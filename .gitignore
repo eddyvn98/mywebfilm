@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# CinemaWeb Specific
+config.json
+movies_cache.json
+jav_metadata_cache.json
+tags.json
+thumbnails/
+previews/
+*.txt
+*.jpg
+*.png
+!static/img/*
+!static/images/*
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store

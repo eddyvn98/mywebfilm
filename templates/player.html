@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem phim</title>
+    <!-- Plyr CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            color: white;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .video-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Tùy chỉnh Plyr để đẹp hơn */
+        .plyr {
+            --plyr-color-main: #3b82f6;
+            /* Blue-500 */
+            --plyr-video-control-color: #ffffff;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Ẩn control trên mobile cho gọn nếu muốn */
+        .plyr--fullscreen-enabled [data-plyr='fullscreen'] {
+            display: inline-block;
+        }
+
+        /* Custom Back Button overlay */
+        .custom-back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            border-radius: 9999px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .custom-back-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="goBack()" class="custom-back-btn" id="backBtn">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
+    </button>
+
+    <div class="video-container">
+        <video id="player" playsinline controls crossorigin>
+            <source id="video-source" src="" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- Plyr JS -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const path = urlParams.get('path');
+        const videoElement = document.getElementById('player');
+
+        let player;
+
+        if (path) {
+            document.getElementById('video-source').src = '/api/stream?path=' + encodeURIComponent(path);
+
+            // Khởi tạo Plyr
+            player = new Plyr('#player', {
+                controls: [
+                    'play-large', // The large play button in the center
+                    'restart', // Restart playback
+                    'rewind', // Rewind by the seek time (default 10 seconds)
+                    'play', // Play/pause playback
+                    'fast-forward', // Fast forward by the seek time (default 10 seconds)
+                    'progress', // The progress bar and scrubber for playback and buffering
+                    'current-time', // The current time of playback
+                    'duration', // The full duration of the media
+                    'mute', // Toggle mute
+                    'volume', // Volume control
+                    'settings', // Settings menu
+                    'pip', // Picture-in-picture (currently Safari only)
+                    'airplay', // Airplay (currently Safari only)
+                    'fullscreen', // Toggle fullscreen
+                ],
+                seekTime: 10,
+                keyboard: { focused: true, global: true },
+                tooltips: { controls: true, seek: true },
+                i18n: {
+                    restart: 'Phát lại',
+                    rewind: 'Tua lại {seektime}s',
+                    play: 'Phát',
+                    pause: 'Tạm dừng',
+                    fastForward: 'Tua nhanh {seektime}s',
+                    seek: 'Tua',
+                    seekLabel: '{currentTime} của {duration}',
+                    played: 'Đã phát',
+                    buffered: 'Đã tải',
+                    currentTime: 'Thời gian hiện tại',
+                    duration: 'Thời lượng',
+                    volume: 'Âm lượng',
+                    mute: 'Tắt tiếng',
+                    unmute: 'Bật tiếng',
+                    enableCaptions: 'Bật phụ đề',
+                    disableCaptions: 'Tắt phụ đề',
+                    enterFullscreen: 'Toàn màn hình',
+                    exitFullscreen: 'Thoát toàn màn hình',
+                    settings: 'Cài đặt',
+                    menuBack: 'Quay lại',
+                    speed: 'Tốc độ',
+                    normal: 'Bình thường',
+                    quality: 'Chất lượng',
+                    loop: 'Lặp lại',
+                }
+            });
+        } else {
+            alert("Không tìm thấy đường dẫn video!");
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        // --- Resume Playback Logic ---
+        const storageKey = 'video_pos_' + path;
+        const savedTime = localStorage.getItem(storageKey);
+
+        if (savedTime && player) {
+            player.on('ready', () => {
+                player.currentTime = parseFloat(savedTime);
+                // Optional: Toast notification "Resuming from..." could go here
+            });
+        }
+
+        if (player) {
+            player.on('timeupdate', event => {
+                localStorage.setItem(storageKey, player.currentTime);
+            });
+
+            // Ẩn hiện nút Back
+            let timeout;
+            const container = document.body;
+            const backBtn = document.getElementById('backBtn');
+
+            container.addEventListener('touchstart', showControls);
+            container.addEventListener('mousemove', showControls);
+
+            function showControls() {
+                backBtn.style.opacity = '1';
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    if (player.playing) {
+                        backBtn.style.opacity = '0';
+                    }
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+
+</html>
