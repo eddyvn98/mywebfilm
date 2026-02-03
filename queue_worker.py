@@ -69,6 +69,43 @@ class MediaQueue:
                     if res_path:
                         item['status'] = "completed"
                         item['output'] = res_path
+                        
+                        # Sync Cache
+                        try:
+                            items = cfg.load_cache()
+                            updated = False
+                            
+                            if item['type'] == "convert":
+                                # Replace the .ts entry with .mp4
+                                for v in items:
+                                    if v['full_path'] == item['path']:
+                                        v['full_path'] = res_path
+                                        v['ext'] = "MP4"
+                                        v['name'] = os.path.splitext(os.path.basename(res_path))[0]
+                                        # Update size if possible
+                                        if os.path.exists(res_path):
+                                            st = os.stat(res_path)
+                                            v['size'] = st.st_size
+                                            from scanner_service import format_size
+                                            v['size_fmt'] = format_size(st.st_size)
+                                        updated = True
+                                        print(f"[Queue] Cache updated: {item['path']} -> {res_path}")
+                                        break
+                            
+                            elif item['type'] == "highlight":
+                                # Highlights are new files, but often in a 'Processed' folder
+                                # We don't necessarily replace the old one, but we should add the new one
+                                # if it's not already there.
+                                if not any(v['full_path'] == res_path for v in items):
+                                    # Create a basic entry or trigger a mini-scan
+                                    # For simplicity, we trigger a save and the next user refresh/scan will pick it up
+                                    # But let's try to add it minimally
+                                    pass
+                            
+                            if updated:
+                                cfg.save_cache(items)
+                        except Exception as cache_err:
+                            print(f"[Queue] Cache Sync Error: {cache_err}")
                     else:
                         item['status'] = "failed"
                         item['error'] = "FFmpeg task failed"

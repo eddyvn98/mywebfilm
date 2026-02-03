@@ -54,8 +54,139 @@ body {
 
     .dropdown-menu {
         min-width: 140px !important;
-        left: auto !important;
-        right: 0 !important;
+        left: 10px !important;
+        right: 10px !important;
+        top: auto !important;
+        bottom: 20px !important;
+        /* Move to bottom as an 'action sheet' for better reach */
+        position: fixed !important;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        border-radius: 20px 20px 0 0 !important;
+        margin-bottom: constant(safe-area-inset-bottom);
+        margin-bottom: env(safe-area-inset-bottom);
+    }
+
+    .dropdown-menu.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* Backdrop for fixed dropdowns on mobile */
+    .custom-dropdown::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 90;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .custom-dropdown:has(.dropdown-menu.show)::after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .plyr__time {
+        font-size: 10px !important;
+        padding: 0 4px !important;
+    }
+
+    /* Strict 2-Row Layout: Row 1 = Timeline, Row 2 = EVERYTHING ELSE */
+    .plyr__controls {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        padding: 5px 10px 15px 10px !important;
+        justify-content: space-between !important;
+        gap: 0 !important;
+    }
+
+    /* Row 1: Timeline */
+    .plyr__progress__container {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        order: 1 !important;
+        margin: 5px 0 15px 0 !important;
+    }
+
+    /* Row 2: Controls Container */
+    /* We'll use a nested flex or just manual ordering to keep them in one line */
+    .plyr__controls>.plyr__control,
+    .plyr__volume,
+    .plyr__time,
+    .plyr__menu {
+        order: 2 !important;
+        padding: 4px !important;
+        margin: 0 !important;
+    }
+
+    /* Shrink the volume button container to fit */
+    .plyr__volume {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+
+    /* Vertical Volume Transformation */
+    .plyr__volume {
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Hide horizontal bar, prepare for vertical */
+    .plyr__volume input[type=range] {
+        position: absolute !important;
+        bottom: 45px !important;
+        left: 50% !important;
+        transform: rotate(270deg) translateY(-50%) !important;
+        transform-origin: left center !important;
+        width: 80px !important;
+        height: 25px !important;
+        margin: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s, transform 0.2s !important;
+        background: rgba(15, 23, 42, 0.9) !important;
+        border-radius: 20px !important;
+        padding: 10px !important;
+        z-index: 100 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Show on hover (on mobile some 'hover' translates to toggle on tap) */
+    .plyr__volume:hover input[type=range],
+    .plyr__volume:active input[type=range],
+    .plyr__volume--expanded input[type=range] {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    /* Custom button sizes to fit everything */
+    .plyr__control {
+        width: 32px !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .plyr__control svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* Playlist toggle button specifically */
+    #plyr-btn-playlist {
+        font-size: 12px !important;
+        color: #fff !important;
+    }
+
+    /* Make progress bar thicker on mobile or easier seeking */
+    .plyr__progress input[type=range] {
+        height: 12px !important;
     }
 }
 
@@ -67,7 +198,7 @@ body {
 
 /* Movie Card */
 .movie-card {
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s, filter 0.5s;
     border-radius: 16px;
     background: transparent;
 }
@@ -155,7 +286,7 @@ body {
 /* Custom Dropdown Styles */
 .custom-dropdown {
     position: relative;
-    display: inline-block;
+    /* Ensure child menus aren't clipped by overflow containers */
 }
 
 .dropdown-trigger {
@@ -195,8 +326,9 @@ body {
     transform: translateY(-8px);
     pointer-events: none;
     transition: all 0.1s ease-out;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    /* Reduced blur for performance */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .dropdown-menu.show {
@@ -456,4 +588,136 @@ body {
 .blur-btn-active {
     background: #3b82f6 !important;
     color: white !important;
+}
+
+/* Action Sheet (Mobile Global Menu) */
+.action-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 24px 24px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+    /* Safe Area for iPhone */
+    padding-bottom: env(safe-area-inset-bottom);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.action-sheet.active {
+    transform: translateY(0) !important;
+}
+
+@media (min-width: 768px) {
+
+    /* Desktop: Centered Modal */
+    .action-sheet {
+        bottom: auto;
+        /* reset */
+        top: 50%;
+        left: 50%;
+        right: auto;
+        width: 360px;
+        transform: translate(-50%, calc(-50% + 20px));
+        border-radius: 20px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        padding-bottom: 0;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .action-sheet.active {
+        transform: translate(-50%, -50%) !important;
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* Playlist Sidebar (Drawer) */
+#playlist-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 1500;
+    /* Above modal */
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#playlist-sidebar.show {
+    transform: translateX(0);
+}
+
+@media (max-width: 640px) {
+    #playlist-sidebar {
+        width: 100%;
+        /* Full screen on mobile */
+    }
+}
+
+.playlist-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.playlist-item:hover,
+.playlist-item.active {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.playlist-item.active .playlist-title {
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.playlist-thumb {
+    width: 60px;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.playlist-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-title {
+    font-size: 12px;
+    color: #cbd5e1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playlist-meta {
+    font-size: 10px;
+    color: #64748b;
+}
+
+/* Toggle Switch */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #3b82f6;
+}
+
+.toggle-checkbox:checked+.toggle-label {
+    background-color: #3b82f6;
 }

@@ -1,21 +1,35 @@
-// static/js/filter_service.js
 import { state, saveState } from './state.js';
 import { renderGrid } from './render_service.js';
+import { favoritesService } from './favorites_service.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
 
 function closeDropdowns() {
     document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
 }
 
-export function applyFilters() {
+export function applyFilters(preserveScroll = false) {
+    const currentScroll = preserveScroll ? window.scrollY : 0;
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const type = state.filterType || 'all';
     const sort = state.sortOrder || 'added_newest';
 
     let filtered = state.allVideos.filter(v => {
+        const meta = v.jav_metadata || {};
         const matchesName = v.name.toLowerCase().includes(search);
         const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
-        const matchesSearch = matchesName || matchesCats;
+        const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
+        const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
+
+        const matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+
+        // Favorites / History override
+        if (state.currentFolder === 'favorites') {
+            return matchesSearch && favoritesService.isFavorite(v.full_path);
+        }
+        if (state.currentFolder === 'history') {
+            const histPaths = historyService.getHistoryPaths() || [];
+            return matchesSearch && histPaths.includes(v.full_path);
+        }
 
         const matchesFolder = state.currentFolder === 'all' || v.folder === state.currentFolder;
         const matchesType = type === 'all' || v.type === type;
@@ -30,23 +44,42 @@ export function applyFilters() {
     });
 
     if (sort === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'name_desc') filtered.sort((a, b) => b.name.localeCompare(a.name));
     else if (sort === 'views_desc') filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
     else if (sort === 'newest') filtered.sort((a, b) => b.mtime - a.mtime);
+    else if (sort === 'duration_desc') filtered.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+    else if (sort === 'duration_asc') filtered.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+    else if (sort === 'size_desc') filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
+    else if (sort === 'size_asc') filtered.sort((a, b) => (a.size || 0) - (b.size || 0));
     else filtered.sort((a, b) => b.date_added - a.date_added);
 
-    renderGrid(filtered);
+    // If preserveScroll is true, we don't want to reset to page 1
+    // Special sorting for history: preserve history order
+    if (state.currentFolder === 'history') {
+        const histPaths = historyService.getHistoryPaths() || [];
+        filtered.sort((a, b) => histPaths.indexOf(a.full_path) - histPaths.indexOf(b.full_path));
+    }
+
+    renderGrid(filtered, false, !preserveScroll);
     saveState();
 
     const statsEl = document.getElementById('stats');
     if (statsEl) statsEl.innerText = `${filtered.length} FILE`;
 
     renderDynamicCategories();
+
+    if (preserveScroll) {
+        // Small delay to ensure render is complete
+        setTimeout(() => window.scrollTo({ top: currentScroll, behavior: 'instant' }), 0);
+    }
 }
 
+// Update to target the new Global Sheet list
 export function renderDynamicCategories() {
-    const list = document.getElementById('dynamic-studios-list');
+    const list = document.getElementById('dynamic-studios-list-sheet');
     if (!list) return;
 
+    list.innerHTML = '';
     const sections = {
         'Studio': new Set(),
         'Diễn viên': new Set(),
@@ -74,7 +107,7 @@ export function renderDynamicCategories() {
             const count = state.allVideos.filter(v => v.categories?.includes(val)).length;
             if (count === 0) return '';
             return `
-                <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${val}', '${s.toUpperCase()}'); event.stopPropagation()">
+                <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${val}', '${s.toUpperCase()}'); event.stopPropagation(); event.preventDefault()">
                     <span class="truncate pr-2">${s}</span>
                     <span class="text-[8px] opacity-40 group-hover/cat:opacity-100 transition shrink-0">${count}</span>
                 </div>
@@ -93,25 +126,32 @@ export function selectType(val, label) {
     state.filterType = val;
     state.filterExt = 'all';
     document.getElementById('type-label').innerText = label;
-    closeDropdowns();
-    applyFilters();
+    // Micro-delay to prevent ghost clicks on elements behind the menu
+    setTimeout(() => {
+        closeDropdowns();
+        applyFilters();
+    }, 50);
 }
 
 export function selectExt(val, label) {
     state.filterExt = val;
     state.filterType = 'all';
     document.getElementById('type-label').innerText = label;
-    closeDropdowns();
-    applyFilters();
+    setTimeout(() => {
+        closeDropdowns();
+        applyFilters();
+    }, 50);
 }
 
 export function selectCategory(val, label) {
     state.currentCategory = val;
     const labelEl = document.getElementById('category-label');
     if (labelEl) labelEl.innerText = label;
-    closeDropdowns();
-    applyFilters();
-    if (window.closeDiscovery) window.closeDiscovery();
+    setTimeout(() => {
+        closeDropdowns();
+        applyFilters();
+        if (window.closeDiscovery) window.closeDiscovery();
+    }, 50);
 }
 
 // Attach to window for global access from empty state button
@@ -138,6 +178,39 @@ export function selectSort(val, label) {
     state.sortOrder = val;
     const labelEl = document.getElementById('sort-label');
     if (labelEl) labelEl.innerText = label;
-    closeDropdowns();
+    setTimeout(() => {
+        closeDropdowns();
+        applyFilters();
+    }, 50);
+}
+
+export function filterByFavorites() {
+    state.currentFolder = 'favorites';
     applyFilters();
+    // Update active UI
+    const homeBtn = document.querySelector('[onclick="filterByFolder(\'all\')"]');
+    const favBtn = document.getElementById('btn-show-favorites');
+    if (homeBtn) homeBtn.classList.replace('bg-blue-600/10', 'bg-slate-800/0');
+    if (favBtn) favBtn.classList.replace('bg-red-600/0', 'bg-red-600/10');
+}
+
+export async function filterByHistory() {
+    state.currentFolder = 'history';
+    // Ensure history is loaded in service
+    await historyService.loadHistoryData();
+    applyFilters();
+
+    // Update UI active state
+    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('bg-blue-600/10', 'bg-red-600/10')); // hypothetical
+    // For now simple reset like filterByFavorites
+    const homeBtn = document.querySelector('[onclick="filterByFolder(\'all\')"]');
+    const histBtn = document.getElementById('btn-show-history');
+    if (homeBtn) {
+        homeBtn.classList.remove('bg-blue-600/10');
+        homeBtn.classList.add('bg-slate-800/0');
+    }
+    if (histBtn) {
+        histBtn.classList.remove('bg-blue-600/0');
+        histBtn.classList.add('bg-blue-600/10');
+    }
 }

@@ -17,7 +17,9 @@ const defaultState = {
     scrollPos: 0,
     queuedPaths: [],
     filterExt: 'all',
-    currentCategory: 'all'
+    currentCategory: 'all',
+    pageSize: 40,
+    currentPage: 1
 };
 
 function loadStoredState() {

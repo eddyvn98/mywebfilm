@@ -7,8 +7,9 @@
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/css/style.css?v=mobile_v4" rel="stylesheet">
+    <link href="/static/css/style.css?v=v3_player" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link href="/static/css/clauwbot.css" rel="stylesheet">
     <style>
         /* Modal Animation specific */
         .modal-open {
@@ -18,35 +19,63 @@
         .plyr {
             width: 100%;
             height: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .plyr__video-wrapper {
-            height: 100%;
+            background: black;
+            height: 100% !important;
+            max-height: 100%;
         }
 
-        video {
-            max-height: 100vh;
+        .plyr video {
+            object-fit: contain !important;
         }
 
-        .plyr,
-        .plyr__video-wrapper,
-        #modal-player {
-            touch-action: none !important;
+        /* Ensure controls are always visible and within safe areas */
+        .plyr--full-ui.plyr--video .plyr__controls {
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
+            background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8)) !important;
         }
 
-        .plyr--full-ui.plyr--video .plyr__control--overlaid {
-            display: none;
+        @media (max-width: 768px) {
+            .plyr__video-wrapper {
+                height: auto !important;
+            }
+
+            .plyr--fullscreen-fallback {
+                height: 100% !important;
+            }
         }
 
-        .plyr__controls {
-            flex-wrap: wrap !important;
-            padding-top: 10px !important;
+        /* Custom Plyr Controls */
+        .plyr--full-ui input[type=range] {
+            color: #3b82f6;
+        }
+
+        .plyr__control--overlaid {
+            background: rgba(59, 130, 246, 0.8);
+        }
+
+        .plyr--video .plyr__control.plyr__tab-focus,
+        .plyr--video .plyr__control:hover,
+        .plyr--video .plyr__control[aria-expanded=true] {
+            background: #3b82f6;
+        }
+
+        .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
+            background: #3b82f6;
+        }
+
+        .plyr__captions {
+            font-weight: 500;
+            font-size: 14px;
         }
 
         .plyr__progress__container {
-            width: 100% !important;
-            flex: 0 0 100% !important;
-            margin-bottom: 10px !important;
             order: -1;
         }
 
@@ -63,467 +92,47 @@
     <div id="sidebar-overlay" onclick="toggleSidebar()"
         class="fixed inset-0 bg-black/80 z-40 hidden transition-opacity duration-300 backdrop-blur-sm md:hidden"></div>
 
-    <aside id="sidebar"
-        class="fixed inset-y-0 left-0 w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50 shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative">
-        <div class="p-6 text-center">
-            <h1 class="text-2xl font-black text-blue-500 italic tracking-tighter uppercase cursor-default">My Cinema
-            </h1>
-        </div>
-
-        <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 space-y-2">
-            <button onclick="filterByFolder('all')"
-                class="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-all font-bold flex items-center text-sm"
-                id="btn-all">
-                <i class="fa-solid fa-house mr-3"></i>TẤT CẢ
-            </button>
-            <div id="source-list" class="space-y-1 mt-4"></div>
-            <div class="h-px bg-slate-800 my-2"></div>
-            <nav class="space-y-1" id="folder-list"></nav>
-        </div>
-
-        <div class="p-4 border-t border-slate-800 bg-slate-950/40">
-            <div class="flex gap-2">
-                <input type="text" id="new-folder-path" placeholder="Thêm folder..."
-                    class="flex-1 bg-slate-800/50 rounded-lg py-2 px-3 text-xs outline-none border border-slate-700/50 focus:border-blue-500">
-                <button onclick="addFolder()"
-                    class="bg-blue-600 w-9 h-9 rounded-lg flex items-center justify-center text-white transition hover:bg-blue-500 active:scale-95">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                </button>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Slide-up Video Player Modal -->
-    <div id="video-modal"
-        class="fixed inset-0 z-[100] translate-y-full transition-transform duration-300 ease-in-out bg-black flex flex-col hidden">
-        <div id="drag-handle"
-            class="h-12 w-full flex items-center justify-center bg-gradient-to-b from-black/80 to-black/0 absolute top-0 z-50 cursor-grab active:cursor-grabbing touch-none">
-            <div class="w-16 h-1.5 bg-white/30 rounded-full"></div>
-        </div>
-        <button onclick="closeVideoModal()"
-            class="absolute top-4 right-4 z-50 w-10 h-10 bg-black/50 backdrop-blur rounded-full flex items-center justify-center text-white/80 hover:bg-white/20 transition">
-            <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
-        <div class="flex-1 relative bg-black flex items-center justify-center">
-            <video id="modal-player" playsinline controls class="w-full h-full object-contain"></video>
-        </div>
-    </div>
-
-    <!-- PIN Entry Overlay -->
-    <div id="pin-overlay"
-        class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-6 hidden">
-        <div class="w-full max-w-xs space-y-8 animate-in fade-in zoom-in duration-300">
-            <div class="text-center space-y-2">
-                <i class="fa-solid fa-lock text-blue-500 text-4xl mb-4"></i>
-                <h2 class="text-2xl font-bold text-white uppercase tracking-widest">Nhập Mã PIN</h2>
-                <p class="text-slate-400 text-xs">Vui lòng nhập mã bảo mật để truy cập thư viện</p>
-            </div>
-            <div class="flex justify-center gap-3" id="pin-dots">
-                <div class="w-4 h-4 rounded-full border-2 border-slate-700"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-slate-700"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-slate-700"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-slate-700"></div>
-            </div>
-            <div class="grid grid-cols-3 gap-4">
-                <button onclick="pressPin(1)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">1</button>
-                <button onclick="pressPin(2)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">2</button>
-                <button onclick="pressPin(3)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">3</button>
-                <button onclick="pressPin(4)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">4</button>
-                <button onclick="pressPin(5)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">5</button>
-                <button onclick="pressPin(6)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">6</button>
-                <button onclick="pressPin(7)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">7</button>
-                <button onclick="pressPin(8)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">8</button>
-                <button onclick="pressPin(9)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">9</button>
-                <div class="flex items-center justify-center">
-                    <button onclick="clearPin()" class="text-slate-500 hover:text-white transition"><i
-                            class="fa-solid fa-delete-left text-xl"></i></button>
-                </div>
-                <button onclick="pressPin(0)"
-                    class="h-16 rounded-2xl bg-slate-900 text-2xl font-bold text-white hover:bg-slate-800 transition active:scale-95">0</button>
-                <div class="flex items-center justify-center">
-                    <button onclick="verifyPin()"
-                        class="text-blue-500 hover:text-blue-400 font-bold uppercase text-xs">OK</button>
-                </div>
-            </div>
-            <p id="pin-error" class="text-red-500 text-[10px] text-center font-bold opacity-0 transition-opacity">MÃ PIN
-                KHÔNG CHÍNH XÁC</p>
-        </div>
-    </div>
+    <!-- Components -->
+    {% include 'components/sidebar.html' %}
 
     <main class="flex-1 flex flex-col bg-slate-950 w-full relative">
-        <header class="p-3 md:p-4 flex flex-col gap-3 border-b border-slate-800/50 bg-slate-900/90 backdrop-blur z-30">
-            <div class="flex items-center gap-3 w-full">
-                <button onclick="toggleSidebar()"
-                    class="md:hidden w-10 h-10 -ml-1 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-800 rounded-full">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-                <div class="relative flex-1">
-                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                    <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm kiếm phim..."
-                        class="w-full bg-slate-800/50 rounded-lg py-2.5 pl-9 pr-3 text-base md:text-sm outline-none border border-slate-700/50 focus:border-blue-500/50 transition text-white placeholder-slate-500">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="refreshLibrary()" id="btn-refresh"
-                        class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
-                        <i class="fa-solid fa-rotate text-sm"></i>
-                    </button>
-                    <button onclick="toggleBlur()" id="btn-blur"
-                        class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
-                        <i class="fa-solid fa-eye-slash text-sm"></i>
-                    </button>
-                    <button onclick="clearAllCache()"
-                        class="hidden md:flex w-9 h-9 rounded-lg bg-red-900/10 items-center justify-center hover:bg-red-500 transition text-red-500 hover:text-white">
-                        <i class="fa-solid fa-broom text-xs"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- Bottom Row: Filters -->
-            <div class="flex items-center gap-3 pb-1 md:pb-0 flex-wrap">
-                <button onclick="toggleManageMode()" id="btn-manage-mode"
-                    class="h-10 px-4 rounded-xl bg-slate-800/50 border border-white/5 text-[10px] font-black tracking-widest text-slate-400 hover:text-white transition uppercase">
-                    Quản lý
-                </button>
-                <button onclick="openDiscovery()"
-                    class="h-10 px-4 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                    <i class="fa-solid fa-compass"></i>
-                    Khám phá
-                </button>
-                <div class="w-px h-4 bg-white/10 mx-1"></div>
-                <div class="custom-dropdown" id="dropdown-type">
-                    <div class="dropdown-trigger" onclick="toggleDropdown('dropdown-type'); event.stopPropagation()">
-                        <span id="type-label">TẤT CẢ</span>
-                        <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
-                    </div>
-                    <div class="dropdown-menu" onclick="event.stopPropagation()">
-                        <div class="dropdown-item" onclick="selectType('all', 'TẤT CẢ'); event.stopPropagation()">Tất cả
-                        </div>
-                        <div class="dropdown-item" onclick="selectType('video', 'VIDEO'); event.stopPropagation()">Video
-                        </div>
-                        <div class="dropdown-item" onclick="selectExt('mp4', 'FMT: MP4'); event.stopPropagation()">MP4
-                        </div>
-                        <div class="dropdown-item" onclick="selectExt('ts', 'FMT: TS'); event.stopPropagation()">TS
-                        </div>
-                        <div class="dropdown-item" onclick="selectType('image', 'ẢNH'); event.stopPropagation()">ẢNH
-                        </div>
-                    </div>
-                </div>
-                <div class="custom-dropdown" id="dropdown-category">
-                    <div class="dropdown-trigger"
-                        onclick="toggleDropdown('dropdown-category'); event.stopPropagation()">
-                        <span id="category-label">THỂ LOẠI</span>
-                        <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
-                    </div>
-                    <div class="dropdown-menu" onclick="event.stopPropagation()">
-                        <div class="dropdown-item" onclick="selectCategory('all', 'THỂ LOẠI'); event.stopPropagation()">
-                            Tất cả</div>
-                        <div class="h-px bg-white/5 my-1"></div>
-                        <div id="dynamic-studios-list" class="max-h-[300px] overflow-y-auto">
-                            <!-- JS populated -->
-                        </div>
-                    </div>
-                </div>
-                <div class="custom-dropdown" id="dropdown-sort">
-                    <div class="dropdown-trigger !text-blue-400"
-                        onclick="toggleDropdown('dropdown-sort'); event.stopPropagation()">
-                        <span id="sort-label">MỚI CẬP NHẬT</span>
-                        <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
-                    </div>
-                    <div class="dropdown-menu" onclick="event.stopPropagation()">
-                        <div class="dropdown-item"
-                            onclick="selectSort('added_newest', 'MỚI CẬP NHẬT'); event.stopPropagation()">Mới cập nhật
-                        </div>
-                        <div class="dropdown-item"
-                            onclick="selectSort('newest', 'FILE MỚI NHẤT'); event.stopPropagation()">File mới nhất</div>
-                        <div class="dropdown-item"
-                            onclick="selectSort('views_desc', 'XEM NHIỀU'); event.stopPropagation()">Xem nhiều</div>
-                        <div class="dropdown-item" onclick="selectSort('name', 'TÊN A-Z'); event.stopPropagation()">Tên
-                            A-Z</div>
-                    </div>
-                </div>
-                <button onclick="openAiLab()" id="btn-ai-lab"
-                    class="h-10 px-4 rounded-xl bg-purple-600/20 border border-purple-500/20 text-purple-400 hover:bg-purple-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                    <i class="fa-solid fa-robot"></i>
-                    AI Lab
-                </button>
-                <div id="stats"
-                    class="ml-auto bg-blue-600/20 text-blue-500 font-black px-2.5 py-1 rounded-full text-[9px] tracking-widest whitespace-nowrap">
-                    0 FILE </div>
-            </div>
-        </header>
+        {% include 'components/header.html' %}
 
-        <!-- AI Metadata Management Studio Overlay -->
-        <div id="ai-lab-overlay"
-            class="fixed inset-0 z-[120] bg-slate-950/98 backdrop-blur-3xl translate-y-full transition-transform duration-500 ease-out flex flex-col hidden">
-            <header
-                class="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-slate-900/50 shadow-2xl">
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                        <i class="fa-solid fa-wand-magic-sparkles text-white text-xs"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-white font-black text-xs tracking-[0.2em] uppercase">AI Management Studio</h2>
-                        <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Normalizing & Injecting
-                            Metadata</p>
-                    </div>
-                </div>
-                <button onclick="closeAiLab()"
-                    class="group w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all duration-300">
-                    <i
-                        class="fa-solid fa-xmark text-white/50 group-hover:text-white group-hover:rotate-90 transition-all"></i>
-                </button>
-            </header>
 
-            <div class="flex-1 flex overflow-hidden">
-                <!-- Left Sidebar: Unverified Files -->
-                <aside class="w-80 border-r border-white/5 flex flex-col bg-slate-900/30">
-                    <div class="p-4 space-y-3">
-                        <div class="relative">
-                            <i
-                                class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
-                            <input type="text" id="mgmt-search" placeholder="Lọc danh sách..."
-                                class="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-8 pr-3 text-[10px] text-white outline-none focus:border-blue-500/50 transition">
-                        </div>
-                        <div class="flex justify-between items-center px-1">
-                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest"
-                                id="mgmt-count">0 File Chờ</span>
-                            <button onclick="loadUnverifiedList()"
-                                class="text-[8px] text-blue-500 font-black hover:underline uppercase">Làm mới</button>
-                        </div>
-                    </div>
-                    <div id="mgmt-file-list" class="flex-1 overflow-y-auto px-2 space-y-1">
-                        <!-- JS Dynamic list -->
-                    </div>
-                </aside>
-
-                <!-- Center: Metadata Editor -->
-                <main class="flex-1 overflow-y-auto p-8 bg-black/20">
-                    <div id="mgmt-editor-empty"
-                        class="h-full flex flex-col items-center justify-center space-y-4 opacity-50">
-                        <i class="fa-solid fa-hand-pointer text-4xl text-slate-700"></i>
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chọn một file để bắt
-                            đầu chuẩn hóa</p>
-                    </div>
-
-                    <div id="mgmt-editor-content" class="max-w-3xl mx-auto space-y-8 hidden">
-                        <!-- AI Suggester -->
-                        <div
-                            class="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl p-6 flex items-center justify-between shadow-xl">
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/30 animate-pulse">
-                                    <i class="fa-solid fa-robot text-white text-xl"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-white font-black text-xs uppercase tracking-wider">AI Assistant</h3>
-                                    <p class="text-[9px] text-slate-400">Tự động phân tích tên file và đề xuất metadata.
-                                    </p>
-                                </div>
-                            </div>
-                            <button onclick="runAiAnalyzeMgmt()" id="btn-run-ai-mgmt"
-                                class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition active:scale-95 shadow-lg shadow-purple-600/20">
-                                CHẠY PHÂN TÍCH
-                            </button>
-                        </div>
-
-                        <!-- Manual JSON Import -->
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Nhập
-                                    JSON
-                                    (Paste metadata vào đây)</label>
-                                <button onclick="parseJsonMetadata()"
-                                    class="text-[9px] text-blue-500 font-bold hover:underline">Tự điền</button>
-                            </div>
-                            <textarea id="mgmt-json-input" rows="2"
-                                placeholder='VD: { "code": "ABC-123", "title": "Phim hay..." }'
-                                class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-xs text-slate-300 outline-none focus:border-blue-500 transition font-mono"></textarea>
-                        </div>
-
-                        <!-- Form -->
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2 col-span-2">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Tiêu
-                                    đề phim (Title)</label>
-                                <input type="text" id="mgmt-title"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Mã
-                                    phim (Code)</label>
-                                <input type="text" id="mgmt-code" placeholder="VD: MEYD-855"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Hãng
-                                    phim (Studio)</label>
-                                <input type="text" id="mgmt-studio"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition">
-                            </div>
-                            <div class="space-y-2 col-span-2">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Diễn
-                                    viên (Actors - Cách nhau bởi dấu phẩy)</label>
-                                <input type="text" id="mgmt-actors"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition">
-                            </div>
-                            <div class="space-y-2 col-span-2">
-                                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Thể
-                                    loại (Genres - Cách nhau bởi dấu phẩy)</label>
-                                <input type="text" id="mgmt-genres"
-                                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 transition">
-                            </div>
-                        </div>
-
-                        <!-- Options -->
-                        <div class="flex items-center gap-6 pt-4 border-t border-white/5">
-                            <label class="flex items-center gap-3 cursor-pointer group">
-                                <div
-                                    class="relative w-10 h-6 bg-slate-800 rounded-full transition-colors group-hover:bg-slate-700">
-                                    <input type="checkbox" id="mgmt-rename" checked class="sr-only peer">
-                                    <div
-                                        class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 peer-checked:bg-blue-500">
-                                    </div>
-                                </div>
-                                <span
-                                    class="text-[10px] font-black text-slate-400 group-hover:text-white uppercase tracking-widest transition">Tự
-                                    động đổi tên file</span>
-                            </label>
-
-                            <div class="flex-1"></div>
-
-                            <button onclick="finalizeMetadata()" id="btn-finalize"
-                                class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition active:scale-95 shadow-xl shadow-blue-600/30 flex items-center gap-3">
-                                <i class="fa-solid fa-check-double scale-125"></i>
-                                HOÀN TẤT & LƯU
-                            </button>
-                        </div>
-                    </div>
-                </main>
-
-                <!-- Right Sidebar: Actor Assets & Predefined Tags -->
-                <aside
-                    class="w-80 border-l border-white/5 bg-slate-900/40 p-6 space-y-8 overflow-y-auto hidden md:block">
-                    <!-- Actors Gallery -->
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Studio Assets
-                            </h3>
-                            <i class="fa-solid fa-building text-slate-700"></i>
-                        </div>
-                        <div id="mgmt-studio-list" class="flex flex-wrap gap-2">
-                            <!-- JS Dynamic -->
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Actor Assets
-                                (Idols)</h3>
-                            <i class="fa-solid fa-id-badge text-slate-700"></i>
-                        </div>
-                        <div id="mgmt-actor-gallery" class="grid grid-cols-2 gap-3">
-                            <!-- JS Dynamic -->
-                            <div
-                                class="col-span-2 text-center py-10 text-slate-700 text-[8px] uppercase font-black italic">
-                                Trống</div>
-                        </div>
-
-                        <!-- Quick Select Actors List -->
-                        <div class="space-y-2 pt-4 border-t border-white/5">
-                            <h3 class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Quick Select
-                                Actors</h3>
-                            <div id="mgmt-all-actors-list"
-                                class="grid grid-cols-2 gap-1 max-h-[200px] overflow-y-auto pr-2">
-                                <!-- JS Populated -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Genre Suggestions -->
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Smart Genres</h3>
-                            <i class="fa-solid fa-tags text-slate-700"></i>
-                        </div>
-                        <div id="mgmt-genre-chips" class="flex flex-wrap gap-2">
-                            <!-- JS Dynamic -->
-                        </div>
-                    </div>
-                </aside>
-            </div>
-        </div>
+        <!-- Video Grid Container -->
         <div id="video-grid" class="flex-1 overflow-y-auto p-4 md:p-6 content-start pb-24 md:pb-6">
             <div class="col-span-full py-40 text-center text-slate-600 font-bold italic text-sm">Đang tải dữ liệu...
             </div>
         </div>
     </main>
 
-    <!-- Selection Toolbar -->
-    <div id="selection-toolbar"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-blue-600 rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-6 transition-all transform translate-y-32 opacity-0">
-        <div class="text-white font-bold text-xs"><span id="selected-count">0</span> Đã chọn</div>
-        <div class="h-6 w-px bg-white/20"></div>
-        <div class="flex gap-2">
-            <button onclick="bulkMove()"
-                class="h-9 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase transition">Di
-                chuyển</button>
-            <button onclick="bulkDelete()"
-                class="h-9 px-4 rounded-xl bg-red-500 hover:bg-red-400 text-white text-[10px] font-black uppercase transition">Xóa
-                hết</button>
-        </div>
-        <button onclick="cancelSelection()" class="text-white/60 hover:text-white transition"><i
-                class="fa-solid fa-xmark"></i></button>
-    </div>
+    <!-- Modals & Overlays -->
+    {% include 'components/video_modal.html' %}
+    {% include 'components/pin_overlay.html' %}
+    {% include 'components/ai_lab.html' %}
+    {% include 'components/discovery_overlay.html' %}
+    {% include 'components/remote_access_modal.html' %}
+    {% include 'components/mobile_menus.html' %}
 
-    <!-- Rename Modal -->
-    <div id="rename-modal"
-        class="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 hidden">
-        <div class="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4">
-            <h3 class="text-white font-bold text-sm uppercase tracking-widest">Đổi tên file</h3>
-            <input type="text" id="rename-input"
-                class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 transition">
-            <div class="flex gap-2 pt-2">
-                <button onclick="closeRenameModal()"
-                    class="flex-1 h-11 rounded-xl bg-slate-800 text-white text-xs font-bold uppercase">Hủy</button>
-                <button onclick="confirmRename()"
-                    class="flex-1 h-11 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase">Lưu</button>
-            </div>
-        </div>
-    </div>
+    <!-- Floating UI -->
+    {% include 'components/selection_toolbar.html' %}
 
-    <!-- Visual Discovery Overlay -->
-    <div id="discovery-overlay"
-        class="fixed inset-0 z-[110] bg-slate-950/98 backdrop-blur-xl translate-y-full transition-transform duration-500 ease-out flex flex-col hidden">
-        <header class="h-20 flex items-center justify-between px-6 border-b border-white/5">
-            <h2 class="text-white font-black text-xl tracking-tighter uppercase">Khám phá</h2>
-            <button onclick="closeDiscovery()"
-                class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition">
-                <i class="fa-solid fa-xmark text-white"></i>
-            </button>
-        </header>
+    <!-- Floating UI -->
+    {% include 'components/selection_toolbar.html' %}
+    {% include 'components/back_to_top.html' %}
+    {% include 'components/rename_modal.html' %}
 
-        <main id="discovery-content" class="flex-1 overflow-y-auto p-6 pb-24 space-y-10">
-            <!-- Dynamic Sections (Idol, Studio, Themes) -->
-        </main>
-    </div>
-
+    <!-- Scripts -->
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-    <script type="module" src="/static/js/player.js"></script>
-    <script type="module" src="/static/js/render_service.js"></script>
-    <script type="module" src="/static/js/filter_service.js"></script>
-    <script type="module" src="/static/js/manage_service.js"></script>
-    <script type="module" src="/static/js/discovery_service.js"></script>
-    <script type="module" src="/static/js/grid.js?v=refactor"></script>
-    <script type="module" src="/static/js/main.js?v=refactor"></script>
+    <script type="module" src="/static/js/player.js?v=v3_player"></script>
+    <script type="module" src="/static/js/render_service.js?v=v3_player"></script>
+    <script type="module" src="/static/js/filter_service.js?v=v3_player"></script>
+    <script type="module" src="/static/js/manage_service.js?v=v3_player"></script>
+    <script type="module" src="/static/js/discovery_service.js?v=v3_player"></script>
+    <script type="module" src="/static/js/ai_search_service.js?v=v3_player"></script>
+    <script type="module" src="/static/js/grid.js?v=v3_player"></script>
+    <script type="module" src="/static/js/main.js?v=v3_player"></script>
+    <script src="/static/js/clauwbot.js"></script>
 </body>
 
 </html>

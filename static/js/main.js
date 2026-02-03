@@ -1,7 +1,9 @@
 // static/js/main.js
 import { state } from './state.js';
+import { historyService } from './history_service.js';
+import { favoritesService } from './favorites_service.js';
 import { checkPinStatus } from './auth.js';
-import { renderFolders, applyFilters, restoreScroll } from './grid.js';
+import { renderGrid, renderFolders, applyFilters, restoreScroll } from './grid.js';
 import { initGestures } from './gestures.js';
 import { startQueuePolling } from './manage_service.js';
 import { fetchConfig, fetchVideos, apiAddFolder, apiRemoveFolder } from './api.js';
@@ -13,7 +15,12 @@ function syncUIFromState() {
         'added_newest': 'MỚI CẬP NHẬT',
         'newest': 'FILE MỚI NHẤT',
         'views_desc': 'XEM NHIỀU',
-        'name': 'TÊN A-Z'
+        'name': 'TÊN A-Z',
+        'name_desc': 'TÊN Z-A',
+        'duration_desc': 'DÀI NHẤT',
+        'duration_asc': 'NGẮN NHẤT',
+        'size_desc': 'DUNG LƯỢNG LỚN',
+        'size_asc': 'DUNG LƯỢNG NHỎ'
     };
 
     const typeLabel = document.getElementById('type-label');
@@ -27,44 +34,65 @@ function syncUIFromState() {
 
 async function loadLibrary() {
     try {
-        console.log("PIN Success: Loading Library...");
-        state.allVideos = await fetchVideos();
+        console.log("loadLibrary() started...");
+        const videos = await fetchVideos();
+        console.log("fetchVideos() returned:", videos ? videos.length : 'NULL', "items");
+        state.allVideos = videos;
         renderFolders();
+        renderGrid(videos);
         applyFilters();
         restoreScroll();
         initGestures();
-        startQueuePolling(); // Check for any ongoing background tasks on load
+        favoritesService.loadFavorites();
+        startQueuePolling();
     } catch (e) {
-        console.error("Library load failed:", e);
+        console.error("loadLibrary() FAILED:", e);
     }
 }
 
 async function init() {
     try {
+        console.log("Initializing App...");
         const config = await fetchConfig();
+        console.log("Config loaded:", config);
+
         if (config.pin) state.correctPin = config.pin;
         checkPinStatus();
         syncUIFromState();
 
         const sourceList = document.getElementById('source-list');
+        if (!sourceList) {
+            console.error("CRITICAL: Element #source-list not found! Sidebar might be missing.");
+            return;
+        }
+
         sourceList.innerHTML = (config.video_dirs || []).map(path => `
-            <div class="group flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 rounded-lg">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-blue-500/10 rounded-lg"><i class="fa-solid fa-folder text-blue-400"></i></div>
-                    <span class="text-slate-300 font-medium text-sm truncate max-w-[150px]" title="${path}">${path}</span>
+            <div class="group flex items-center justify-between gap-2 px-4 py-2 hover:bg-slate-800/40 rounded-lg transition-colors">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i class="fa-solid fa-folder text-blue-400"></i></div>
+                    <span class="text-slate-300 font-medium text-sm truncate" title="${path}">${path}</span>
                 </div>
-                <button onclick="removeFolder('${path.replace(/\\/g, '\\\\')}')" 
-                        class="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-red-500 transition">
-                    <i class="fa-solid fa-trash-can text-xs"></i>
-                </button>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                     <button onclick="renameFolder('${path.replace(/\\/g, '\\\\')}')" 
+                            class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition" title="Đổi tên an toàn (giữ thumbnail)">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                    </button>
+                    <button onclick="removeFolder('${path.replace(/\\/g, '\\\\')}')" 
+                            class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-md transition" title="Xóa nguồn">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
             </div>`).join('');
+
+        console.log("Source list rendered.");
 
         // If already authenticated, load immediately
         if (sessionStorage.getItem('cinema_authenticated') === 'true') {
+            console.log("Already authenticated, loading library...");
             loadLibrary();
         }
     } catch (e) {
-        console.error("Init failed:", e);
+        console.error("Init failed with error:", e);
     }
 }
 
@@ -78,15 +106,57 @@ window.toggleSidebar = () => {
     overlay.classList.toggle('hidden');
 };
 
+window.toggleSection = (id, btn) => {
+    const el = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    // Check if currently collapsed based on max-height
+    // If max-height is 0px, it is collapsed. 
+    // If max-height is none or >0, it is expanded.
+
+    const isCollapsed = el.style.maxHeight === '0px';
+
+    if (isCollapsed) {
+        // EXPAND
+        el.classList.remove('hidden'); // Just in case
+        el.style.maxHeight = el.scrollHeight + "px";
+        icon.style.transform = 'rotate(0deg)';
+        el.style.opacity = '1';
+
+        // Cleanup after transition
+        setTimeout(() => {
+            if (el.style.maxHeight !== '0px') {
+                el.style.maxHeight = 'none';
+            }
+        }, 300);
+    } else {
+        // COLLAPSE
+        // Set specific height first to animate FROM
+        el.style.maxHeight = el.scrollHeight + "px";
+        el.offsetHeight; // Force reflow
+
+        el.style.maxHeight = "0px";
+        icon.style.transform = 'rotate(-90deg)';
+        el.style.opacity = '0.5';
+    }
+};
+
 window.refreshLibrary = async () => {
     const btn = document.getElementById('btn-refresh');
+    if (!btn) return;
     btn.classList.add('animate-spin');
     try {
-        await fetch('/api/scan', { method: 'POST' });
-        state.allVideos = await fetchVideos();
+        // Use a small timeout for scan so it doesn't hang the UI too long
+        // If it fails with "Failed to fetch", it's likely the server is restarting
+        await fetch('/api/scan', { method: 'POST' }).catch(e => console.warn("Scan fetch failed (server restarting?):", e));
+        state.allVideos = await fetchVideos().catch(e => {
+            console.error("Fetch videos failed:", e);
+            return state.allVideos; // Fallback to current state
+        });
         renderFolders();
         applyFilters();
-        startQueuePolling(); // Start polling in case scan triggered auto-conversion
+        startQueuePolling();
+    } catch (err) {
+        console.error("refreshLibrary total error:", err);
     } finally {
         setTimeout(() => btn.classList.remove('animate-spin'), 500);
     }
@@ -116,6 +186,26 @@ window.removeFolder = async (path) => {
     if (confirm(`Xóa nguồn: ${path}?`)) {
         const res = await apiRemoveFolder(path);
         if (res.ok) init();
+    }
+};
+
+window.renameFolder = async (path) => {
+    const currentName = path.split('\\').pop().split('/').pop();
+    const newName = prompt("Nhập tên mới cho thư mục (Hệ thống sẽ tự cập nhật thumbnail):", currentName);
+
+    if (newName && newName !== currentName) {
+        try {
+            const { apiRename } = await import('./api.js');
+            const res = await apiRename(path, newName);
+            if (res.status === 'ok') {
+                alert("Đổi tên thành công!");
+                location.reload(); // Reload to refresh all paths
+            } else {
+                alert("Lỗi: " + (res.msg || "Không xác định"));
+            }
+        } catch (e) {
+            alert("Lỗi kết nối: " + e.message);
+        }
     }
 };
 

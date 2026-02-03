@@ -1,0 +1,140 @@
+<!-- Remote Access Modal -->
+<div id="remote-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/90 backdrop-blur-md" onclick="closeRemoteModal()"></div>
+
+    <!-- Modal Content -->
+    <div class="relative bg-slate-900 border border-white/10 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-300 scale-95 opacity-0"
+        id="remote-modal-content">
+        <!-- Header -->
+        <div
+            class="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                    <i class="fa-solid fa-cloud-arrow-up text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold">Truy cập từ xa</h3>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest font-black">Cloudflare Tunnel</p>
+                </div>
+            </div>
+            <button onclick="closeRemoteModal()"
+                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-8 text-center">
+            <div class="mb-6 relative group">
+                <div
+                    class="absolute -inset-4 bg-blue-600/20 rounded-full blur-2xl group-hover:bg-blue-600/30 transition-all duration-500">
+                </div>
+                <div id="qrcode" class="relative bg-white p-4 rounded-2xl inline-block shadow-2xl mx-auto">
+                    <!-- QR Code injected here -->
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
+                    <p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Subdomain của bạn
+                    </p>
+                    <input type="text" id="tunnel-url-display" readonly
+                        class="w-full bg-transparent text-center text-blue-400 font-bold focus:outline-none"
+                        value="Chưa cấu hình">
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="copyTunnelUrl()"
+                        class="flex-1 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy text-xs"></i>
+                        Copy Link
+                    </button>
+                    <button onclick="saveTunnelUrl()"
+                        class="w-12 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition flex items-center justify-center">
+                        <i class="fa-solid fa-save"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer/Info -->
+        <div class="px-6 py-4 bg-slate-800/30 border-t border-white/5 text-center">
+            <p class="text-[10px] text-slate-500 font-medium">
+                <i class="fa-solid fa-shield-halved mr-1"></i>
+                Chỉ cho phép truy cập qua Cloudflare Zero Trust
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    let qrcodeInstance = null;
+
+    async function openRemoteModal() {
+        const modal = document.getElementById('remote-modal');
+        const content = document.getElementById('remote-modal-content');
+
+        let url = 'https://your-subdomain.trycloudflare.com';
+        try {
+            const resp = await fetch('/api/auth/tunnel/info');
+            const data = await resp.json();
+            if (data.url) {
+                url = data.url;
+                if (data.token) {
+                    url += `?token=${data.token}`;
+                }
+            }
+        } catch (e) { console.error('Tunnel API Error', e); }
+
+        document.getElementById('tunnel-url-display').value = url;
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+
+        generateQr(url);
+    }
+
+    function closeRemoteModal() {
+        const modal = document.getElementById('remote-modal');
+        const content = document.getElementById('remote-modal-content');
+
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function generateQr(url) {
+        const container = document.getElementById('qrcode');
+        container.innerHTML = '';
+        qrcodeInstance = new QRCode(container, {
+            text: url,
+            width: 180,
+            height: 180,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+
+    function copyTunnelUrl() {
+        const url = document.getElementById('tunnel-url-display').value;
+        navigator.clipboard.writeText(url);
+        alert('Đã copy link truy cập!');
+    }
+
+    function saveTunnelUrl() {
+        const currentUrl = document.getElementById('tunnel-url-display').value;
+        const newUrl = prompt("Nhập Tunnel URL của bạn:", currentUrl);
+        if (newUrl) {
+            localStorage.setItem('tunnel_url', newUrl);
+            document.getElementById('tunnel-url-display').value = newUrl;
+            generateQr(newUrl);
+        }
+    }
+</script>

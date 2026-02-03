@@ -1,0 +1,89 @@
+<!-- Global Action Sheets / Dropdowns -->
+<!-- Included via index.html to ensure they are outside any overflow:hidden or backdrop-blur containers -->
+
+<div id="action-sheet-overlay" onclick="closeAllActionSheets()"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden transition-opacity duration-300 opacity-0"></div>
+
+<!-- Type Menu -->
+<div id="sheet-type" class="action-sheet bg-slate-900 border border-white/10 z-[100]">
+    <div class="p-4 border-b border-white/5 flex justify-between items-center md:hidden">
+        <span class="text-xs font-black uppercase tracking-widest text-slate-400">Lọc theo loại</span>
+        <button onclick="closeAllActionSheets()" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-2">
+        <div class="dropdown-item" onclick="selectType('all', 'TẤT CẢ')">
+            <i class="fa-solid fa-layer-group w-6 text-center"></i> Tất cả
+        </div>
+        <div class="dropdown-item" onclick="selectType('video', 'VIDEO')">
+            <i class="fa-solid fa-video w-6 text-center"></i> Video
+        </div>
+        <div class="dropdown-item" onclick="selectExt('mp4', 'FMT: MP4')">
+            <i class="fa-brands fa-chromecast w-6 text-center"></i> MP4 Format
+        </div>
+        <div class="dropdown-item" onclick="selectExt('ts', 'FMT: TS')">
+            <i class="fa-solid fa-file-video w-6 text-center"></i> TS Format
+        </div>
+        <div class="dropdown-item" onclick="selectType('image', 'ẢNH')">
+            <i class="fa-solid fa-image w-6 text-center"></i> Hình ảnh
+        </div>
+    </div>
+</div>
+
+<!-- Category Menu -->
+<div id="sheet-category" class="action-sheet bg-slate-900 border border-white/10 z-[100]">
+    <div class="p-4 border-b border-white/5 flex justify-between items-center md:hidden">
+        <span class="text-xs font-black uppercase tracking-widest text-slate-400">Chọn thể loại</span>
+        <div class="flex gap-3">
+            <button onclick="window.resetFilters(); closeAllActionSheets()"
+                class="text-[10px] text-blue-400 font-bold uppercase">Xóa lọc</button>
+            <button onclick="closeAllActionSheets()" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+    <div class="p-2 max-h-[60vh] overflow-y-auto">
+        <div class="dropdown-item" onclick="selectCategory('all', 'THỂ LOẠI')">
+            <i class="fa-solid fa-border-all w-6 text-center"></i> Tất cả
+        </div>
+        <div class="h-px bg-white/5 my-2"></div>
+        <div id="dynamic-studios-list-sheet">
+            <!-- Populated via JS -->
+            <div class="text-center py-4 text-slate-600 italic text-xs">Đang tải danh mục...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Sort Menu -->
+<div id="sheet-sort" class="action-sheet bg-slate-900 border border-white/10 z-[100]">
+    <div class="p-4 border-b border-white/5 flex justify-between items-center md:hidden">
+        <span class="text-xs font-black uppercase tracking-widest text-slate-400">Sắp xếp</span>
+        <button onclick="closeAllActionSheets()" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-2">
+        <div class="dropdown-item" onclick="selectSort('added_newest', 'MỚI CẬP NHẬT')">
+            <i class="fa-solid fa-clock w-6 text-center"></i> Mới cập nhật
+        </div>
+        <div class="dropdown-item" onclick="selectSort('newest', 'FILE MỚI NHẤT')">
+            <i class="fa-solid fa-calendar-day w-6 text-center"></i> Theo ngày file
+        </div>
+        <div class="dropdown-item" onclick="selectSort('views_desc', 'XEM NHIỀU')">
+            <i class="fa-solid fa-eye w-6 text-center"></i> Xem nhiều nhất
+        </div>
+        <div class="dropdown-item" onclick="selectSort('name', 'TÊN A-Z')">
+            <i class="fa-solid fa-arrow-down-a-z w-6 text-center"></i> Tên A-Z
+        </div>
+        <div class="dropdown-item" onclick="selectSort('name_desc', 'TÊN Z-A')">
+            <i class="fa-solid fa-arrow-down-z-a w-6 text-center"></i> Tên Z-A
+        </div>
+        <div class="dropdown-item" onclick="selectSort('duration_desc', 'DÀI NHẤT')">
+            <i class="fa-solid fa-hourglass-start w-6 text-center"></i> Thời lượng dài
+        </div>
+        <div class="dropdown-item" onclick="selectSort('duration_asc', 'NGẮN NHẤT')">
+            <i class="fa-solid fa-hourglass-end w-6 text-center"></i> Thời lượng ngắn
+        </div>
+        <div class="dropdown-item" onclick="selectSort('size_desc', 'DUNG LƯỢNG LỚN')">
+            <i class="fa-solid fa-weight-hanging w-6 text-center"></i> Dung lượng lớn
+        </div>
+        <div class="dropdown-item" onclick="selectSort('size_asc', 'DUNG LƯỢNG NHỎ')">
+            <i class="fa-solid fa-feather w-6 text-center"></i> Dung lượng nhẹ
+        </div>
+    </div>
+</div>

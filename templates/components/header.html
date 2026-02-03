@@ -1,0 +1,101 @@
+<header class="p-3 md:p-4 flex flex-col gap-3 border-b border-slate-800/50 bg-slate-900/90 backdrop-blur z-30">
+    <div class="flex items-center gap-3 w-full">
+        <button onclick="toggleSidebar()"
+            class="md:hidden w-10 h-10 -ml-1 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-800 rounded-full">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <div class="relative flex-1 group/search">
+            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+            <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm kiếm phim..."
+                class="w-full bg-slate-800/50 rounded-lg py-2.5 pl-9 pr-12 text-base md:text-sm outline-none border border-slate-700/50 focus:border-blue-500/50 transition text-white placeholder-slate-500">
+            <button onclick="runAiSearch()" title="AI Semantic Search"
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
+                <i class="fa-solid fa-robot text-xs"></i>
+            </button>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="refreshLibrary()" id="btn-refresh"
+                class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
+                <i class="fa-solid fa-rotate text-sm"></i>
+            </button>
+            <button onclick="toggleBlur()" id="btn-blur"
+                class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
+                <i class="fa-solid fa-eye-slash text-sm"></i>
+            </button>
+            <button onclick="clearAllCache()"
+                class="hidden md:flex w-9 h-9 rounded-lg bg-red-900/10 items-center justify-center hover:bg-red-500 transition text-red-500 hover:text-white">
+                <i class="fa-solid fa-broom text-xs"></i>
+            </button>
+        </div>
+    </div>
+    <!-- Bottom Row: Filters -->
+    <div class="flex items-center gap-3 pb-1 md:pb-0 relative">
+        <!-- Separate scrollable wrapper for buttons that might wrap/overflow -->
+        <div class="flex items-center gap-3 overflow-x-auto no-scrollbar flex-nowrap md:flex-wrap flex-1">
+            <button onclick="toggleManageMode()" id="btn-manage-mode"
+                class="h-10 px-4 shrink-0 rounded-xl bg-slate-800/50 border border-white/5 text-[10px] font-black tracking-widest text-slate-400 hover:text-white transition uppercase">
+                Quản lý
+            </button>
+            <button onclick="selectAll()" id="btn-select-all"
+                class="hidden h-10 px-4 shrink-0 rounded-xl bg-slate-800/50 border border-white/5 text-[10px] font-black tracking-widest text-slate-400 hover:text-white transition uppercase">
+                Chọn tất cả
+            </button>
+            <button onclick="openDiscovery()"
+                class="h-10 px-4 shrink-0 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-compass"></i>
+                Khám phá
+            </button>
+            <div class="w-px h-4 bg-white/10 mx-1 shrink-0"></div>
+
+            <!-- Type Dropdown -->
+            <div class="custom-dropdown shrink-0" id="dropdown-type">
+                <div class="dropdown-trigger" onclick="openActionSheet('sheet-type'); event.stopPropagation()">
+                    <span id="type-label">TẤT CẢ</span>
+                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
+                </div>
+            </div>
+
+            <!-- Category Dropdown -->
+            <div class="custom-dropdown shrink-0" id="dropdown-category">
+                <div class="dropdown-trigger" onclick="openActionSheet('sheet-category'); event.stopPropagation()">
+                    <span id="category-label">THỂ LOẠI</span>
+                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
+                </div>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="custom-dropdown shrink-0" id="dropdown-sort">
+                <div class="dropdown-trigger !text-blue-400"
+                    onclick="openActionSheet('sheet-sort'); event.stopPropagation()">
+                    <span id="sort-label">MỚI CẬP NHẬT</span>
+                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
+                </div>
+            </div>
+
+            <button onclick="openAiLab()" id="btn-ai-lab"
+                class="h-10 px-4 shrink-0 rounded-xl bg-purple-600/20 border border-purple-500/20 text-purple-400 hover:bg-purple-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-robot"></i>
+                AI Lab
+            </button>
+            <button onclick="openRemoteModal()" id="btn-remote"
+                class="h-10 px-4 shrink-0 rounded-xl bg-orange-600/20 border border-orange-500/20 text-orange-400 hover:bg-orange-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                Remote
+            </button>
+        </div>
+        <div id="stats"
+            class="hidden md:block bg-blue-600/20 text-blue-500 font-black px-2.5 py-1 rounded-full text-[9px] tracking-widest whitespace-nowrap shrink-0">
+            0 FILE </div>
+    </div>
+</header>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>

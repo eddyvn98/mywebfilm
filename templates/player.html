@@ -67,6 +67,38 @@
             transform: scale(0.95);
             background: rgba(0, 0, 0, 0.7);
         }
+
+        /* Mobile Player Optimizations */
+        @media (max-width: 768px) {
+            .plyr__controls {
+                flex-wrap: wrap !important;
+                padding: 15px 10px 10px 10px !important;
+            }
+
+            .plyr__progress__container {
+                flex: 1 1 100% !important;
+                order: -1 !important;
+                margin-bottom: 15px !important;
+                margin-left: 0 !important;
+            }
+
+            .plyr__controls>button {
+                padding: 10px !important;
+            }
+
+            .plyr__volume {
+                max-width: 80px !important;
+            }
+
+            .plyr__time {
+                font-size: 11px !important;
+            }
+
+            /* Make progress bar thicker on mobile for easier seeking */
+            .plyr__progress input[type=range] {
+                height: 12px !important;
+            }
+        }
     </style>
 </head>
 

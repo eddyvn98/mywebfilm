@@ -1,143 +1,204 @@
-import os
-import requests
-from bs4 import BeautifulSoup
+import json
 import re
-import time
-import random
-import sys
+from llm_service import call_local_llm, parse_llm_json
 
-# Biến toàn cục để lưu Class DDGS đã import thành công
-GLOBAL_DDGS = None
+def extract_search_intent(query):
+    """
+    Phân tích ý định tìm kiếm.
+    Prompt được tối ưu để Llama 3.2 hiểu cấu trúc lệnh tốt hơn.
+    """
+    prompt = f"""
+    ### SYSTEM
+    You are a smart Search Query Analyzer. 
+    Analyze the user's input: "{query}" and extract entities into JSON.
 
-def try_import():
-    global GLOBAL_DDGS
+    ### INSTRUCTIONS
+    - code: Look for patterns like ABC-123, SSIS-090.
+    - actors: Look for names (Japanese or Vietnamese keywords referring to people).
+    - genres: Look for categories (e.g., 'uncensored', 'drama', 'school').
+    - target_site: If the query implies finding metadata, set to "javlibrary".
+    - intent_summary: A short summary in Vietnamese.
+
+    ### OUTPUT FORMAT (JSON ONLY)
+    {{
+      "actors": ["name1"],
+      "genres": ["genre1"],
+      "studio": "studio name",
+      "code": "ABC-123",
+      "keywords": ["keyword"],
+      "intent_summary": "Tóm tắt ý định tìm kiếm",
+      "target_site": "javlibrary" 
+    }}
+    """
+    
+    raw_response = call_local_llm(prompt)
+    intent = parse_llm_json(raw_response)
+    
+    # Fallback nếu AI tịt ngòi
+    if not intent:
+        # Tự động nhận diện mã phim bằng regex nếu AI fail
+        code_match = re.search(r'([a-zA-Z]{2,5}-\d{3,5})', query)
+        code = code_match.group(1).upper() if code_match else ""
+        return {
+            "actors": [],
+            "genres": [],
+            "studio": "",
+            "code": code,
+            "keywords": [query],
+            "intent_summary": f"Tìm kiếm: {query}",
+            "target_site": "javlibrary"
+        }
+    
+    return intent
+
+def search_web(query, max_results=5):
+    """
+    General purpose web search using DuckDuckGo.
+    Returns a combined text context from the search results.
+    """
     try:
         from duckduckgo_search import DDGS
-        GLOBAL_DDGS = DDGS
-        return True
-    except ImportError:
-        try:
-            from ddgs import DDGS
-            GLOBAL_DDGS = DDGS
-            return True
-        except ImportError:
-            return False
+        import requests
+        from bs4 import BeautifulSoup
 
-# Debug và Tự động cài đặt nếu thiếu
-print(f"--- DEBUG ENVIRONMENT ---")
-print(f"Python Executable: {sys.executable}")
-
-if not try_import():
-    print("Dependency missing. Attempting self-installation...")
-    try:
-        import subprocess
-        subprocess.run([sys.executable, "-m", "pip", "install", "duckduckgo-search"], check=True)
-        if try_import():
-            print("Self-installation: SUCCESS")
-        else:
-            print("Self-installation: FAILED")
+        print(f"  [Search] Searching web for: {query}")
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=max_results):
+                results.append(f"Title: {r['title']}\nSnippet: {r['body']}\nSource: {r['href']}")
+        
+        return "\n\n".join(results)
     except Exception as e:
-        print(f"Self-installation error: {e}")
-else:
-    print("Import DDGS: SUCCESS")
-print(f"-------------------------")
+        print(f"  [Search] DDGS Error: {e}")
+        # Fallback to a very simple scraper if needed, or return empty
+        return ""
 
-def clean_filename_for_search(filename):
-    """Xóa các phần rác phổ biến trong tên file để search chính xác hơn"""
-    # Xóa extension
-    name = os.path.splitext(filename)[0]
+def search_jav_context(query):
+    """
+    Specialized search for JAV metadata.
+    Searches JavLibrary, JavBus, and other sources to get a rich context.
+    """
+    # Clean query to extract code if possible
+    code_match = re.search(r'([a-zA-Z]{2,6}[-_]?\d{2,5})', query)
+    code = code_match.group(1).upper().replace('_', '-') if code_match else query
+
+    print(f"  [Search] Searching JAV context for: {code}")
     
-    # Xóa các domain và tag rác phổ biến
-    junk_patterns = [
-        r'MissAV(-| )?', r'Watch( )?HD( )?JAV( )?On(line)?', r'Uncensored', r'HD', r'4K', r'720p', r'1080p',
-        r'Sub(title)?', r'Vietsub', r' thuyết minh', r' bản đẹp', r'Full( )?HD', r'Bluray', r'x264', r'x265',
-        r'[-_]C(\.ts)?$', r'\.mp4$', r'\.mkv$', r'\.avi$', r' Nightmare-chan'
+    # Try multiple sources to build a solid context
+    sources = [
+        f"https://www.javlibrary.com/en/vl_searchbyid.php?keyword={code}",
+        f"https://www.javbus.com/en/{code}"
     ]
-    for pattern in junk_patterns:
-        name = re.sub(pattern, '', name, flags=re.IGNORECASE)
-
-    # Thay thế các ký tự đặc biệt bằng khoảng trắng để search linh hoạt
-    name = re.sub(r'[-_.]', ' ', name)
-    # Trim
-    return ' '.join(name.split())
-
-def extract_potential_code(filename):
-    """Trích xuất mã phim tiềm năng (VD: HAKC-016)"""
-    match = re.search(r'([a-zA-Z]{2,6}[-_]\d{3,5})', filename)
-    return match.group(1) if match else None
-
-def search_jav_context(filename):
-    """
-    Tìm kiếm context cho LLM với logic 'Search Agent':
-    1. Trích xuất mã phim (VD: HAKC-016).
-    2. Tìm kiếm JAVBus (Ưu tiên số 1).
-    3. Nếu xịt, dùng DuckDuckGo với query đã lọc sạch.
-    """
-    code = extract_potential_code(filename)
-    cleaned_name = clean_filename_for_search(filename)
     
-    context_results = []
-
-    # 1. Thử JAVBus (High Reliability)
-    target_code = code if code else cleaned_name.split()[0] if cleaned_name else None
-    if target_code:
-        print(f"  [JAVBus] Đang quét: {target_code}...")
+    context_parts = []
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    
+    for url in sources:
         try:
-            # JAVBus thỉnh thoảng yêu cầu cookies hoặc redirect
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-            # Thử search chung
-            search_url = f"https://www.javbus.com/en/search/{target_code}"
-            resp = requests.get(search_url, headers=headers, timeout=5, allow_redirects=True)
-            
+            import requests
+            from bs4 import BeautifulSoup
+            resp = requests.get(url, headers=headers, timeout=10)
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, 'html.parser')
-                # Trường hợp 1: Link trực tiếp (Đã redirect vào trang phim)
-                if "movie-list" not in resp.text and "ID:" in resp.text:
-                    title = soup.find('h3').get_text(strip=True) if soup.find('h3') else ""
-                    # Lấy info trong thẻ .info
-                    info = soup.find('div', class_='info')
-                    info_text = info.get_text(" | ", strip=True) if info else ""
-                    context_results.append(f"JAVBus (Direct): {title} | {info_text[:400]}")
-                # Trường hợp 2: Danh sách kết quả
+                # Extract main content areas
+                text = ""
+                if 'javlibrary' in url:
+                    video_info = soup.select_one('#video_info')
+                    if video_info: text = video_info.get_text()
                 else:
-                    items = soup.find_all('a', class_='movie-box')
-                    for item in items[:2]:
-                        title = item.find('span').get_text(strip=True) if item.find('span') else ""
-                        context_results.append(f"JAVBus (Search): {title}")
+                    info = soup.select_one('.info')
+                    if info: text = info.get_text()
                 
-                if context_results: print("  [JAVBus] OK.")
+                if text:
+                    context_parts.append(f"Source: {url}\n{text.strip()}")
         except Exception as e:
-            print(f"  [JAVBus] Skip: {e}")
+            print(f"  [Search] Source error ({url}): {e}")
 
-    # 2. Thử DuckDuckGo (Fallback rộng)
-    if not context_results and GLOBAL_DDGS:
-        # Search 2 lần: Một lần mã, một lần tên
-        search_terms = []
-        if code: search_terms.append(code)
-        if cleaned_name and cleaned_name != code: search_terms.append(cleaned_name)
+    # If specialized search fails, try general web search
+    if not context_parts:
+        return search_web(f"JAV {code} metadata cast studio genres")
         
-        for term in search_terms[:2]:
-            try:
-                with GLOBAL_DDGS() as ddgs:
-                    print(f"  [DDG] Search: {term}")
-                    results = ddgs.text(term, max_results=2)
-                    if results:
-                        for r in results:
-                            context_results.append(f"Web: {r['title']} -> {r['body'][:300]}")
-                        break # Nếu có kết quả rồi thì thôi
-            except Exception as e:
-                print(f"  [DDG] Error: {e}")
+    return "\n\n".join(context_parts)
 
-    if context_results:
-        return "\n---\n".join(context_results)
+def score_video(video, intent):
+    """
+    Hệ thống tính điểm (Ranking System) để tìm video khớp nhất.
+    Không thay đổi nhiều vì logic cũ của bạn khá ổn, chỉ tinh chỉnh trọng số.
+    """
+    score = 0
+    # Chuẩn hóa dữ liệu đầu vào để so sánh không phân biệt hoa thường
+    name_lower = str(video.get('name', '')).lower()
+    path_lower = str(video.get('path', '')).lower()
+    cats = [str(c).lower() for c in video.get('categories', [])]
     
-    return f"Không tìm thấy thông tin trên mạng cho '{filename}'."
+    # Metadata có sẵn trong file (nếu có)
+    meta = video.get('jav_metadata', {})
+    if not isinstance(meta, dict): meta = {}
+    
+    meta_actors = [str(a).lower() for a in meta.get('actors', [])]
+    
+    # 1. KHỚP MÃ PHIM (Trọng số TỐI THƯỢNG: 1000 điểm)
+    # Mã phim là duy nhất, nếu khớp thì chắc chắn đúng 99%
+    if intent.get('code'):
+        code_clean = intent['code'].lower().replace('-', '')
+        # Kiểm tra trong tên file và cả đường dẫn
+        if code_clean in name_lower.replace('-', '') or code_clean in path_lower.replace('-', ''):
+            score += 1000 
+    
+    # 2. Khớp diễn viên (Trọng số cao: 100 điểm)
+    for actor in intent.get('actors', []):
+        actor_l = actor.lower()
+        # Tìm trong tên file hoặc metadata đã có
+        if actor_l in name_lower or any(actor_l in a for a in meta_actors):
+            score += 100
+        # Tìm trong categories (nhiều khi tag chứa tên diễn viên)
+        elif any(actor_l in c for c in cats):
+            score += 50
 
-    if context_results:
-        return "\n---\n".join(context_results)
+    # 3. Khớp hãng phim (50 điểm)
+    studio = intent.get('studio')
+    if studio:
+        studio_l = studio.lower()
+        if studio_l in name_lower or (meta.get('studio') and studio_l in meta['studio'].lower()):
+            score += 50
+            
+    # 4. Khớp thể loại (30 điểm)
+    for genre in intent.get('genres', []):
+        genre_l = genre.lower()
+        if any(genre_l in c for c in cats):
+            score += 30
+            
+    return score
+
+def semantic_search(query, all_videos):
+    """
+    Hàm gọi chính: Từ query -> Intent -> Score -> Sort
+    """
+    # Bước 1: Hiểu ý người dùng
+    intent = extract_search_intent(query)
+    print(f"  [Search] Intent parsed: {intent.get('intent_summary')} | Code: {intent.get('code')}")
     
-    return f"No context found on web for '{filename}'. Local LLM will attempt to infer from name only."
+    scored_items = []
+    for v in all_videos:
+        final_score = score_video(v, intent)
+        if final_score > 0:
+            scored_items.append((v, final_score))
+            
+    # Bước 2: Sắp xếp điểm từ cao xuống thấp
+    scored_items.sort(key=lambda x: x[1], reverse=True)
+    
+    # Chỉ lấy danh sách video, bỏ điểm số khi return
+    results = [item[0] for item in scored_items]
+    return results, intent
 
 if __name__ == "__main__":
-    # Test
-    print(search_jav_context("ADN-413"))
+    # Test thử logic tìm kiếm
+    mock_db = [
+        {"name": "SSIS-987.mp4", "categories": ["uncensored"], "jav_metadata": {"actors": ["Eimi Fukada"]}},
+        {"name": "ABP-123.mp4", "categories": ["drama"], "jav_metadata": {"actors": ["Yua Mikami"]}}
+    ]
+    query = "Tìm phim của Eimi Fukada mã SSIS-987"
+    res, intent = semantic_search(query, mock_db)
+    print("Found:", [r['name'] for r in res])

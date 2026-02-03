@@ -112,6 +112,10 @@ export async function apiAddQueue(paths) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paths })
     });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Lỗi server");
+    }
     return await res.json();
 }
 
@@ -119,8 +123,12 @@ export async function apiProcessConvert(paths) {
     const res = await fetch('/api/process/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths, type: 'convert' }) // Specify type='convert'
+        body: JSON.stringify({ paths, type: 'convert' })
     });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Lỗi server");
+    }
     return await res.json();
 }
 

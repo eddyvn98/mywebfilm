@@ -1,0 +1,685 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Search Portal - Verified Discovery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        :root { --p: #ff5722; --bg: #050505; --c: #151515; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: #fff; margin:0; }
+        .hero { background: linear-gradient(135deg, #111, #000); padding: 80px 20px; text-align: center; border-bottom: 4px solid var(--p); }
+        .hero h1 { font-family: 'Bebas Neue'; font-size: 72px; margin:0; color: var(--p); letter-spacing: 5px; }
+        .hero p { color: #888; font-size: 18px; margin-top: 10px; }
+        .container { max-width: 1400px; margin: 40px auto; padding: 0 40px; }
+        
+        .section { margin-bottom: 60px; scroll-margin-top: 100px; }
+        .s-title { font-size: 32px; color: var(--p); margin-bottom: 30px; border-left: 8px solid var(--p); padding-left: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .card { background: var(--c); border-radius: 10px; padding: 20px; border: 1px solid #222; transition: 0.3s; }
+        .card:hover { border-color: var(--p); transform: translateY(-3px); }
+        
+        .idol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        .idol-tile { background: #111; padding: 10px; border-radius: 8px; text-align: left; text-decoration: none; color: #fff; border: 1px solid #222; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .idol-tile:hover { background: var(--p); border-color: var(--p); transform: translateY(-3px); }
+        
+        .avatar-box { width: 45px; height: 45px; border-radius: 50%; overflow: hidden; background: #222; border: 1px solid rgba(255,255,255,0.1); }
+        .avatar { width: 100%; height: 100%; object-fit: cover; }
+        
+        .idol-tile span { font-weight: bold; font-size: 14px; }
+        .tag-link { background: #222; color: #fff; text-decoration: none; padding: 5px 12px; border-radius: 3px; font-size: 13px; font-weight: bold; margin: 2px; display: inline-block; }
+        .tag-link:hover { background: #333; color: var(--p); }
+        
+        .footer { text-align: center; padding: 100px; border-top: 1px solid #222; color: #444; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>ULTIMATE SEARCH PORTAL</h1>
+        <p>Hệ thống cổng tìm kiếm vạn năng - Tích hợp Ảnh đại diện Idol tự động</p>
+    </div>
+
+    <div class="container">
+    <script>
+        function handleImageError(img, name) {
+            const sources = [
+                `https://www.javdatabase.com/images/idols/${name.toLowerCase().replace(/ /g, '-')}.jpg`,
+                `https://missav.com/images/actresses/${encodeURIComponent(name)}.jpg`,
+                `https://www.asianpornstars.com/performer_images/${name.toLowerCase().replace(/ /g, '-')}.jpg`
+            ];
+            let currentSourceIdx = parseInt(img.getAttribute('data-src-idx') || '0');
+            if (currentSourceIdx < sources.length) {
+                img.setAttribute('data-src-idx', currentSourceIdx + 1);
+                img.src = sources[currentSourceIdx];
+            } else {
+                img.src = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+                img.style.opacity = "0.3";
+            }
+        }
+    </script>
+    <section id="series" class="section">
+        <h2 class="s-title">Series Portals</h2>
+        <div class="grid">
+    
+                <div class="card">
+                    <h3 style="color:#999; font-size:12px; text-transform:uppercase;">Premium Idols (S1, IP, SOD)</h3>
+                    <div style="margin-top:10px;">
+        <a href="https://missav.live/vi/search/[SSNI]" target="_blank" class="tag-link">SSNI</a><a href="https://missav.live/vi/search/[SNIS]" target="_blank" class="tag-link">SNIS</a><a href="https://missav.live/vi/search/[IPX]" target="_blank" class="tag-link">IPX</a><a href="https://missav.live/vi/search/[IPZ]" target="_blank" class="tag-link">IPZ</a><a href="https://missav.live/vi/search/[STARS]" target="_blank" class="tag-link">STARS</a><a href="https://missav.live/vi/search/[ABW]" target="_blank" class="tag-link">ABW</a><a href="https://missav.live/vi/search/[ABP]" target="_blank" class="tag-link">ABP</a><a href="https://missav.live/vi/search/[MIDE]" target="_blank" class="tag-link">MIDE</a><a href="https://missav.live/vi/search/[MEYD]" target="_blank" class="tag-link">MEYD</a><a href="https://missav.live/vi/search/[TEK]" target="_blank" class="tag-link">TEK</a><a href="https://missav.live/vi/search/[PPPD]" target="_blank" class="tag-link">PPPD</a></div></div>
+                <div class="card">
+                    <h3 style="color:#999; font-size:12px; text-transform:uppercase;">High Quality / Bibian</h3>
+                    <div style="margin-top:10px;">
+        <a href="https://missav.live/vi/search/[BBAN]" target="_blank" class="tag-link">BBAN</a><a href="https://missav.live/vi/search/[BBI]" target="_blank" class="tag-link">BBI</a><a href="https://missav.live/vi/search/[BBSS]" target="_blank" class="tag-link">BBSS</a><a href="https://missav.live/vi/search/[BBTU]" target="_blank" class="tag-link">BBTU</a><a href="https://missav.live/vi/search/[CHIA]" target="_blank" class="tag-link">CHIA</a><a href="https://missav.live/vi/search/[BBD]" target="_blank" class="tag-link">BBD</a><a href="https://missav.live/vi/search/[FSDSS]" target="_blank" class="tag-link">FSDSS</a><a href="https://missav.live/vi/search/[FSFR]" target="_blank" class="tag-link">FSFR</a><a href="https://missav.live/vi/search/[KAWD]" target="_blank" class="tag-link">KAWD</a></div></div>
+                <div class="card">
+                    <h3 style="color:#999; font-size:12px; text-transform:uppercase;">Dark / Hardcore / Dark Hero</h3>
+                    <div style="margin-top:10px;">
+        <a href="https://missav.live/vi/search/[FC2-PPV]" target="_blank" class="tag-link">FC2-PPV</a><a href="https://missav.live/vi/search/[ADN]" target="_blank" class="tag-link">ADN</a><a href="https://missav.live/vi/search/[GVH]" target="_blank" class="tag-link">GVH</a><a href="https://missav.live/vi/search/[REB]" target="_blank" class="tag-link">REB</a><a href="https://missav.live/vi/search/[DDT]" target="_blank" class="tag-link">DDT</a><a href="https://missav.live/vi/search/[URKK]" target="_blank" class="tag-link">URKK</a><a href="https://missav.live/vi/search/[VEMA]" target="_blank" class="tag-link">VEMA</a><a href="https://missav.live/vi/search/[TKT]" target="_blank" class="tag-link">TKT</a><a href="https://missav.live/vi/search/[KIBD]" target="_blank" class="tag-link">KIBD</a><a href="https://missav.live/vi/search/[GIGA]" target="_blank" class="tag-link">GIGA</a><a href="https://missav.live/vi/search/[GHV]" target="_blank" class="tag-link">GHV</a><a href="https://missav.live/vi/search/[ZEX]" target="_blank" class="tag-link">ZEX</a></div></div>
+                <div class="card">
+                    <h3 style="color:#999; font-size:12px; text-transform:uppercase;">Amateur / Real Life</h3>
+                    <div style="margin-top:10px;">
+        <a href="https://missav.live/vi/search/[SIRO]" target="_blank" class="tag-link">SIRO</a><a href="https://missav.live/vi/search/[1Pondo]" target="_blank" class="tag-link">1Pondo</a><a href="https://missav.live/vi/search/[Caribbeancom]" target="_blank" class="tag-link">Caribbeancom</a><a href="https://missav.live/vi/search/[DASS]" target="_blank" class="tag-link">DASS</a><a href="https://missav.live/vi/search/[DASD]" target="_blank" class="tag-link">DASD</a><a href="https://missav.live/vi/search/[MIAD]" target="_blank" class="tag-link">MIAD</a><a href="https://missav.live/vi/search/[MIGD]" target="_blank" class="tag-link">MIGD</a><a href="https://missav.live/vi/search/[MKON]" target="_blank" class="tag-link">MKON</a><a href="https://missav.live/vi/search/[SKE]" target="_blank" class="tag-link">SKE</a><a href="https://missav.live/vi/search/[SCR]" target="_blank" class="tag-link">SCR</a></div></div>
+                <div class="card">
+                    <h3 style="color:#999; font-size:12px; text-transform:uppercase;">Mature / MILF / Story</h3>
+                    <div style="margin-top:10px;">
+        <a href="https://missav.live/vi/search/[JUL]" target="_blank" class="tag-link">JUL</a><a href="https://missav.live/vi/search/[JUX]" target="_blank" class="tag-link">JUX</a><a href="https://missav.live/vi/search/[RBD]" target="_blank" class="tag-link">RBD</a><a href="https://missav.live/vi/search/[SHKD]" target="_blank" class="tag-link">SHKD</a><a href="https://missav.live/vi/search/[WANZ]" target="_blank" class="tag-link">WANZ</a><a href="https://missav.live/vi/search/[WZEN]" target="_blank" class="tag-link">WZEN</a><a href="https://missav.live/vi/search/[JUFE]" target="_blank" class="tag-link">JUFE</a><a href="https://missav.live/vi/search/[JUC]" target="_blank" class="tag-link">JUC</a><a href="https://missav.live/vi/search/[WAN]" target="_blank" class="tag-link">WAN</a><a href="https://missav.live/vi/search/[HODV]" target="_blank" class="tag-link">HODV</a></div></div>
+        </div>
+    </section>
+
+    <section id="idols" class="section">
+        <h2 class="s-title">My Idol Collection (70+ Idols)</h2>
+        <div class="idol-grid">
+    
+            <a href="https://missav.live/vi/search/[Ai%20Wakana]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/ai-wakana.jpg" alt="Ai Wakana" data-src-idx="1"
+                         onerror="handleImageError(this, 'Ai Wakana')">
+                </div>
+                <span>Ai Wakana</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Aika]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/aika.jpg" alt="Aika" data-src-idx="1"
+                         onerror="handleImageError(this, 'Aika')">
+                </div>
+                <span>Aika</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Airi%20Honoka]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/airi-honoka.jpg" alt="Airi Honoka" data-src-idx="1"
+                         onerror="handleImageError(this, 'Airi Honoka')">
+                </div>
+                <span>Airi Honoka</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Akagi%20Midori]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/akagi-midori.jpg" alt="Akagi Midori" data-src-idx="1"
+                         onerror="handleImageError(this, 'Akagi Midori')">
+                </div>
+                <span>Akagi Midori</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Akari%20Mitani]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/akari-mitani.jpg" alt="Akari Mitani" data-src-idx="1"
+                         onerror="handleImageError(this, 'Akari Mitani')">
+                </div>
+                <span>Akari Mitani</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Amakawa%20Sora]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/amakawa-sora.jpg" alt="Amakawa Sora" data-src-idx="1"
+                         onerror="handleImageError(this, 'Amakawa Sora')">
+                </div>
+                <span>Amakawa Sora</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Amiri%20Saito]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/amiri-saito.jpg" alt="Amiri Saito" data-src-idx="1"
+                         onerror="handleImageError(this, 'Amiri Saito')">
+                </div>
+                <span>Amiri Saito</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Aoi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/aoi.jpg" alt="Aoi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Aoi')">
+                </div>
+                <span>Aoi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Asuka%20Kirara]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/asuka-kirara.jpg" alt="Asuka Kirara" data-src-idx="1"
+                         onerror="handleImageError(this, 'Asuka Kirara')">
+                </div>
+                <span>Asuka Kirara</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Ayunohana%20Mori]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/ayunohana-mori.jpg" alt="Ayunohana Mori" data-src-idx="1"
+                         onerror="handleImageError(this, 'Ayunohana Mori')">
+                </div>
+                <span>Ayunohana Mori</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Azumi%20Kinoshita]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/azumi-kinoshita.jpg" alt="Azumi Kinoshita" data-src-idx="1"
+                         onerror="handleImageError(this, 'Azumi Kinoshita')">
+                </div>
+                <span>Azumi Kinoshita</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Emiri%20Okazaki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/emiri-okazaki.jpg" alt="Emiri Okazaki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Emiri Okazaki')">
+                </div>
+                <span>Emiri Okazaki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Erika%20Isshin]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/erika-isshin.jpg" alt="Erika Isshin" data-src-idx="1"
+                         onerror="handleImageError(this, 'Erika Isshin')">
+                </div>
+                <span>Erika Isshin</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Futaba%20Kurimiya]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/futaba-kurimiya.jpg" alt="Futaba Kurimiya" data-src-idx="1"
+                         onerror="handleImageError(this, 'Futaba Kurimiya')">
+                </div>
+                <span>Futaba Kurimiya</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Hibiki%20Ohtsuki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/hibiki-ohtsuki.jpg" alt="Hibiki Ohtsuki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Hibiki Ohtsuki')">
+                </div>
+                <span>Hibiki Ohtsuki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Hikari%20Sena]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/hikari-sena.jpg" alt="Hikari Sena" data-src-idx="1"
+                         onerror="handleImageError(this, 'Hikari Sena')">
+                </div>
+                <span>Hikari Sena</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Himari%20Asada]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/himari-asada.jpg" alt="Himari Asada" data-src-idx="1"
+                         onerror="handleImageError(this, 'Himari Asada')">
+                </div>
+                <span>Himari Asada</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Hinako%20Mori]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/hinako-mori.jpg" alt="Hinako Mori" data-src-idx="1"
+                         onerror="handleImageError(this, 'Hinako Mori')">
+                </div>
+                <span>Hinako Mori</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Honoka%20Mihara]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/honoka-mihara.jpg" alt="Honoka Mihara" data-src-idx="1"
+                         onerror="handleImageError(this, 'Honoka Mihara')">
+                </div>
+                <span>Honoka Mihara</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Julia]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/julia.jpg" alt="Julia" data-src-idx="1"
+                         onerror="handleImageError(this, 'Julia')">
+                </div>
+                <span>Julia</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Jun%20Suehiro]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/jun-suehiro.jpg" alt="Jun Suehiro" data-src-idx="1"
+                         onerror="handleImageError(this, 'Jun Suehiro')">
+                </div>
+                <span>Jun Suehiro</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kana%20Momonogi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kana-momonogi.jpg" alt="Kana Momonogi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kana Momonogi')">
+                </div>
+                <span>Kana Momonogi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kana%20Morisawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kana-morisawa.jpg" alt="Kana Morisawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kana Morisawa')">
+                </div>
+                <span>Kana Morisawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kanna%20Misaki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kanna-misaki.jpg" alt="Kanna Misaki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kanna Misaki')">
+                </div>
+                <span>Kanna Misaki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Karen%20Yuzuriha]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/karen-yuzuriha.jpg" alt="Karen Yuzuriha" data-src-idx="1"
+                         onerror="handleImageError(this, 'Karen Yuzuriha')">
+                </div>
+                <span>Karen Yuzuriha</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kashiwagi%20Konatsu]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kashiwagi-konatsu.jpg" alt="Kashiwagi Konatsu" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kashiwagi Konatsu')">
+                </div>
+                <span>Kashiwagi Konatsu</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kinoshita%20Azumi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kinoshita-azumi.jpg" alt="Kinoshita Azumi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kinoshita Azumi')">
+                </div>
+                <span>Kinoshita Azumi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Konan%20Koyoi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/konan-koyoi.jpg" alt="Konan Koyoi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Konan Koyoi')">
+                </div>
+                <span>Konan Koyoi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Koroharu%20Suzuki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/koroharu-suzuki.jpg" alt="Koroharu Suzuki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Koroharu Suzuki')">
+                </div>
+                <span>Koroharu Suzuki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Kotoneka]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/kotoneka.jpg" alt="Kotoneka" data-src-idx="1"
+                         onerror="handleImageError(this, 'Kotoneka')">
+                </div>
+                <span>Kotoneka</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Lima%20Arai]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/lima-arai.jpg" alt="Lima Arai" data-src-idx="1"
+                         onerror="handleImageError(this, 'Lima Arai')">
+                </div>
+                <span>Lima Arai</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Maria%20Ozawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/maria-ozawa.jpg" alt="Maria Ozawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Maria Ozawa')">
+                </div>
+                <span>Maria Ozawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Marin%20Hinata]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/marin-hinata.jpg" alt="Marin Hinata" data-src-idx="1"
+                         onerror="handleImageError(this, 'Marin Hinata')">
+                </div>
+                <span>Marin Hinata</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mei%20Haruka]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mei-haruka.jpg" alt="Mei Haruka" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mei Haruka')">
+                </div>
+                <span>Mei Haruka</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mei%20Itsukaichi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mei-itsukaichi.jpg" alt="Mei Itsukaichi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mei Itsukaichi')">
+                </div>
+                <span>Mei Itsukaichi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mei%20Satsuki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mei-satsuki.jpg" alt="Mei Satsuki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mei Satsuki')">
+                </div>
+                <span>Mei Satsuki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Midori%20Arimura]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/midori-arimura.jpg" alt="Midori Arimura" data-src-idx="1"
+                         onerror="handleImageError(this, 'Midori Arimura')">
+                </div>
+                <span>Midori Arimura</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Minami%20Aizawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/minami-aizawa.jpg" alt="Minami Aizawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Minami Aizawa')">
+                </div>
+                <span>Minami Aizawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Minami%20Kojima]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/minami-kojima.jpg" alt="Minami Kojima" data-src-idx="1"
+                         onerror="handleImageError(this, 'Minami Kojima')">
+                </div>
+                <span>Minami Kojima</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mirai%20Asumi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mirai-asumi.jpg" alt="Mirai Asumi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mirai Asumi')">
+                </div>
+                <span>Mirai Asumi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mirei%20Uno]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mirei-uno.jpg" alt="Mirei Uno" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mirei Uno')">
+                </div>
+                <span>Mirei Uno</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Mitsuki%20Momota]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/mitsuki-momota.jpg" alt="Mitsuki Momota" data-src-idx="1"
+                         onerror="handleImageError(this, 'Mitsuki Momota')">
+                </div>
+                <span>Mitsuki Momota</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Momo%20Sakurazora]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/momo-sakurazora.jpg" alt="Momo Sakurazora" data-src-idx="1"
+                         onerror="handleImageError(this, 'Momo Sakurazora')">
+                </div>
+                <span>Momo Sakurazora</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Nami%20Hoshino]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/nami-hoshino.jpg" alt="Nami Hoshino" data-src-idx="1"
+                         onerror="handleImageError(this, 'Nami Hoshino')">
+                </div>
+                <span>Nami Hoshino</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Nana%20Fukada]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/nana-fukada.jpg" alt="Nana Fukada" data-src-idx="1"
+                         onerror="handleImageError(this, 'Nana Fukada')">
+                </div>
+                <span>Nana Fukada</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Natsume%20Saiharu]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/natsume-saiharu.jpg" alt="Natsume Saiharu" data-src-idx="1"
+                         onerror="handleImageError(this, 'Natsume Saiharu')">
+                </div>
+                <span>Natsume Saiharu</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Nishinomiya%20Yume]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/nishinomiya-yume.jpg" alt="Nishinomiya Yume" data-src-idx="1"
+                         onerror="handleImageError(this, 'Nishinomiya Yume')">
+                </div>
+                <span>Nishinomiya Yume</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Non%20Kohana]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/non-kohana.jpg" alt="Non Kohana" data-src-idx="1"
+                         onerror="handleImageError(this, 'Non Kohana')">
+                </div>
+                <span>Non Kohana</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Of%20Sato%20(Momo%20Kato)]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/of-sato-(momo-kato).jpg" alt="Of Sato (Momo Kato)" data-src-idx="1"
+                         onerror="handleImageError(this, 'Of Sato (Momo Kato)')">
+                </div>
+                <span>Of Sato (Momo Kato)</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Ogawa%20Rio]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/ogawa-rio.jpg" alt="Ogawa Rio" data-src-idx="1"
+                         onerror="handleImageError(this, 'Ogawa Rio')">
+                </div>
+                <span>Ogawa Rio</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rei%20Kamiki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rei-kamiki.jpg" alt="Rei Kamiki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rei Kamiki')">
+                </div>
+                <span>Rei Kamiki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Ria%20Yamate]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/ria-yamate.jpg" alt="Ria Yamate" data-src-idx="1"
+                         onerror="handleImageError(this, 'Ria Yamate')">
+                </div>
+                <span>Ria Yamate</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rin%20Hachimitsu]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rin-hachimitsu.jpg" alt="Rin Hachimitsu" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rin Hachimitsu')">
+                </div>
+                <span>Rin Hachimitsu</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rin%20Yamitsu]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rin-yamitsu.jpg" alt="Rin Yamitsu" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rin Yamitsu')">
+                </div>
+                <span>Rin Yamitsu</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rina%20Ishihara]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rina-ishihara.jpg" alt="Rina Ishihara" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rina Ishihara')">
+                </div>
+                <span>Rina Ishihara</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rino%20Kirishima]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rino-kirishima.jpg" alt="Rino Kirishima" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rino Kirishima')">
+                </div>
+                <span>Rino Kirishima</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rino%20Yuki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rino-yuki.jpg" alt="Rino Yuki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rino Yuki')">
+                </div>
+                <span>Rino Yuki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Rui%20Hizuki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/rui-hizuki.jpg" alt="Rui Hizuki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Rui Hizuki')">
+                </div>
+                <span>Rui Hizuki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Sakura%20Miura]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/sakura-miura.jpg" alt="Sakura Miura" data-src-idx="1"
+                         onerror="handleImageError(this, 'Sakura Miura')">
+                </div>
+                <span>Sakura Miura</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Shiori%20Kamisaki]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/shiori-kamisaki.jpg" alt="Shiori Kamisaki" data-src-idx="1"
+                         onerror="handleImageError(this, 'Shiori Kamisaki')">
+                </div>
+                <span>Shiori Kamisaki</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Shitara%20Yuuhi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/shitara-yuuhi.jpg" alt="Shitara Yuuhi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Shitara Yuuhi')">
+                </div>
+                <span>Shitara Yuuhi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Sho%20Nishino]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/sho-nishino.jpg" alt="Sho Nishino" data-src-idx="1"
+                         onerror="handleImageError(this, 'Sho Nishino')">
+                </div>
+                <span>Sho Nishino</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Shouko%20Takahashi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/shouko-takahashi.jpg" alt="Shouko Takahashi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Shouko Takahashi')">
+                </div>
+                <span>Shouko Takahashi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Sora%20Amakawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/sora-amakawa.jpg" alt="Sora Amakawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Sora Amakawa')">
+                </div>
+                <span>Sora Amakawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Suzu%20Mitake]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/suzu-mitake.jpg" alt="Suzu Mitake" data-src-idx="1"
+                         onerror="handleImageError(this, 'Suzu Mitake')">
+                </div>
+                <span>Suzu Mitake</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Suzuka%20Ishikawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/suzuka-ishikawa.jpg" alt="Suzuka Ishikawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Suzuka Ishikawa')">
+                </div>
+                <span>Suzuka Ishikawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Tachikawa%20Rie]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/tachikawa-rie.jpg" alt="Tachikawa Rie" data-src-idx="1"
+                         onerror="handleImageError(this, 'Tachikawa Rie')">
+                </div>
+                <span>Tachikawa Rie</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Uta%20Hayano]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/uta-hayano.jpg" alt="Uta Hayano" data-src-idx="1"
+                         onerror="handleImageError(this, 'Uta Hayano')">
+                </div>
+                <span>Uta Hayano</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Yamaguchi%20Riko]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/yamaguchi-riko.jpg" alt="Yamaguchi Riko" data-src-idx="1"
+                         onerror="handleImageError(this, 'Yamaguchi Riko')">
+                </div>
+                <span>Yamaguchi Riko</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Yua%20Mikami]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/yua-mikami.jpg" alt="Yua Mikami" data-src-idx="1"
+                         onerror="handleImageError(this, 'Yua Mikami')">
+                </div>
+                <span>Yua Mikami</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Yuna%20Hasegawa]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/yuna-hasegawa.jpg" alt="Yuna Hasegawa" data-src-idx="1"
+                         onerror="handleImageError(this, 'Yuna Hasegawa')">
+                </div>
+                <span>Yuna Hasegawa</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Yuna%20Hayashi]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/yuna-hayashi.jpg" alt="Yuna Hayashi" data-src-idx="1"
+                         onerror="handleImageError(this, 'Yuna Hayashi')">
+                </div>
+                <span>Yuna Hayashi</span>
+            </a>
+        
+            <a href="https://missav.live/vi/search/[Yuna%20Mitake]" target="_blank" class="idol-tile">
+                <div class="avatar-box">
+                    <img class="avatar" src="https://www.javdatabase.com/images/idols/yuna-mitake.jpg" alt="Yuna Mitake" data-src-idx="1"
+                         onerror="handleImageError(this, 'Yuna Mitake')">
+                </div>
+                <span>Yuna Mitake</span>
+            </a>
+        
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>© 2026 AI SUPREME SEARCH ENGINE</p>
+    </footer>
+    </div>
+</body>
+</html>
+    

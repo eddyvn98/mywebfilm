@@ -49,3 +49,52 @@ def parse_nfo(nfo_path):
     except Exception as e:
         print(f"Error parsing NFO {nfo_path}: {e}")
         return None
+
+def save_nfo(video_path, metadata):
+    """
+    Save metadata to .nfo sidecar file (XML format)
+    video_path: path to the video file
+    metadata: dict {title, actors, studio, genres, code}
+    """
+    nfo_path = os.path.splitext(video_path)[0] + '.nfo'
+    
+    root = ET.Element("movie")
+    
+    title = ET.SubElement(root, "title")
+    title.text = metadata.get('title', '')
+    
+    uniqueid = ET.SubElement(root, "uniqueid", type="num", default="true")
+    uniqueid.text = metadata.get('code', '')
+    
+    studio = ET.SubElement(root, "studio")
+    studio.text = metadata.get('studio', '')
+    
+    maker = ET.SubElement(root, "maker")
+    maker.text = metadata.get('studio', '')
+
+    for g in metadata.get('genres', []):
+        genre = ET.SubElement(root, "genre")
+        genre.text = g
+        
+    for a in metadata.get('actors', []):
+        actor = ET.SubElement(root, "actor")
+        name = ET.SubElement(actor, "name")
+        name.text = a
+
+    # Add a custom tag for AI verification status
+    ai_status = ET.SubElement(root, "ai_verified")
+    ai_status.text = "true" if metadata.get('is_ai_verified') else "false"
+
+    tree = ET.ElementTree(root)
+    
+    # Use indent if possible (minidom formatting)
+    try:
+        from xml.dom import minidom
+        xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="   ")
+        with open(nfo_path, "w", encoding="utf-8") as f:
+            f.write(xmlstr)
+    except:
+        tree.write(nfo_path, encoding="utf-8", xml_declaration=True)
+        
+    print(f"  [NFO] Saved sidecar: {nfo_path}")
+    return True

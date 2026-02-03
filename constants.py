@@ -3,6 +3,8 @@ import os
 # --- PATHS ---
 CONFIG_FILE = "config.json"
 CACHE_FILE = "movies_cache.json"
+HISTORY_FILE = "history_cache.json"
+FAVORITES_FILE = "favorites_cache.json"
 
 # Nơi lưu trữ metadata cục bộ trong mỗi thư mục chứa video
 METADATA_DIR_NAME = ".mycinema" 

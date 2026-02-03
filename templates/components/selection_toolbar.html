@@ -1,0 +1,18 @@
+<div id="selection-toolbar"
+    class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-blue-600 rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-6 transition-all transform translate-y-32 opacity-0">
+    <div class="text-white font-bold text-xs"><span id="selected-count">0</span> Đã chọn</div>
+    <div class="h-6 w-px bg-white/20"></div>
+    <div class="flex gap-2">
+        <button onclick="bulkMove()"
+            class="h-9 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase transition">Di
+            chuyển</button>
+        <button onclick="processConvert(event)"
+            class="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase transition">Convert
+            MP4</button>
+        <button onclick="bulkDelete()"
+            class="h-9 px-4 rounded-xl bg-red-500 hover:bg-red-400 text-white text-[10px] font-black uppercase transition">Xóa
+            hết</button>
+    </div>
+    <button onclick="cancelSelection()" class="text-white/60 hover:text-white transition"><i
+            class="fa-solid fa-xmark"></i></button>
+</div>

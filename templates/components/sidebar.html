@@ -1,0 +1,75 @@
+<aside id="sidebar"
+    class="fixed inset-y-0 left-0 w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50 shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative">
+    <div class="p-6 text-center">
+        <h1 class="text-2xl font-black text-blue-500 italic tracking-tighter uppercase cursor-default">My Cinema
+        </h1>
+    </div>
+
+    <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 space-y-2">
+        <button onclick="filterByFolder('all')"
+            class="w-full flex items-center justify-between px-4 py-3 bg-blue-600/10 text-blue-400 rounded-xl font-bold text-sm transition hover:bg-blue-600/20 active:scale-95 group mb-2">
+            <span class="flex items-center gap-3">
+                <i class="fa-solid fa-house text-xs"></i>
+                TẤT CẢ FILE
+            </span>
+            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+        </button>
+
+        <button onclick="filterByFavorites()" id="btn-show-favorites"
+            class="w-full flex items-center justify-between px-4 py-3 bg-red-600/10 text-red-400 rounded-xl font-bold text-sm transition hover:bg-red-600/20 active:scale-95 group mb-2">
+            <span class="flex items-center gap-3">
+                <i class="fa-solid fa-heart text-xs"></i>
+                YÊU THÍCH
+            </span>
+            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+        </button>
+
+        <button onclick="filterByHistory()" id="btn-show-history"
+            class="w-full flex items-center justify-between px-4 py-3 bg-blue-600/10 text-blue-400 rounded-xl font-bold text-sm transition hover:bg-blue-600/20 active:scale-95 group">
+            <span class="flex items-center gap-3">
+                <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                LỊCH SỬ
+            </span>
+            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+        </button>
+
+        <div class="h-px bg-slate-800 my-2"></div>
+
+        <!-- Collapsible Sources -->
+        <div>
+            <button onclick="toggleSection('sources-wrapper', this)"
+                class="w-full flex items-center justify-between px-2 py-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-slate-300 transition group">
+                Nguồn File
+                <i class="fa-solid fa-chevron-down text-[8px] transition-transform duration-300"></i>
+            </button>
+            <div id="sources-wrapper" class="space-y-1 overflow-hidden transition-all duration-300 origin-top">
+                <div id="source-list" class="space-y-1"></div>
+            </div>
+        </div>
+
+        <div class="h-px bg-slate-800 my-2"></div>
+
+        <!-- Collapsible Folders -->
+        <div>
+            <button onclick="toggleSection('folders-wrapper', this)"
+                class="w-full flex items-center justify-between px-2 py-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-slate-300 transition group">
+                Thư mục
+                <i class="fa-solid fa-chevron-down text-[8px] transition-transform duration-300"></i>
+            </button>
+            <div id="folders-wrapper" class="space-y-1 overflow-hidden transition-all duration-300 origin-top">
+                <nav class="space-y-1" id="folder-list"></nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div class="flex gap-2">
+            <input type="text" id="new-folder-path" placeholder="Thêm folder..."
+                class="flex-1 bg-slate-800/50 rounded-lg py-2 px-3 text-xs outline-none border border-slate-700/50 focus:border-blue-500 text-white">
+            <button onclick="addFolder()"
+                class="bg-blue-600 w-9 h-9 rounded-lg flex items-center justify-center text-white transition hover:bg-blue-500 active:scale-95">
+                <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+        </div>
+    </div>
+</aside>
