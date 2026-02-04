@@ -20,7 +20,8 @@ def load_config():
         "auto_convert_ts": True,
         "scrapper_cookies": "",
         "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "preferred_codec": "h264"
+        "preferred_codec": "h264",
+        "gemini_api_key": ""
     }
 
     if not os.path.exists(CONFIG_FILE):

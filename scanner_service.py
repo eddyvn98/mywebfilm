@@ -1,5 +1,9 @@
 import os
 import time
+import re
+import json
+from datetime import datetime
+import ffmpeg_service
 from config_manager import save_cache, load_cache, load_config
 from category_service import get_categories
 from queue_worker import media_queue
@@ -71,7 +75,8 @@ def scan_videos(video_dirs):
         for root, dirs, files in os.walk(bdir):
             if '.mycinema' in root: continue
             for f in files:
-                if f.lower().endswith(VIDEO_EXTS): # Chỉ lấy video
+                lower_f = f.lower()
+                if lower_f.endswith(VIDEO_EXTS) or lower_f.endswith(IMAGE_EXTS):
                     all_files_to_process.append((root, f))
     
     total_files = len(all_files_to_process)
@@ -87,9 +92,32 @@ def scan_videos(video_dirs):
         
         processed_count += 1
         lower_f = f.lower()
-        is_video = True
+        is_video = lower_f.endswith(VIDEO_EXTS)
         try:
             st = os.stat(fp)
+            
+            # --- Logic trích xuất ngày từ tên tệp (Đa định dạng) ---
+            file_date_ts = None
+            # Pattern: YYYY-MM-DD, YYYY_MM_DD, YYYY MM DD, hoặc YYYYMMDD
+            # Ưu tiên các định dạng có dấu phân cách để tránh nhầm lẫn với mã JAV
+            date_match = re.search(r'(\d{4})[-_\s](\d{2})[-_\s](\d{2})', f)
+            if not date_match:
+                # Fallback: IMG_20180327
+                date_match = re.search(r'(?:IMG|VID|MV)?_?(\d{4})(\d{2})(\d{2})', f, re.IGNORECASE)
+            
+            if date_match:
+                try:
+                    yyyy, mm, dd = date_match.groups()
+                    yy_int, mm_int, dd_int = int(yyyy), int(mm), int(dd)
+                    # Kiểm tra tính hợp lệ sơ bộ
+                    if 1990 < yy_int < 2030 and 1 <= mm_int <= 12 and 1 <= dd_int <= 31:
+                        dt_obj = datetime(yy_int, mm_int, dd_int)
+                        file_date_ts = dt_obj.timestamp()
+                        print(f"  [Dòng thời gian] Nhận diện {f} -> {yyyy}-{mm}-{dd}")
+                except Exception as e:
+                    # print(f"  [DateError] {f}: {e}")
+                    pass
+            # -----------------------------------------------------------
             
             # Move Detection Logic
             # Detect if this file matches a lost file from old_cache
@@ -162,9 +190,10 @@ def scan_videos(video_dirs):
             if os.path.exists(nfo_path):
                 nfo_meta = parse_nfo(nfo_path)
 
-            date_added = old_meta.get("date_added")
+            # Ưu tiên: 1. Ngày từ tên file, 2. Ngày cũ trong cache, 3. Ngày mtime của file
+            date_added = file_date_ts if file_date_ts else old_meta.get("date_added")
             if not date_added:
-                 date_added = current_time
+                 date_added = st.st_mtime
             
             # Categorize
             cats, jav_meta = get_categories(f, existing_metadata=jav_meta, nfo_metadata=nfo_meta, skip_scraping=not enable_scraping)
@@ -172,14 +201,16 @@ def scan_videos(video_dirs):
             if old_categories:
                 cats = list(dict.fromkeys(cats + old_categories))
             
-            duration = old_meta.get("duration", 0.0)
-            if duration <= 0:
-                duration = ffmpeg_service.get_video_duration(fp)
+            duration = 0.0
+            if is_video:
+                duration = old_meta.get("duration", 0.0)
+                if duration <= 0:
+                    duration = ffmpeg_service.get_video_duration(fp)
 
             items.append({
                 "name": nfo_meta.get('title') if nfo_meta and nfo_meta.get('title') else (jav_meta.get('title') if jav_meta and jav_meta.get('title') else os.path.splitext(f)[0]),
                 "ext": os.path.splitext(f)[1][1:].upper(),
-                "type": "video",
+                "type": "video" if is_video else "image",
                 "full_path": fp,
                 "folder": os.path.basename(root),
                 "size": st.st_size,

@@ -1,6 +1,7 @@
 import requests
 import json
 import re
+import time
 from config_manager import load_config
 
 _config = load_config()
@@ -15,29 +16,55 @@ DEFAULT_OPTIONS = {
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-def call_local_llm(prompt, json_format=True):
-    """Gửi prompt tới Ollama local với cấu hình tối ưu"""
+def call_gemini_api(prompt, api_key):
+    """Gửi prompt tới Google Gemini API với cơ chế Retry khi quá tải"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={api_key}"
     payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": False,
-        "options": DEFAULT_OPTIONS
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.2,
+            "topP": 0.8,
+            "topK": 40
+        }
     }
-    if json_format:
-        payload["format"] = "json"
     
-    try:
-        # print(f"  [LLM] Calling Ollama ({MODEL_NAME})...") # Bỏ comment nếu muốn debug
-        response = requests.post(OLLAMA_URL, json=payload, timeout=60)
-        if response.status_code == 200:
-            res_text = response.json().get('response')
-            return res_text
-        else:
-            print(f"  [LLM] Error: Status {response.status_code}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, json=payload, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                return data['candidates'][0]['content']['parts'][0]['text']
+            elif response.status_code in [503, 429]:
+                # 503: Overloaded, 429: Too Many Requests
+                print(f"  [Gemini] Model overloaded/busy (Attempt {attempt+1}/{max_retries}). Retrying in 2s...")
+                time.sleep(2)
+                continue
+            else:
+                print(f"  [Gemini] API Error: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            print(f"  [Gemini] Connection error: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
             return None
-    except Exception as e:
-        print(f"  [LLM] Connection error: {str(e)}")
-        return None
+    
+    print("  [Gemini] Failed after all retries.")
+    return None
+
+def call_local_llm(prompt, json_format=True):
+    """Hàm wrapper: Chỉ sử dụng Gemini API. Đã vô hiệu hóa Ollama local."""
+    api_key = _config.get("gemini_api_key")
+    if api_key and api_key.strip():
+        # print("  [LLM] Using Gemini 3 Flash...")
+        res = call_gemini_api(prompt, api_key)
+        return res
+    
+    print("  [LLM] Error: Gemini API Key not found. Local LLM is disabled.")
+    return None
 
 # Mapping studio giữ nguyên vì nó hữu ích
 STUDIO_MAP = {

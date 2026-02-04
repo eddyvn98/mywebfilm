@@ -1,6 +1,8 @@
 import json
 import re
 from llm_service import call_local_llm, parse_llm_json
+import warnings
+warnings.filterwarnings("ignore") # Tắt toàn bộ warning ngay từ đầu
 
 def extract_search_intent(query):
     """
@@ -53,25 +55,39 @@ def extract_search_intent(query):
 
 def search_web(query, max_results=5):
     """
-    General purpose web search using DuckDuckGo.
-    Returns a combined text context from the search results.
+    Sử dụng DuckDuckGo Search để tìm kiếm thông tin tổng quát.
     """
     try:
         from duckduckgo_search import DDGS
-        import requests
-        from bs4 import BeautifulSoup
+        import warnings
+        # Tắt mọi Warning phiền phức từ các thư viện con
+        warnings.filterwarnings("ignore")
 
-        print(f"  [Search] Searching web for: {query}")
+        # Tối ưu query: Hỗ trợ mã phim có dấu cách (VD: SBMX 054)
+        code_match = re.search(r'([a-zA-Z]{2,6}[-_ \s]?\d{2,5})', query)
+        if code_match:
+            code = code_match.group(1).upper().replace(' ', '-').replace('_', '-')
+            # Ưu tiên tìm mã + JAV, bỏ các từ rác
+            optimized_query = f"{code} JAV"
+            query = optimized_query
+
+        print(f"  [Search-Engine] Query: {query}")
         results = []
         with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=max_results):
-                results.append(f"Title: {r['title']}\nSnippet: {r['body']}\nSource: {r['href']}")
+            # Lấy kết quả văn bản
+            ddgs_gen = ddgs.text(query, max_results=max_results)
+            for r in ddgs_gen:
+                results.append(f"### Result: {r['title']}\nSnippet: {r['body']}\nLink: {r['href']}")
         
+        if not results:
+            print("  [Search-Engine] No results found.")
+            return "No web results found for this query."
+            
+        print(f"  [Search-Engine] Found {len(results)} results.")
         return "\n\n".join(results)
     except Exception as e:
-        print(f"  [Search] DDGS Error: {e}")
-        # Fallback to a very simple scraper if needed, or return empty
-        return ""
+        print(f"  [Search-Engine] Fatal Error: {e}")
+        return f"Error during web search: {str(e)}"
 
 def search_jav_context(query):
     """
@@ -142,9 +158,10 @@ def score_video(video, intent):
     # 1. KHỚP MÃ PHIM (Trọng số TỐI THƯỢNG: 1000 điểm)
     # Mã phim là duy nhất, nếu khớp thì chắc chắn đúng 99%
     if intent.get('code'):
-        code_clean = intent['code'].lower().replace('-', '')
-        # Kiểm tra trong tên file và cả đường dẫn
-        if code_clean in name_lower.replace('-', '') or code_clean in path_lower.replace('-', ''):
+        # Chuẩn hóa mã: Loại bỏ cả "-" và space để so sánh (VD: SBMX-054 hay SBMX 054 đều khớp)
+        code_clean = intent['code'].lower().replace('-', '').replace(' ', '')
+        # Kiểm tra trong tên file và cả đường dẫn sau khi chuẩn hóa
+        if code_clean in name_lower.replace('-', '').replace(' ', '') or code_clean in path_lower.replace('-', '').replace(' ', ''):
             score += 1000 
     
     # 2. Khớp diễn viên (Trọng số cao: 100 điểm)

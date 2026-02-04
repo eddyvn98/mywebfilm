@@ -100,14 +100,54 @@
 
 
         <!-- Video Grid Container -->
-        <div id="video-grid" class="flex-1 overflow-y-auto p-4 md:p-6 content-start pb-24 md:pb-6">
-            <div class="col-span-full py-40 text-center text-slate-600 font-bold italic text-sm">Đang tải dữ liệu...
+        <div class="flex-1 flex overflow-hidden relative">
+            <div id="video-grid"
+                class="flex-1 overflow-y-auto p-4 md:p-6 content-start pb-24 md:pb-6 no-scrollbar h-full">
+                <div class="col-span-full py-40 text-center text-slate-600 font-bold italic text-sm">Đang tải dữ liệu...
+                </div>
+            </div>
+            <!-- Timeline Sidebar -->
+            <div id="grid-timeline"
+                class="hidden md:flex w-16 border-l border-white/5 flex-col items-center py-6 gap-8 overflow-y-auto no-scrollbar bg-slate-900/20 backdrop-blur-sm z-20">
+                <!-- Populated via JS -->
             </div>
         </div>
     </main>
 
     <!-- Modals & Overlays -->
     {% include 'components/video_modal.html' %}
+
+    <!-- Image Modal -->
+    <div id="image-modal"
+        class="fixed inset-0 z-[150] bg-black/95 flex flex-col hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute top-4 right-4 z-[160] flex gap-3">
+            <button onclick="closeImageModal()"
+                class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="absolute top-4 left-6 z-[160]">
+            <h2 id="image-modal-title" class="text-white font-bold text-sm drop-shadow-lg opacity-80"></h2>
+        </div>
+        <div class="flex-1 flex items-center justify-center overflow-hidden p-4 select-none touch-none"
+            id="image-container">
+            <img id="modal-image-img" src=""
+                class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-300">
+        </div>
+        <!-- Navigation Area -->
+        <div class="absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
+            onclick="playPrev()">
+            <div
+                class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <i class="fa-solid fa-chevron-left"></i></div>
+        </div>
+        <div class="absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
+            onclick="playNext()">
+            <div
+                class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+    </div>
     {% include 'components/pin_overlay.html' %}
     {% include 'components/ai_lab.html' %}
     {% include 'components/discovery_overlay.html' %}

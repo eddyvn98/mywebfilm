@@ -174,10 +174,10 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
                 '-vf', "select='lt(mod(t,60),10)',setpts=N/FRAME_RATE/TB",
                 '-af', "aselect='lt(mod(t,60),10)',asetpts=N/SR/TB",
                 '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-crf', '26',
+                '-preset', 'veryfast',
+                '-crf', '18',
                 '-c:a', 'aac',
-                '-b:a', '128k',
+                '-b:a', '192k',
                 '-movflags', '+faststart',
                 output_path
             ]
@@ -294,21 +294,20 @@ def convert_ts_to_mp4(input_path, delete_src=True):
             ]
             
             if "libx264" in encoder or "libx265" in encoder:
-                # CPU: CRF 28 (HEVC) is great for size/quality. Preset veryfast is much better than ultrafast for size.
-                cmd.extend(['-preset', 'veryfast', '-crf', '23' if pref_codec == 'h264' else '28'])
+                # Dùng CRF 18 cho chất lượng gần như không suy giảm (Visually Lossless)
+                cmd.extend(['-preset', 'veryfast', '-crf', '18'])
             else:
-                # GPU: Dùng Constant Quality (CQ) thay vì Fixed Bitrate để tránh phình to dung lượng
+                # GPU: Giảm giá trị CQ để tăng chất lượng (CQ thấp = chất lượng cao)
                 if 'nvenc' in encoder:
-                    cmd.extend(['-rc', 'vbr', '-cq', '28', '-qmin', '24', '-qmax', '34'])
+                    cmd.extend(['-rc', 'vbr', '-cq', '18', '-qmin', '15', '-qmax', '22'])
                 elif 'qsv' in encoder:
-                    cmd.extend(['-global_quality', '28'])
+                    cmd.extend(['-global_quality', '18'])
                 else:
-                    # Amf hoặc các encoder khác
-                    cmd.extend(['-b:v', '4M', '-maxrate', '6M', '-bufsize', '12M'])
+                    cmd.extend(['-b:v', '10M', '-maxrate', '15M', '-bufsize', '30M'])
                 
-                cmd.extend(['-preset', 'fast' if 'nvenc' in encoder else 'ultrafast'])
+                cmd.extend(['-preset', 'p4' if 'nvenc' in encoder else 'veryfast'])
                 
-            cmd.extend(['-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', output_path])
+            cmd.extend(['-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output_path])
             
             print(f"Encoding Task (Target: {pref_codec}): {' '.join(cmd)}")
             res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
