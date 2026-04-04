@@ -2,6 +2,7 @@ import os
 import time
 import re
 import json
+import sys
 from datetime import datetime
 import ffmpeg_service
 from config_manager import save_cache, load_cache, load_config
@@ -13,6 +14,19 @@ from nfo_service import parse_nfo
 
 VIDEO_EXTS = ('.mp4', '.ts', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm')
 IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.gif')
+
+
+def safe_print(message):
+    """Print safely on Windows consoles that may not support Unicode."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        try:
+            encoded = str(message).encode(sys.stdout.encoding or "utf-8", errors="replace")
+            print(encoded.decode(sys.stdout.encoding or "utf-8", errors="replace"))
+        except Exception:
+            # Last resort: avoid crashing scan due to logging.
+            pass
 
 def scan_videos(video_dirs):
     """Quét các thư mục để tìm file video và hình ảnh"""
@@ -69,7 +83,7 @@ def scan_videos(video_dirs):
     enable_scraping = cfg.get("enable_jav_scraping", False) # Mặc định tắt (User request)
     
     # Đếm tổng số file trước để hiện tiến độ
-    print(f"Bắt đầu quét. Thư mục Online: {len(reachable_roots)}, Offline: {len(unreachable_roots)}")
+    safe_print(f"Bắt đầu quét. Thư mục Online: {len(reachable_roots)}, Offline: {len(unreachable_roots)}")
     all_files_to_process = []
     for bdir in reachable_roots:
         for root, dirs, files in os.walk(bdir):
@@ -80,7 +94,7 @@ def scan_videos(video_dirs):
                     all_files_to_process.append((root, f))
     
     total_files = len(all_files_to_process)
-    print(f"Bắt đầu xử lý {total_files} videos (Scraping: {enable_scraping})...")
+    safe_print(f"Bắt đầu xử lý {total_files} videos (Scraping: {enable_scraping})...")
     
     processed_count = 0
     processed_paths = set()
@@ -113,7 +127,7 @@ def scan_videos(video_dirs):
                     if 1990 < yy_int < 2030 and 1 <= mm_int <= 12 and 1 <= dd_int <= 31:
                         dt_obj = datetime(yy_int, mm_int, dd_int)
                         file_date_ts = dt_obj.timestamp()
-                        print(f"  [Dòng thời gian] Nhận diện {f} -> {yyyy}-{mm}-{dd}")
+                        safe_print(f"  [Dòng thời gian] Nhận diện {f} -> {yyyy}-{mm}-{dd}")
                 except Exception as e:
                     # print(f"  [DateError] {f}: {e}")
                     pass
@@ -134,16 +148,16 @@ def scan_videos(video_dirs):
                      old_path, old_data = candidate
                      # Confirm old path is gone (Double check)
                      if not os.path.exists(old_path):
-                         print(f"  [SmartScan] Detected Move: {old_path} -> {fp}")
+                         safe_print(f"  [SmartScan] Detected Move: {old_path} -> {fp}")
                          # Adopt old metadata
                          old_meta = old_data
                          # Sync Artifacts
                          try:
                              from utils import sync_artifacts
                              if sync_artifacts(old_path, fp):
-                                 print(f"  [SmartScan] Artifacts synced.")
+                                 safe_print(f"  [SmartScan] Artifacts synced.")
                          except Exception as e:
-                             print(f"  [SmartScan] Sync failed: {e}")
+                             safe_print(f"  [SmartScan] Sync failed: {e}")
                              
                          # Remove from candidates so we don't match again
                          del move_candidates[candidate_key]
@@ -154,7 +168,7 @@ def scan_videos(video_dirs):
                 folder = os.path.basename(root)
                 old_meta = base_name_map.get((base, folder), {})
                 if old_meta:
-                    print(f"  [Sync] Found metadata for extension-changed file: {f}")
+                    safe_print(f"  [Sync] Found metadata for extension-changed file: {f}")
 
             current_views = old_meta.get("views", 0)
             jav_meta = old_meta.get("jav_metadata")
@@ -174,7 +188,7 @@ def scan_videos(video_dirs):
                 import metadata_injector
                 internal_blob = metadata_injector.read_metadata(fp)
                 if internal_blob:
-                    print(f"  [SmartTag] Äá»c thông tin tá»« file: {f}")
+                    safe_print(f"  [SmartTag] Äá»c thông tin tá»« file: {f}")
                     jav_meta = {
                         'code': internal_blob.get('code'),
                         'title': internal_blob.get('title'),
@@ -232,10 +246,10 @@ def scan_videos(video_dirs):
                 
             # Cập nhật tiến độ
             if processed_count % 50 == 0 or processed_count == total_files:
-                print(f"Tiến độ: {processed_count}/{total_files} videos...")
+                safe_print(f"Tiến độ: {processed_count}/{total_files} videos...")
                 
         except Exception as e:
-            print(f"Lỗi xử lý video {f}: {e}")
+            safe_print(f"Lỗi xử lý video {f}: {e}")
             continue
 
     # --- STICKY CACHE LOGIC ---
@@ -262,7 +276,7 @@ def scan_videos(video_dirs):
             processed_paths.add(path) # Mark as kept
     
     save_cache(items)
-    print(f"Quét hoàn tất! Tổng cộng: {len(items)} items ({len(reachable_roots)} online, {len(unreachable_roots)} offline roots)")
+    safe_print(f"Quét hoàn tất! Tổng cộng: {len(items)} items ({len(reachable_roots)} online, {len(unreachable_roots)} offline roots)")
     return items
 
 def format_size(size_bytes):

@@ -1,34 +1,33 @@
+﻿import os
 
-from search_service import search_jav_context
+import pytest
+
 from llm_service import normalize_metadata_with_llm
-import json
+from search_service import search_jav_context
 
-def test_llm_pipeline(filename):
-    print(f"\n" + "="*50)
-    print(f"Testing Filename: {filename}")
-    
-    # 1. Search for context
-    # Không dùng extract_code nữa, search thẳng bằng tên file
-    context = search_jav_context(filename)
-    print(f"Context Found (first 100 chars): {context[:100]}...")
-    
-    # 2. Call LLM
-    print("Calling local LLM (Ollama)...")
-    result = normalize_metadata_with_llm(filename, context)
-    
-    if result:
-        print("LLM Result:")
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-    else:
-        print("LLM failed to return a valid result.")
 
-if __name__ == "__main__":
-    # Test cases
-    test_cases = [
+def _integration_enabled():
+    # This test hits external dependencies (search + local LLM).
+    # Enable explicitly when needed:
+    #   $env:RUN_LLM_INTEGRATION_TESTS='1'
+    return os.getenv("RUN_LLM_INTEGRATION_TESTS") == "1"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
         "ADN-413.mp4",
         "MEYD-855-Uncensored.ts",
-        "IMG_20220430_134834.jpg" # This should ideally be ignored by extract_code
-    ]
-    
-    for tc in test_cases:
-        test_llm_pipeline(tc)
+        "IMG_20220430_134834.jpg",
+    ],
+)
+def test_llm_pipeline(filename):
+    if not _integration_enabled():
+        pytest.skip("Set RUN_LLM_INTEGRATION_TESTS=1 to run LLM integration tests")
+
+    context = search_jav_context(filename)
+    assert isinstance(context, str)
+
+    result = normalize_metadata_with_llm(filename, context)
+    # Allow None when model/search does not yield a reliable output.
+    assert result is None or isinstance(result, dict)
