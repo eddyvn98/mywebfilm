@@ -103,7 +103,7 @@ def check_path_safe(path):
         import config_manager as cfg
         config = cfg.load_config()
         # Lấy danh sách thư mục whitelist
-        whitelist_dirs = config.get('video_dirs', [])
+        whitelist_dirs = list(config.get('video_dirs', []))
         
         # Thêm thư mục static và templates của dự án vào whitelist cho phép (để lưu avatar/actor_image)
         project_root = os.path.dirname(os.path.abspath(__file__))
