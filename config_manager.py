@@ -6,6 +6,7 @@ import threading
 from storage_utils import atomic_write_json
 from runtime_db import load_list_state, mutate_list_state, save_list_state
 from media_catalog import (
+    clear_catalog,
     increment_views as catalog_increment_views,
     load_catalog,
     mutate_catalog,
@@ -126,3 +127,7 @@ def save_favorites(data):
 
 def mutate_favorites(mutator):
     return mutate_list_state("favorites", mutator, FAVORITES_FILE)
+
+
+def clear_cache_data():
+    clear_catalog(CACHE_FILE)
