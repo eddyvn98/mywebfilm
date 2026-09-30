@@ -341,17 +341,23 @@ def convert_ts_to_mp4(input_path, delete_src=True):
                 
             final_path = output_path
             
-            # BƯỚC 3: Tráo đổi file nguyên tử nếu dùng tên tạm
+            # BƯỚC 3: Tráo đổi nguyên tử nếu nguồn đã là .mp4.
+            # os.replace chỉ thay original khi file mới đã sẵn sàng; không xóa source trước.
             if temp_output:
                 original_final = os.path.join(os.path.dirname(input_path), f"{name}.mp4")
                 if delete_src:
                     try:
-                        os.remove(input_path)
-                        os.rename(output_path, original_final)
+                        os.replace(output_path, original_final)
                         final_path = original_final
                         print(f"Atomic Swap: Replaced original with NEW {pref_codec} file")
                     except Exception as e:
                         print(f"Atomic Swap Error: {e}")
+                        try:
+                            if os.path.exists(output_path):
+                                os.remove(output_path)
+                        except OSError:
+                            pass
+                        return None
                 else:
                     # Nếu không xóa nguồn, giữ nguyên tên .converting.mp4 hoặc đổi sang tên khác
                     pass
