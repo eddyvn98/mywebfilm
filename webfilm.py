@@ -106,12 +106,11 @@ def check_auth():
     token_req = request.args.get('token')
     has_valid_token = token_req and is_token_valid(token_req)
     
-    # 3. Media routes: Allow if authenticated OR token is valid
+    # 3. Media routes require an authenticated session; OTT is only a login bootstrap token.
     if full_path.startswith(('/api/stream', '/api/thumbnail', '/api/preview')):
-        if is_authenticated or has_valid_token:
+        if is_authenticated:
             return
-        else:
-            return jsonify({"status": "err", "msg": "Unauthorized media access"}), 401
+        return jsonify({"status": "err", "msg": "Unauthorized media access"}), 401
             
     # 4. Global static path bypass
     if full_path.startswith('/static/'):
@@ -128,11 +127,7 @@ def check_auth():
         if is_authenticated:
             return
             
-    # 7. Fallback Token-based access for general endpoints
-    if has_valid_token:
-        return
-
-    # 8. Final Protection
+    # 7. Final Protection
     if not is_authenticated:
         if is_api:
             return jsonify({"status": "err", "msg": "Unauthorized"}), 401
