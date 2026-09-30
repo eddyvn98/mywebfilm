@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from runtime_db import list_incomplete_operations
+from operation_journal import list_incomplete_operations
 
 diagnostics_bp = Blueprint("api_diagnostics", __name__)
 
