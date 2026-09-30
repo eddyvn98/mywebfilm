@@ -50,6 +50,7 @@ The intended highlight behavior is preserved: a successful highlight job may del
 - Add a health endpoint with dependency/config status that does not expose secrets.
 - Add structured application logging for high-value operations.
 - Document backup/recovery expectations and known platform assumptions.
+- Persist media-job state; mark in-flight jobs interrupted after restart instead of silently losing or auto-resuming them.
 
 ## Release gate
 
@@ -70,5 +71,5 @@ The pull request may merge only when:
 - [x] Checkpoint 3 complete.
 - [x] Checkpoint 4 complete.
 - [x] Checkpoint 5 complete.
-- [ ] CI green.
-- [ ] PR merged.
+- [ ] CI green — blocked as of 2026-09-30 by GitHub-hosted runner provisioning failure (`runner_id=0`, `steps=[]`) before any workflow step starts.
+- [ ] PR merged — intentionally held until CI is genuinely green.
