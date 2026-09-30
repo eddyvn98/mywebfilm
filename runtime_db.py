@@ -56,6 +56,17 @@ def ensure_schema():
                     updated_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS media_catalog (
+                    path_key TEXT PRIMARY KEY,
+                    full_path TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    payload TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_media_catalog_position
+                ON media_catalog(position);
+
                 CREATE TABLE IF NOT EXISTS media_jobs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     path TEXT NOT NULL,
