@@ -25,10 +25,14 @@ def get_tags():
     return jsonify(tag_manager.get_all())
 
 def _public_config(config):
-    safe_config = {
-        key: value for key, value in config.items()
-        if key not in {"gemini_api_key", "scrapper_cookies"}
+    public_keys = {
+        "video_dirs",
+        "auto_convert_ts",
+        "preferred_codec",
+        "llm_model",
+        "enable_jav_scraping",
     }
+    safe_config = {key: config[key] for key in public_keys if key in config}
     safe_config["gemini_configured"] = bool(config.get("gemini_api_key"))
     safe_config["scrapper_cookies_configured"] = bool(config.get("scrapper_cookies"))
     return safe_config
