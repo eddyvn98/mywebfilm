@@ -50,8 +50,13 @@ Finish the runtime data migration by moving the media catalog out of `movies_cac
 ## Checkpoint log
 
 - [x] Sprint 3 plan recorded.
-- [ ] SQLite media catalog complete.
-- [ ] Catalog writers converted.
-- [ ] Integration/recovery tests complete.
-- [ ] Final validation green.
+- [x] SQLite media catalog complete.
+- [x] Catalog writers converted.
+- [x] Integration/recovery tests complete.
+- [x] Final validation green — commit `1b05e326dc3f5da79637a3f93b2c2c31d7e31001`: import smoke + compileall + 51 passed, 3 skipped, coverage 55.55%, `CI_FINAL_EXIT=0`.
 - [ ] PR merged.
+
+
+## Validation note
+
+The final executable code head was validated on the isolated Railway service using the expanded coverage set for `runtime_db`, `media_catalog`, `media_job_store`, `operation_journal`, and `fs_catalog` in addition to the existing application modules. The coverage floor was raised from 15% to 20% for this sprint.
