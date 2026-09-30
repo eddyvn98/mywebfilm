@@ -65,10 +65,10 @@ The pull request may merge only when:
 ## Checkpoint log
 
 - [x] Plan recorded.
-- [ ] Checkpoint 1 complete.
-- [ ] Checkpoint 2 complete.
-- [ ] Checkpoint 3 complete.
-- [ ] Checkpoint 4 complete.
-- [ ] Checkpoint 5 complete.
+- [x] Checkpoint 1 complete.
+- [x] Checkpoint 2 complete.
+- [x] Checkpoint 3 complete.
+- [x] Checkpoint 4 complete.
+- [x] Checkpoint 5 complete.
 - [ ] CI green.
 - [ ] PR merged.
