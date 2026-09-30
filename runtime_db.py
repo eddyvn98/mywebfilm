@@ -3,6 +3,7 @@ import os
 import sqlite3
 import threading
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,6 +28,19 @@ def _connect():
     return conn
 
 
+@contextmanager
+def _db():
+    conn = _connect()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def ensure_schema():
     global _schema_path
     if _schema_path == DB_PATH and os.path.exists(DB_PATH):
@@ -34,7 +48,7 @@ def ensure_schema():
     with _schema_lock:
         if _schema_path == DB_PATH and os.path.exists(DB_PATH):
             return
-        with _connect() as conn:
+        with _db() as conn:
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS list_state (
@@ -90,7 +104,7 @@ def _read_legacy_list(path):
 
 def load_list_state(name, legacy_json_path=None):
     ensure_schema()
-    with _connect() as conn:
+    with _db() as conn:
         row = conn.execute(
             "SELECT payload FROM list_state WHERE name = ?",
             (name,),
@@ -155,7 +169,7 @@ def save_list_state(name, items):
     ensure_schema()
     payload = json.dumps(list(items or []), ensure_ascii=False)
     now = _utc_now()
-    with _connect() as conn:
+    with _db() as conn:
         conn.execute(
             """
             INSERT INTO list_state(name, payload, updated_at)
@@ -172,7 +186,7 @@ def migrate_media_jobs_json(path):
     ensure_schema()
     if not path or not os.path.exists(path):
         return 0
-    with _connect() as conn:
+    with _db() as conn:
         count = conn.execute("SELECT COUNT(*) FROM media_jobs").fetchone()[0]
         if count:
             return 0
@@ -216,7 +230,7 @@ def migrate_media_jobs_json(path):
 def load_media_jobs():
     ensure_schema()
     now = _utc_now()
-    with _connect() as conn:
+    with _db() as conn:
         conn.execute(
             """
             UPDATE media_jobs
@@ -252,7 +266,7 @@ def add_media_job(path, name, task_type):
     ensure_schema()
     now = _utc_now()
     try:
-        with _connect() as conn:
+        with _db() as conn:
             cur = conn.execute(
                 """
                 INSERT INTO media_jobs(path, name, task_type, status, created_at, updated_at)
@@ -282,7 +296,7 @@ def update_media_job(job_id, *, status=None, output=None, error=None):
             assignments.append(f"{column} = ?")
             values.append(value)
     values.append(job_id)
-    with _connect() as conn:
+    with _db() as conn:
         conn.execute(
             f"UPDATE media_jobs SET {', '.join(assignments)} WHERE id = ?",
             values,
@@ -291,7 +305,7 @@ def update_media_job(job_id, *, status=None, output=None, error=None):
 
 def clear_finished_media_jobs():
     ensure_schema()
-    with _connect() as conn:
+    with _db() as conn:
         conn.execute(
             "DELETE FROM media_jobs WHERE status NOT IN ('pending', 'processing')"
         )
@@ -301,7 +315,7 @@ def begin_operation(op_type, src_path=None, dst_path=None, detail=None):
     ensure_schema()
     op_id = uuid.uuid4().hex
     now = _utc_now()
-    with _connect() as conn:
+    with _db() as conn:
         conn.execute(
             """
             INSERT INTO operation_journal(
@@ -315,7 +329,7 @@ def begin_operation(op_type, src_path=None, dst_path=None, detail=None):
 
 def update_operation(op_id, status, detail=None):
     ensure_schema()
-    with _connect() as conn:
+    with _db() as conn:
         if detail is None:
             conn.execute(
                 "UPDATE operation_journal SET status = ?, updated_at = ? WHERE id = ?",
@@ -334,7 +348,7 @@ def update_operation(op_id, status, detail=None):
 
 def list_incomplete_operations(limit=50):
     ensure_schema()
-    with _connect() as conn:
+    with _db() as conn:
         rows = conn.execute(
             """
             SELECT id, op_type, src_path, dst_path, status, detail, created_at, updated_at
