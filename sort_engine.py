@@ -3,6 +3,7 @@ sort_engine.py - Core engine for Video Auto-Sort Web Dashboard.
 Handles: scan, classify, actress lookup (jav321), move files.
 """
 import os, re, json, time, urllib.request, shutil
+from storage_utils import atomic_write_json
 from collections import Counter
 from datetime import datetime
 
@@ -38,8 +39,7 @@ def load_drive_map():
 
 def save_drive_map(data):
     try:
-        with open(DRIVE_MAP_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        atomic_write_json(DRIVE_MAP_FILE, data, indent=2)
     except Exception:
         pass
 
@@ -76,7 +76,7 @@ def load_cache():
     return json.load(open(CACHE_FILE,encoding="utf-8")) if os.path.exists(CACHE_FILE) else {}
 
 def save_cache(c):
-    json.dump(c, open(CACHE_FILE,"w",encoding="utf-8"), ensure_ascii=False, indent=2)
+    atomic_write_json(CACHE_FILE, c, indent=2)
 
 def classify(fn):
     fl = fn.lower()
