@@ -18,7 +18,9 @@ export async function processHighlight(e, index) {
 
     if (paths.length === 0) return;
 
-    const msg = paths.length === 1 ? `Tạo highlight (cắt 15p đầu, lấy 10s mỗi phút)?` : `Tạo highlight cho ${paths.length} file?`;
+    const msg = paths.length === 1
+        ? `Tạo highlight và xóa video gốc sau khi kiểm tra output thành công?`
+        : `Tạo highlight cho ${paths.length} file và xóa từng video gốc sau khi output tương ứng được kiểm tra thành công?`;
     if (!confirm(msg)) return;
 
     const btn = e?.target?.closest('button') || document.querySelector('button[onclick^="processHighlight"]');
