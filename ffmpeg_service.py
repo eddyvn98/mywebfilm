@@ -1,10 +1,32 @@
 import subprocess
 import os
 import threading
-from constants import FFMPEG_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
+from constants import FFMPEG_PATH, FFPROBE_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
 
 # Giới hạn tối đa 2 tiến trình FFmpeg chạy cùng lúc để tránh quá tải RAM/CPU
 ffmpeg_semaphore = threading.Semaphore(2)
+
+def validate_media_output(path):
+    """Validate a generated media file before any destructive source cleanup."""
+    if not os.path.exists(path) or os.path.getsize(path) <= 0:
+        return False
+    try:
+        cmd = [
+            FFPROBE_PATH, '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_type:format=duration',
+            '-of', 'json', path
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        if res.returncode != 0:
+            return False
+        import json
+        payload = json.loads(res.stdout or '{}')
+        has_video = any(s.get('codec_type') == 'video' for s in payload.get('streams', []))
+        duration = float((payload.get('format') or {}).get('duration') or 0)
+        return has_video and duration > 0
+    except Exception:
+        return False
 
 def generate_thumbnail(media_path, output_path, is_image=False):
     """Tạo ảnh thumbnail từ video hoặc resize ảnh gốc"""
@@ -151,24 +173,21 @@ def get_video_duration(media_path):
     return 0.0
 
 def process_highlight_video(input_path, output_dir, delete_src=False):
-    """
-    Xử lý video highlight: Dùng THUẦN CPU (libx264 + ultrafast) 
-    để đạt tốc độ cao nhất cho các tác vụ cắt vụn (filter).
-    """
+    """Create a highlight; source deletion is intentional but happens only after validation."""
     with ffmpeg_semaphore:
         try:
             filename = os.path.basename(input_path)
             name, _ = os.path.splitext(filename)
             output_path = os.path.join(output_dir, f"{name}_highlight.mp4")
-            
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            temp_output = output_path + '.partial.mp4'
 
-            # --- TỐI ƯU: Dùng CPU Multithreading + Ultrafast preset ---
-            # Với vụn vặt như highlight, CPU i7-8750H (12 luồng) sẽ nhanh hơn 1050Ti
+            os.makedirs(output_dir, exist_ok=True)
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
+
             cmd = [
                 FFMPEG_PATH, '-y',
-                '-threads', '0', 
+                '-threads', '0',
                 '-ss', '900',
                 '-i', input_path,
                 '-vf', "select='lt(mod(t,60),10)',setpts=N/FRAME_RATE/TB",
@@ -179,28 +198,25 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
                 '-c:a', 'aac',
                 '-b:a', '192k',
                 '-movflags', '+faststart',
-                output_path
+                temp_output
             ]
 
             print(f"Processing Highlight (Pure CPU): {' '.join(cmd)}")
             res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            
-            if res.returncode != 0:
-                print(f"FFmpeg Process Error: {res.stderr}")
+            if res.returncode != 0 or not validate_media_output(temp_output):
+                if os.path.exists(temp_output):
+                    os.remove(temp_output)
+                print(f"Highlight validation failed for {input_path}")
                 return None
-            
-            if delete_src and os.path.exists(output_path):
-                try:
-                    os.remove(input_path)
-                    print(f"Auto-cleanup: Deleted original {input_path}")
-                except Exception as e:
-                    print(f"Cleanup Error: {e}")
-                
+
+            os.replace(temp_output, output_path)
+            if delete_src:
+                os.remove(input_path)
+                print(f"Auto-cleanup: Deleted original {input_path}")
             return output_path
         except Exception as e:
             print(f"FFmpeg Highlight Exception: {e}")
             return None
-
 def remux_ts_to_mp4(input_path, output_path):
     """
     Thực hiện Remux (copy stream) cực nhanh từ TS sang MP4.
@@ -272,12 +288,14 @@ def convert_ts_to_mp4(input_path, delete_src=True):
     # BƯỚC 1: Nếu là .ts, thử Remux (Cực nhanh, 5-20 giây)
     if ext == '.ts' or ext == '.m2ts':
         if remux_ts_to_mp4(input_path, output_path):
-            if delete_src and os.path.exists(output_path):
-                try:
+            if validate_media_output(output_path):
+                if delete_src:
                     os.remove(input_path)
-                    print(f"Auto-cleanup: Deleted original TS after REMUX")
-                except: pass
-            return output_path
+                    print("Auto-cleanup: Deleted original TS after validated REMUX")
+                return output_path
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            print(f"Remux output validation failed for {input_path}; falling back to encode")
 
     # BƯỚC 2: Fallback Encode (Vài phút) - Dành cho .mp4 hoặc khi Remux .ts thất bại
     with ffmpeg_semaphore:
@@ -314,6 +332,11 @@ def convert_ts_to_mp4(input_path, delete_src=True):
             
             if res.returncode != 0:
                 print(f"Conversion Error: {res.stderr}")
+                return None
+            if not validate_media_output(output_path):
+                print(f"Conversion validation failed for {input_path}")
+                if os.path.exists(output_path) and output_path != input_path:
+                    os.remove(output_path)
                 return None
                 
             final_path = output_path
