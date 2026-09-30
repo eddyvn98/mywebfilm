@@ -7,7 +7,33 @@ from flask import jsonify
 from functools import wraps
 
 import os
+import secrets
 import threading
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
+
+def _load_secret_key():
+    env_secret = os.environ.get("CINEMA_SECRET_KEY")
+    if env_secret:
+        return env_secret
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    secret_path = os.path.join(DATA_DIR, "flask_secret.key")
+    if os.path.exists(secret_path):
+        with open(secret_path, "r", encoding="utf-8") as f:
+            existing = f.read().strip()
+            if len(existing) >= 32:
+                return existing
+
+    new_secret = secrets.token_hex(32)
+    tmp_path = secret_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(new_secret)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, secret_path)
+    return new_secret
 
 # Pre-calculate common paths to avoid url_for overhead on every request
 # Removed '/api/auth/tunnel/sync' from ALLOWED_PATH_BASES to prevent remote sync bypass
@@ -26,7 +52,12 @@ SENSITIVE_PATH_BASES = [
 ]
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-app.secret_key = "my-cinema-secret-key-123" # Stable key prevents logout on restart
+app.secret_key = _load_secret_key()
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("CINEMA_SECURE_COOKIES", "0").lower() in {"1", "true", "yes"},
+)
 
 # Auth Decorator
 def login_required(f):
