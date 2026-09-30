@@ -57,3 +57,15 @@ def test_clear_catalog_does_not_reimport_legacy_cache(tmp_path, monkeypatch):
 
     assert cfg.load_cache() == []
     assert not legacy.exists()
+
+
+def test_empty_catalog_does_not_reimport_legacy_after_migration(tmp_path, monkeypatch):
+    use_temp_db(tmp_path, monkeypatch)
+    legacy = tmp_path / "movies_cache.json"
+    legacy.write_text(json.dumps([{"full_path": "legacy.mp4"}]), encoding="utf-8")
+
+    assert media_catalog.load_catalog(str(legacy))
+    media_catalog.save_catalog([], legacy_json_path=str(legacy))
+
+    assert legacy.exists()
+    assert media_catalog.load_catalog(str(legacy)) == []
