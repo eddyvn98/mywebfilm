@@ -5,6 +5,7 @@ import re
 import shutil
 import sqlite3
 import tempfile
+import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -17,6 +18,7 @@ BACKUP_DIR = os.environ.get("CINEMA_BACKUP_DIR", os.path.join(DATA_DIR, "backups
 TAGS_FILE = os.path.join(BASE_DIR, "tags.json")
 CREDENTIALS_FILE = os.path.join(DATA_DIR, "credentials.json")
 MANIFEST_FILE = "manifest.json"
+_backup_lock = threading.RLock()
 
 BACKUP_ID_RE = re.compile(r"^\d{8}T\d{6}Z_[0-9a-f]{8}$")
 
@@ -112,33 +114,34 @@ def _cleanup_retention(keep):
 
 
 def create_backup(keep=None, cleanup=True):
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    backup_id = f"{_utc_stamp()}_{uuid.uuid4().hex[:8]}"
-    staging = tempfile.mkdtemp(prefix=".backup-", dir=BACKUP_DIR)
-    final_dir = os.path.join(BACKUP_DIR, backup_id)
+    with _backup_lock:
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+        backup_id = f"{_utc_stamp()}_{uuid.uuid4().hex[:8]}"
+        staging = tempfile.mkdtemp(prefix=".backup-", dir=BACKUP_DIR)
+        final_dir = os.path.join(BACKUP_DIR, backup_id)
 
-    try:
-        db_copy = os.path.join(staging, "cinema_state.db")
-        _backup_database(db_copy)
-        if not _validate_sqlite(db_copy):
-            raise RuntimeError("SQLite backup integrity check failed")
+        try:
+            db_copy = os.path.join(staging, "cinema_state.db")
+            _backup_database(db_copy)
+            if not _validate_sqlite(db_copy):
+                raise RuntimeError("SQLite backup integrity check failed")
 
-        for name, source in _source_files().items():
-            if os.path.isfile(source):
-                shutil.copy2(source, os.path.join(staging, name))
+            for name, source in _source_files().items():
+                if os.path.isfile(source):
+                    shutil.copy2(source, os.path.join(staging, name))
 
-        manifest = _manifest_for(staging, backup_id)
-        _write_manifest(staging, manifest)
-        os.replace(staging, final_dir)
+            manifest = _manifest_for(staging, backup_id)
+            _write_manifest(staging, manifest)
+            os.replace(staging, final_dir)
 
-        if cleanup:
-            if keep is None:
-                keep = int(os.environ.get("CINEMA_BACKUP_KEEP", "10"))
-            _cleanup_retention(max(1, min(int(keep), 100)))
-        return manifest
-    except Exception:
-        shutil.rmtree(staging, ignore_errors=True)
-        raise
+            if cleanup:
+                if keep is None:
+                    keep = int(os.environ.get("CINEMA_BACKUP_KEEP", "10"))
+                _cleanup_retention(max(1, min(int(keep), 100)))
+            return manifest
+        except Exception:
+            shutil.rmtree(staging, ignore_errors=True)
+            raise
 
 
 def _load_manifest(backup_dir):
@@ -228,8 +231,11 @@ def _apply_backup_dir(backup_dir):
     destinations = _source_files()
     for name in ("credentials.json", "config.json", "tags.json"):
         source = os.path.join(backup_dir, name)
+        destination = destinations[name]
         if os.path.isfile(source):
-            _atomic_restore_file(source, destinations[name])
+            _atomic_restore_file(source, destination)
+        elif os.path.exists(destination):
+            os.remove(destination)
 
     runtime_db._schema_path = None
 
@@ -238,7 +244,7 @@ def restore_backup(backup_id):
     manifest = verify_backup(backup_id)
     backup_dir = _backup_path(backup_id)
 
-    with runtime_db.database_maintenance():
+    with _backup_lock, runtime_db.database_maintenance():
         emergency = create_backup(keep=None, cleanup=False)
         emergency_dir = _backup_path(emergency["backup_id"])
         try:
