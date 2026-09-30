@@ -11,8 +11,25 @@ permissions:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Runner probe
-        run: Write-Host "runner-ok"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Compile Python
+        run: python -m compileall -q .
+      - name: Run tests
+        env:
+          CINEMA_DATA_DIR: ${{ runner.temp }}/cinema-data
+          CINEMA_SECRET_KEY: ci-only-test-secret
+        run: python -m pytest -q --cov=config_manager --cov=storage_utils --cov=sort_engine --cov=ffmpeg_service --cov=routes --cov=security_service --cov-report=term-missing --cov-fail-under=15
+      - name: Check JavaScript syntax
+        run: |
+          for file in static/js/*.js; do
+            node --check "$file"
+          done
