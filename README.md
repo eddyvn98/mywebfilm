@@ -23,7 +23,7 @@ Normal execution uses Waitress instead of Flask's development server. Optional r
 
 ## Runtime data
 
-Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory. History, favorites, media-job state, and destructive-operation journal entries are stored in `data/cinema_state.db` (SQLite/WAL).
+Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory. The media catalog, history, favorites, media-job state, migration markers, and destructive-operation journal entries are stored in `data/cinema_state.db` (SQLite/WAL).
 
 `CINEMA_SECRET_KEY` can be supplied explicitly. If omitted, the app creates a random persistent key in `data/flask_secret.key`.
 
@@ -33,7 +33,7 @@ For HTTPS/tunnel use, set `CINEMA_SECURE_COOKIES=1`.
 
 ### Upgrade note
 
-Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. Legacy `history_cache.json`, `favorites_cache.json`, and `data/media_jobs.json` are imported into SQLite on first use when no corresponding SQLite state exists. If Git has already removed the old WebAuthn credential file, register the device/passkey again from localhost.
+Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. Legacy `movies_cache.json`, `history_cache.json`, `favorites_cache.json`, and `data/media_jobs.json` are imported into SQLite on first use when no corresponding SQLite state exists. Media-catalog migration is marked in SQLite so an old `movies_cache.json` cannot be silently re-imported after the catalog is later cleared. If Git has already removed the old WebAuthn credential file, register the device/passkey again from localhost.
 
 Back up `data/` (especially `cinema_state.db` and `credentials.json`) plus your local `config.json`, `tags.json`, and media-sidecar `.nfo` files before major upgrades.
 
@@ -63,3 +63,10 @@ Authenticated users can inspect incomplete or failed destructive filesystem oper
 Delete, rename, and move operations are journaled before the filesystem changes. A response with `status: partial` means the filesystem change happened but a later metadata/artifact step needs attention. Keep the returned `operation_id` when troubleshooting.
 
 `GET /api/health` reports FFmpeg/FFprobe availability, writable runtime storage, SQLite readiness, and media-root availability without returning configured filesystem paths or secrets.
+
+
+## Media catalog concurrency
+
+The catalog is stored as one SQLite row per media path. View increments update only the matching row inside an immediate transaction. Long scans replace the catalog transactionally and merge the latest view counts at commit time, preventing a scan from overwriting views recorded while the scan was running.
+
+`POST /api/clear_cache` clears the SQLite media catalog and removes any legacy `movies_cache.json` so stale data cannot return on the next request.

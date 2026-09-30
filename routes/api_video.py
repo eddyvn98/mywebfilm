@@ -3,7 +3,6 @@ import os
 import re
 import mimetypes
 import subprocess
-import threading
 import config_manager as cfg
 import ffmpeg_service as ff
 from constants import MPC_PATH
@@ -70,16 +69,8 @@ def play():
     if not os.path.exists(p):
         return jsonify({"status":"err", "msg": "File not found"}), 404
 
-    # Increase view count in background to avoid blocking initial stream request
-    def update_views(p_val):
-        items = cfg.load_cache()
-        for v in items:
-            if v['full_path'] == p_val:
-                v['views'] = v.get('views', 0) + 1
-                break
-        cfg.save_cache(items)
-    
-    threading.Thread(target=update_views, args=(p,), daemon=True).start()
+    # SQLite updates one catalog row atomically; no background read-modify-write race.
+    cfg.increment_views(p)
     
     # Open file
     if t == 'image':

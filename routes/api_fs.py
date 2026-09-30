@@ -1,28 +1,23 @@
 from flask import Blueprint, jsonify, request
 import logging
-import ntpath
 import os
 import shutil
 import subprocess
 
 import config_manager as cfg
+from fs_catalog import (
+    basename as _basename,
+    delete_from_catalog,
+    dirname as _dirname,
+    join_path as _join,
+    move_in_catalog,
+    rename_in_catalog,
+)
 from operation_journal import begin_operation, update_operation
 from utils import check_path_safe, get_metadata_paths, sync_artifacts
 
 fs_bp = Blueprint("api_fs", __name__)
 logger = logging.getLogger(__name__)
-
-
-def _basename(path):
-    return ntpath.basename(path) if "\\" in path else os.path.basename(path)
-
-
-def _dirname(path):
-    return ntpath.dirname(path) if "\\" in path else os.path.dirname(path)
-
-
-def _join(parent, name):
-    return ntpath.join(parent, name) if "\\" in parent else os.path.join(parent, name)
 
 
 def _operation_failure(op_id, exc, *, filesystem_changed=False):
@@ -62,11 +57,7 @@ def delete_file():
             if os.path.exists(artifact):
                 os.remove(artifact)
 
-        items = [
-            item for item in cfg.load_cache()
-            if item.get("full_path") != path
-        ]
-        cfg.save_cache(items)
+        delete_from_catalog(path)
         update_operation(op_id, "completed")
         return jsonify({"status": "ok", "operation_id": op_id})
     except Exception as exc:
@@ -132,28 +123,23 @@ def fs_rename():
             ]
             cfg.save_config(config)
 
-        items = cfg.load_cache()
+        snapshot = cfg.load_cache()
         old_folder = _basename(old_path)
-        for item in items:
+        for item in snapshot:
             full_path = item.get("full_path", "")
             if full_path == old_path:
                 try:
                     sync_artifacts(old_path, new_path)
                 except Exception as exc:
                     warnings.append(f"artifact sync: {exc}")
-                item["full_path"] = new_path
-                item["name"] = new_name
             elif full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
                 new_full_path = full_path.replace(old_path, new_path, 1)
                 try:
                     sync_artifacts(full_path, new_full_path)
                 except Exception as exc:
                     warnings.append(f"artifact sync {full_path}: {exc}")
-                item["full_path"] = new_full_path
-                if item.get("folder") == old_folder:
-                    item["folder"] = new_name
 
-        cfg.save_cache(items)
+        rename_in_catalog(old_path, new_path, new_name)
         if warnings:
             detail = "; ".join(warnings[:5])
             update_operation(op_id, "failed", detail)
@@ -209,9 +195,8 @@ def fs_move():
         return jsonify({"status": "err", "msg": "Access denied to target directory"}), 403
 
     results = []
-    items = cfg.load_cache()
-    cache_updated = False
     operations = []
+    moved_paths = []
 
     for path in paths:
         if not check_path_safe(path):
@@ -244,16 +229,7 @@ def fs_move():
             except Exception as exc:
                 warnings.append(f"artifact sync: {exc}")
 
-            for item in items:
-                full_path = item.get("full_path", "")
-                if full_path == path:
-                    item["full_path"] = new_path
-                    item["folder"] = _basename(target_dir)
-                    cache_updated = True
-                elif full_path.startswith(path + os.sep) or full_path.startswith(path + "\\"):
-                    item["full_path"] = full_path.replace(path, new_path, 1)
-                    cache_updated = True
-
+            moved_paths.append((path, new_path))
             operations.append((op_id, warnings))
             results.append({
                 "path": path,
@@ -273,10 +249,10 @@ def fs_move():
             })
 
     try:
-        if cache_updated:
-            cfg.save_cache(items)
+        if moved_paths:
+            move_in_catalog(moved_paths, target_dir)
     except Exception as exc:
-        detail = f"filesystem changed but cache update failed: {exc}"
+        detail = f"filesystem changed but catalog update failed: {exc}"
         for op_id, _ in operations:
             update_operation(op_id, "failed", detail)
         return jsonify({

@@ -5,15 +5,19 @@ import time
 import threading
 from storage_utils import atomic_write_json
 from runtime_db import load_list_state, mutate_list_state, save_list_state
+from media_catalog import (
+    clear_catalog,
+    increment_views as catalog_increment_views,
+    load_catalog,
+    mutate_catalog,
+    save_catalog,
+)
 
 # Thread locks to prevent concurrent write data corruption
 _config_lock = threading.Lock()
-_movies_lock = threading.Lock()
 
 _config_cache = None
 _config_mtime = 0
-_movies_cache = None
-_movies_mtime = 0
 
 
 def normalize_video_dirs(video_dirs):
@@ -81,38 +85,27 @@ def save_config(config):
             _config_mtime = time.time()
 
 def load_cache():
-    global _movies_cache, _movies_mtime
-    
-    if not os.path.exists(CACHE_FILE):
-        return []
+    return load_catalog(CACHE_FILE)
 
-    with _movies_lock:
-        try:
-            current_mtime = os.path.getmtime(CACHE_FILE)
-            if _movies_cache is not None and current_mtime <= _movies_mtime:
-                return _movies_cache
-
-            with open(CACHE_FILE, 'r', encoding='utf-8') as f: 
-                data = json.load(f)
-                if isinstance(data, list):
-                    _movies_cache = [v for v in data if v is not None]
-                    _movies_mtime = current_mtime
-                    return _movies_cache
-                return data
-        except Exception as e:
-            print(f"Lỗi load cache: {e}")
-            return []
-        return []
 
 def save_cache(data):
-    global _movies_cache, _movies_mtime
-    with _movies_lock:
-        atomic_write_json(CACHE_FILE, data)
-        _movies_cache = [v for v in data if v is not None]
-        try:
-            _movies_mtime = os.path.getmtime(CACHE_FILE)
-        except:
-            _movies_mtime = time.time()
+    return save_catalog(data, legacy_json_path=CACHE_FILE)
+
+
+def save_scanned_cache(data):
+    return save_catalog(
+        data,
+        legacy_json_path=CACHE_FILE,
+        preserve_views=True,
+    )
+
+
+def mutate_cache(mutator):
+    return mutate_catalog(mutator, CACHE_FILE)
+
+
+def increment_views(path):
+    return catalog_increment_views(path, CACHE_FILE)
 
 def load_history():
     return load_list_state("history", HISTORY_FILE)
@@ -134,3 +127,7 @@ def save_favorites(data):
 
 def mutate_favorites(mutator):
     return mutate_list_state("favorites", mutator, FAVORITES_FILE)
+
+
+def clear_cache_data():
+    clear_catalog(CACHE_FILE)

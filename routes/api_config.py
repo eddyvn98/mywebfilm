@@ -59,7 +59,7 @@ def update_config():
 
 @config_bp.route('/api/clear_cache', methods=['POST'])
 def clear_cache():
-    if os.path.exists(cfg.CACHE_FILE): os.remove(cfg.CACHE_FILE)
+    cfg.clear_cache_data()
     return jsonify({"status": "ok"})
 
 @config_bp.route('/api/scan', methods=['POST'])
