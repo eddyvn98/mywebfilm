@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 import runtime_db
+import operation_journal
 from webfilm import app
 
 
@@ -29,7 +30,7 @@ def test_delete_operation_completes_journal(client, tmp_path):
     assert resp.status_code == 200
     assert not source.exists()
     assert resp.get_json()["operation_id"]
-    assert runtime_db.list_incomplete_operations() == []
+    assert operation_journal.list_incomplete_operations() == []
 
 
 def test_rename_reports_partial_when_artifact_sync_fails(client, tmp_path):
@@ -52,7 +53,7 @@ def test_rename_reports_partial_when_artifact_sync_fails(client, tmp_path):
     assert not source.exists()
     assert (tmp_path / "new.mp4").exists()
 
-    incomplete = runtime_db.list_incomplete_operations()
+    incomplete = operation_journal.list_incomplete_operations()
     assert len(incomplete) == 1
     assert incomplete[0]["status"] == "failed"
     assert "artifact boom" in incomplete[0]["detail"]
@@ -79,15 +80,15 @@ def test_move_records_failure_when_cache_write_fails(client, tmp_path):
     assert (target / "move.mp4").exists()
     assert resp.get_json()["filesystem_changed"] is True
 
-    incomplete = runtime_db.list_incomplete_operations()
+    incomplete = operation_journal.list_incomplete_operations()
     assert len(incomplete) == 1
     assert incomplete[0]["status"] == "failed"
     assert "cache update failed" in incomplete[0]["detail"]
 
 
 def test_diagnostics_lists_incomplete_operations(client):
-    op_id = runtime_db.begin_operation("move", "a.mp4", "b.mp4")
-    runtime_db.update_operation(op_id, "filesystem_done")
+    op_id = operation_journal.begin_operation("move", "a.mp4", "b.mp4")
+    operation_journal.update_operation(op_id, "filesystem_done")
 
     resp = client.get("/api/diagnostics/operations")
 
