@@ -8,6 +8,7 @@ from .api_auth import auth_bp
 from .api_history import api_history_bp
 from .api_favorites import api_favorites_bp
 from .api_sort import sort_bp
+from .api_diagnostics import diagnostics_bp
 
 # Aggregated API Blueprint v2
 api_bp = Blueprint('api', __name__)
@@ -27,3 +28,4 @@ def register_api_v2(app: Flask):
     app.register_blueprint(api_history_bp)
     app.register_blueprint(api_favorites_bp)
     app.register_blueprint(sort_bp)
+    app.register_blueprint(diagnostics_bp)
