@@ -10,6 +10,7 @@ import os
 import secrets
 import threading
 from logging_config import configure_logging
+from startup_checks import run_startup_checks
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
@@ -147,12 +148,20 @@ register_api_v2(app)
 app.register_blueprint(views_bp)
 
 if __name__ == '__main__':
-    if not ff.check_ffmpeg_presence():
-        print("CẢNH BÁO: Không tìm thấy lệnh 'ffmpeg' trong PATH hệ thống.")
-    
-    print("\n" + "-"*30)
-    print("MY CINEMA (Mobile Optimized)")
+    import logging
+    from waitress import serve
+
+    checks = run_startup_checks()
+    logger = logging.getLogger(__name__)
+    logger.info("startup_readiness checks=%s", checks)
+    if not checks["ready"]:
+        logger.warning("startup_readiness_degraded checks=%s", checks)
+
+    host = os.environ.get("CINEMA_HOST", "0.0.0.0")
+    port = int(os.environ.get("CINEMA_PORT", "5000"))
+    threads = max(4, int(os.environ.get("CINEMA_THREADS", "8")))
+
+    print("\n" + "-" * 30)
+    print(f"MY CINEMA - http://{host}:{port}")
     print("-" * 30 + "\n")
-    
-    # Run with threaded=True for stream support
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    serve(app, host=host, port=port, threads=threads)
