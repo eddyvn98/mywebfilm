@@ -54,7 +54,7 @@ Finish the runtime data migration by moving the media catalog out of `movies_cac
 - [x] Catalog writers converted.
 - [x] Integration/recovery tests complete.
 - [x] Final validation green — commit `1b05e326dc3f5da79637a3f93b2c2c31d7e31001`: import smoke + compileall + 51 passed, 3 skipped, coverage 55.55%, `CI_FINAL_EXIT=0`.
-- [ ] PR merged.
+- [x] PR merged — squash merge `5dc6c922338dda9294a671390ccd16494acd3f9f`.
 
 
 ## Validation note
