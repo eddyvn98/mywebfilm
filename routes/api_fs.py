@@ -34,6 +34,8 @@ def open_explorer():
     p = request.json.get('path')
     if not p or not os.path.exists(p):
         return jsonify({"status":"err", "msg": "File not found"}), 404
+    if not check_path_safe(p):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
     try:
         subprocess.run(['explorer', '/select,', os.path.normpath(p)])
         return jsonify({"status":"ok"})
