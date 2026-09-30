@@ -48,8 +48,8 @@ Finish the reliability layer that was intentionally deferred from Sprint 1: tran
 ## Checkpoint log
 
 - [x] Sprint 2 plan recorded.
-- [ ] SQLite runtime state complete.
-- [ ] Operation journal complete.
-- [ ] Production runtime complete.
+- [x] SQLite runtime state complete.
+- [x] Operation journal complete.
+- [x] Production runtime complete.
 - [ ] Final test gate green.
 - [ ] PR merged.
