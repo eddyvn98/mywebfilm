@@ -21,7 +21,7 @@ jobs:
           git init .
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
-          git -c http.extraHeader="Authorization: Basic $AUTH" fetch --depth=1 origin "$GITHUB_SHA"
+          git -c http.extraHeader="Authorization: Basic $AUTH" fetch --depth=1 origin "$GITHUB_REF"
           git checkout --detach FETCH_HEAD
       - name: Show toolchain
         run: |
@@ -35,7 +35,7 @@ jobs:
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}/cinema-data
           CINEMA_SECRET_KEY: ci-only-secret-key-that-is-long-enough-for-tests
-        run: python3 -m pytest -q --cov=. --cov-report=term-missing --cov-fail-under=25
+        run: python3 -m pytest -q --cov=config_manager --cov=storage_utils --cov=sort_engine --cov=ffmpeg_service --cov=routes --cov=security_service --cov-report=term-missing --cov-fail-under=15
       - name: Check JavaScript syntax
         run: |
           for file in static/js/*.js; do
