@@ -111,6 +111,46 @@ def load_list_state(name, legacy_json_path=None):
         return legacy
 
 
+def mutate_list_state(name, mutator, legacy_json_path=None):
+    """Serialize a read-modify-write list update inside one SQLite write transaction."""
+    ensure_schema()
+    conn = _connect()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT payload FROM list_state WHERE name = ?",
+            (name,),
+        ).fetchone()
+        if row:
+            items = json.loads(row["payload"])
+            if not isinstance(items, list):
+                items = []
+        else:
+            items = _read_legacy_list(legacy_json_path) or []
+
+        updated = mutator(list(items))
+        if not isinstance(updated, list):
+            raise ValueError("list state mutator must return a list")
+
+        conn.execute(
+            """
+            INSERT INTO list_state(name, payload, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                payload = excluded.payload,
+                updated_at = excluded.updated_at
+            """,
+            (name, json.dumps(updated, ensure_ascii=False), _utc_now()),
+        )
+        conn.commit()
+        return updated
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def save_list_state(name, items):
     ensure_schema()
     payload = json.dumps(list(items or []), ensure_ascii=False)
