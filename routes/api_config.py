@@ -24,20 +24,22 @@ def health():
 def get_tags():
     return jsonify(tag_manager.get_all())
 
-@config_bp.route('/api/config')
-def get_config():
-    config = cfg.load_config()
+def _public_config(config):
     safe_config = {
         key: value for key, value in config.items()
         if key not in {"gemini_api_key", "scrapper_cookies"}
     }
     safe_config["gemini_configured"] = bool(config.get("gemini_api_key"))
     safe_config["scrapper_cookies_configured"] = bool(config.get("scrapper_cookies"))
-    return jsonify(safe_config)
+    return safe_config
+
+@config_bp.route('/api/config')
+def get_config():
+    return jsonify(_public_config(cfg.load_config()))
 
 @config_bp.route('/api/config/update', methods=['POST'])
 def update_config():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     c = cfg.load_config()
     changed = False
     if 'auto_convert_ts' in data:
@@ -48,7 +50,7 @@ def update_config():
         changed = True
     if changed:
         cfg.save_config(c)
-        return jsonify({"status": "ok", "config": c})
+        return jsonify({"status": "ok", "config": _public_config(c)})
     return jsonify({"status": "no_change"})
 
 @config_bp.route('/api/clear_cache', methods=['POST'])
