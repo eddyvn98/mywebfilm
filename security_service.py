@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 import base64
+from storage_utils import atomic_write_json
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
@@ -19,7 +20,10 @@ from webauthn.helpers import (
     parse_authentication_credential_json,
 )
 
-CREDENTIALS_FILE = "credentials.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
+CREDENTIALS_FILE = os.path.join(DATA_DIR, "credentials.json")
+LEGACY_CREDENTIALS_FILE = os.path.join(BASE_DIR, "credentials.json")
 RP_ID = "localhost" # This will need to be dynamic for tunnels
 RP_NAME = "My Cinema Secure"
 
@@ -29,19 +33,21 @@ class SecurityService:
         self.challenges = {} # Store challenges in memory (temporary)
 
     def _load_credentials(self):
-        if os.path.exists(CREDENTIALS_FILE):
-            with open(CREDENTIALS_FILE, "r") as f:
+        source_file = CREDENTIALS_FILE if os.path.exists(CREDENTIALS_FILE) else LEGACY_CREDENTIALS_FILE
+        if os.path.exists(source_file):
+            with open(source_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 # Migration: Convert single credential to list for each user
                 for user_id in data:
                     if isinstance(data[user_id], dict):
                         data[user_id] = [data[user_id]]
+                if source_file == LEGACY_CREDENTIALS_FILE:
+                    atomic_write_json(CREDENTIALS_FILE, data)
                 return data
         return {}
 
     def _save_credentials(self):
-        with open(CREDENTIALS_FILE, "w") as f:
-            json.dump(self.credentials, f, indent=4)
+        atomic_write_json(CREDENTIALS_FILE, self.credentials)
 
     def get_registration_options(self, user_id, username, origin):
         # We use the origin from the request to support Tunnels
