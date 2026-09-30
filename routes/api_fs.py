@@ -1,28 +1,23 @@
 from flask import Blueprint, jsonify, request
 import logging
-import ntpath
 import os
 import shutil
 import subprocess
 
 import config_manager as cfg
+from fs_catalog import (
+    basename as _basename,
+    delete_from_catalog,
+    dirname as _dirname,
+    join_path as _join,
+    move_in_catalog,
+    rename_in_catalog,
+)
 from operation_journal import begin_operation, update_operation
 from utils import check_path_safe, get_metadata_paths, sync_artifacts
 
 fs_bp = Blueprint("api_fs", __name__)
 logger = logging.getLogger(__name__)
-
-
-def _basename(path):
-    return ntpath.basename(path) if "\\" in path else os.path.basename(path)
-
-
-def _dirname(path):
-    return ntpath.dirname(path) if "\\" in path else os.path.dirname(path)
-
-
-def _join(parent, name):
-    return ntpath.join(parent, name) if "\\" in parent else os.path.join(parent, name)
 
 
 def _operation_failure(op_id, exc, *, filesystem_changed=False):
@@ -62,12 +57,7 @@ def delete_file():
             if os.path.exists(artifact):
                 os.remove(artifact)
 
-        cfg.mutate_cache(
-            lambda items: [
-                item for item in items
-                if item.get("full_path") != path
-            ]
-        )
+        delete_from_catalog(path)
         update_operation(op_id, "completed")
         return jsonify({"status": "ok", "operation_id": op_id})
     except Exception as exc:
@@ -149,19 +139,7 @@ def fs_rename():
                 except Exception as exc:
                     warnings.append(f"artifact sync {full_path}: {exc}")
 
-        def update_catalog(items):
-            for item in items:
-                full_path = item.get("full_path", "")
-                if full_path == old_path:
-                    item["full_path"] = new_path
-                    item["name"] = new_name
-                elif full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
-                    item["full_path"] = full_path.replace(old_path, new_path, 1)
-                    if item.get("folder") == old_folder:
-                        item["folder"] = new_name
-            return items
-
-        cfg.mutate_cache(update_catalog)
+        rename_in_catalog(old_path, new_path, new_name)
         if warnings:
             detail = "; ".join(warnings[:5])
             update_operation(op_id, "failed", detail)
@@ -272,21 +250,7 @@ def fs_move():
 
     try:
         if moved_paths:
-            def update_catalog(items):
-                for item in items:
-                    full_path = item.get("full_path", "")
-                    for old_path, new_path in moved_paths:
-                        if full_path == old_path:
-                            item["full_path"] = new_path
-                            item["folder"] = _basename(target_dir)
-                            full_path = new_path
-                            break
-                        if full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
-                            item["full_path"] = full_path.replace(old_path, new_path, 1)
-                            break
-                return items
-
-            cfg.mutate_cache(update_catalog)
+            move_in_catalog(moved_paths, target_dir)
     except Exception as exc:
         detail = f"filesystem changed but catalog update failed: {exc}"
         for op_id, _ in operations:
