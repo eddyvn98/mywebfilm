@@ -10,6 +10,7 @@ DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
 DB_PATH = os.path.join(DATA_DIR, "cinema_state.db")
 
 _schema_lock = threading.Lock()
+_db_lock = threading.RLock()
 _schema_path = None
 
 
@@ -28,16 +29,23 @@ def _connect():
 
 
 @contextmanager
+def database_maintenance():
+    with _db_lock:
+        yield
+
+
+@contextmanager
 def db_session():
-    conn = _connect()
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+    with _db_lock:
+        conn = _connect()
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
 
 def ensure_schema():
@@ -144,8 +152,7 @@ def load_list_state(name, legacy_json_path=None):
 def mutate_list_state(name, mutator, legacy_json_path=None):
     """Serialize a read-modify-write list update inside one SQLite write transaction."""
     ensure_schema()
-    conn = _connect()
-    try:
+    with db_session() as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute(
             "SELECT payload FROM list_state WHERE name = ?",
@@ -172,13 +179,7 @@ def mutate_list_state(name, mutator, legacy_json_path=None):
             """,
             (name, json.dumps(updated, ensure_ascii=False), utc_now()),
         )
-        conn.commit()
         return updated
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
 
 
 def save_list_state(name, items):
