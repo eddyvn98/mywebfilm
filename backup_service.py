@@ -111,7 +111,7 @@ def _cleanup_retention(keep):
         shutil.rmtree(os.path.join(BACKUP_DIR, name), ignore_errors=True)
 
 
-def create_backup(keep=None):
+def create_backup(keep=None, cleanup=True):
     os.makedirs(BACKUP_DIR, exist_ok=True)
     backup_id = f"{_utc_stamp()}_{uuid.uuid4().hex[:8]}"
     staging = tempfile.mkdtemp(prefix=".backup-", dir=BACKUP_DIR)
@@ -131,9 +131,10 @@ def create_backup(keep=None):
         _write_manifest(staging, manifest)
         os.replace(staging, final_dir)
 
-        if keep is None:
-            keep = int(os.environ.get("CINEMA_BACKUP_KEEP", "10"))
-        _cleanup_retention(max(1, min(int(keep), 100)))
+        if cleanup:
+            if keep is None:
+                keep = int(os.environ.get("CINEMA_BACKUP_KEEP", "10"))
+            _cleanup_retention(max(1, min(int(keep), 100)))
         return manifest
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
@@ -238,7 +239,7 @@ def restore_backup(backup_id):
     backup_dir = _backup_path(backup_id)
 
     with runtime_db.database_maintenance():
-        emergency = create_backup(keep=None)
+        emergency = create_backup(keep=None, cleanup=False)
         emergency_dir = _backup_path(emergency["backup_id"])
         try:
             _apply_backup_dir(backup_dir)
