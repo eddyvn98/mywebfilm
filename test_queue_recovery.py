@@ -1,9 +1,18 @@
 import json
 
 import queue_worker
+import runtime_db
 
 
-def test_media_queue_marks_inflight_jobs_interrupted_on_restart(tmp_path, monkeypatch):
+def use_temp_db(tmp_path, monkeypatch):
+    db = tmp_path / "cinema_state.db"
+    monkeypatch.setattr(runtime_db, "DB_PATH", str(db))
+    monkeypatch.setattr(runtime_db, "_schema_path", None)
+    return db
+
+
+def test_media_queue_migrates_json_and_marks_inflight_interrupted(tmp_path, monkeypatch):
+    use_temp_db(tmp_path, monkeypatch)
     jobs = tmp_path / "media_jobs.json"
     jobs.write_text(json.dumps([
         {"path": "a.mp4", "name": "a.mp4", "type": "highlight", "status": "processing", "output": None, "error": None},
@@ -17,19 +26,21 @@ def test_media_queue_marks_inflight_jobs_interrupted_on_restart(tmp_path, monkey
     assert [item["status"] for item in q.items] == ["failed", "failed", "completed"]
     assert q.items[0]["error"] == "Interrupted by application restart"
     assert q.items[1]["error"] == "Interrupted by application restart"
-
-    persisted = json.loads(jobs.read_text(encoding="utf-8"))
-    assert persisted[0]["status"] == "failed"
-    assert persisted[1]["status"] == "failed"
+    assert runtime_db.load_media_jobs() == q.items
 
 
-def test_clear_completed_persists_empty_job_list(tmp_path, monkeypatch):
+def test_clear_completed_removes_finished_rows_from_sqlite(tmp_path, monkeypatch):
+    use_temp_db(tmp_path, monkeypatch)
     jobs = tmp_path / "media_jobs.json"
     monkeypatch.setattr(queue_worker, "JOBS_FILE", str(jobs))
+
     q = queue_worker.MediaQueue()
-    q.items = [{"path": "done.mp4", "type": "highlight", "status": "completed"}]
+    item = runtime_db.add_media_job("done.mp4", "done.mp4", "highlight")
+    runtime_db.update_media_job(item["id"], status="completed", output="done_highlight.mp4", error="")
+    item.update(status="completed", output="done_highlight.mp4", error="")
+    q.items = [item]
 
     q.clear_completed()
 
     assert q.items == []
-    assert json.loads(jobs.read_text(encoding="utf-8")) == []
+    assert runtime_db.load_media_jobs() == []
