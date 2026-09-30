@@ -4,149 +4,179 @@ import { playNext, playPrev, closeVideoModal } from './player.js';
 
 let gesturesInitialized = false;
 
+function isInteractiveTarget(target) {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest(
+        '#playlist-sidebar, #playlist-overlay, #drag-handle, .plyr__controls, .plyr__menu, ' +
+        'button, input, select, textarea, a, [role="button"], [contenteditable="true"]'
+    ));
+}
+
+function isInsidePlayerSurface(target, modal) {
+    if (!(target instanceof Node)) return false;
+    const player = document.querySelector('#video-modal .plyr');
+    return Boolean(player?.contains(target) || modal.querySelector('.flex-1')?.contains(target));
+}
+
 export function initGestures() {
     if (gesturesInitialized) return;
     gesturesInitialized = true;
 
     const modal = document.getElementById('video-modal');
     const handle = document.getElementById('drag-handle');
-    const container = document.querySelector('#video-modal > div.flex-1');
-    let handleStartY = 0;
+    if (!modal || !handle) return;
 
-    // --- SWIPE TO CLOSE (DRAG HANDLE) ---
+    let handleStartY = 0;
+    let draggingHandle = false;
+
+    // --- SWIPE TO CLOSE (DRAG HANDLE ONLY) ---
     handle.addEventListener('touchstart', (e) => {
+        if (!e.touches[0]) return;
+        draggingHandle = true;
         handleStartY = e.touches[0].clientY;
         modal.style.transition = 'none';
-    }, { passive: false });
+        e.stopPropagation();
+    }, { passive: true });
 
     handle.addEventListener('touchmove', (e) => {
+        if (!draggingHandle || !e.touches[0]) return;
         const delta = e.touches[0].clientY - handleStartY;
         if (delta > 0) modal.style.transform = `translateY(${delta}px)`;
-    }, { passive: false });
+        e.stopPropagation();
+    }, { passive: true });
 
     handle.addEventListener('touchend', (e) => {
+        if (!draggingHandle || !e.changedTouches[0]) return;
+        draggingHandle = false;
         modal.style.transition = 'transform 0.3s ease-in-out';
-        if (e.changedTouches[0].clientY - handleStartY > 150) closeVideoModal();
-        else modal.style.transform = 'translateY(0)';
+
+        const delta = e.changedTouches[0].clientY - handleStartY;
+        if (delta > 150) {
+            closeVideoModal();
+        } else {
+            modal.style.transform = '';
+            modal.style.transition = '';
+        }
+        e.stopPropagation();
     });
 
-    // --- NAVIGATION & SEEKING (GLOBAL Handlers for Fullscreen Support) ---
-    let navStartY = 0, navStartX = 0, isSeeking = false, isMouseDown = false, originalTime = 0;
+    // --- PLAYER GESTURES ---
+    let startY = 0;
+    let startX = 0;
+    let originalTime = 0;
+    let trackingTouch = false;
+    let trackingMouse = false;
+    let isSeeking = false;
     const seekSensitivity = 0.5;
 
-    const startAction = (clientX, clientY, isMouse, target) => {
-        if (modal.classList.contains('hidden')) return;
-        // Only start if clicking on modal or if in fullscreen
-        const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-        if (!isFullscreen && !modal.contains(target)) return;
+    const resetGesture = () => {
+        trackingTouch = false;
+        trackingMouse = false;
+        isSeeking = false;
+    };
 
-        navStartY = clientY; navStartX = clientX; isSeeking = false;
-        if (isMouse) isMouseDown = true;
-        if (state.player) originalTime = state.player.currentTime;
+    const startAction = (clientX, clientY, target, isMouse) => {
+        if (modal.classList.contains('hidden') || draggingHandle) return false;
+        if (isInteractiveTarget(target)) return false;
+
+        const isFullscreen = Boolean(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+        );
+
+        if (!isFullscreen && !isInsidePlayerSurface(target, modal)) return false;
+
+        startX = clientX;
+        startY = clientY;
+        originalTime = state.player?.currentTime || 0;
+        isSeeking = false;
+
+        if (isMouse) trackingMouse = true;
+        else trackingTouch = true;
+        return true;
     };
 
     const moveAction = (clientX, clientY, e) => {
-        if (modal.classList.contains('hidden')) return;
-        if (!isMouseDown && e.type !== 'touchmove') return;
+        if (!trackingTouch && !trackingMouse) return;
 
-        if (isSeeking) {
-            if (e.cancelable) e.preventDefault();
-            const diffX = clientX - navStartX;
-            if (state.player && state.player.duration) {
-                let newTime = originalTime + (diffX * seekSensitivity);
-                state.player.currentTime = Math.max(0, Math.min(newTime, state.player.duration));
-            }
-            return;
-        }
+        const diffX = clientX - startX;
+        const diffY = clientY - startY;
 
-        // Determine if seeking (heavy horizontal movement)
-        if (Math.abs(navStartX - clientX) > Math.abs(navStartY - clientY) && Math.abs(navStartX - clientX) > 20) {
+        if (!isSeeking && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 20) {
             isSeeking = true;
         }
+
+        if (!isSeeking) return;
+
+        if (e.cancelable) e.preventDefault();
+        if (!state.player || !Number.isFinite(state.player.duration)) return;
+
+        const nextTime = originalTime + (diffX * seekSensitivity);
+        state.player.currentTime = Math.max(0, Math.min(nextTime, state.player.duration));
     };
 
     const endAction = (clientX, clientY) => {
-        if (modal.classList.contains('hidden')) {
-            isMouseDown = false;
-            return;
-        }
+        if (!trackingTouch && !trackingMouse) return;
 
-        if (!isMouseDown && !isSeeking && Math.abs(navStartY - clientY) < 10 && Math.abs(navStartX - clientX) < 10) return;
-        isMouseDown = false;
+        const diffX = startX - clientX;
+        const diffY = startY - clientY;
+        const wasSeeking = isSeeking;
+        resetGesture();
 
-        if (isSeeking) {
-            isSeeking = false;
+        if (wasSeeking) {
             state.player?.play().catch(() => { });
             return;
         }
 
-        // NAVIGATION: Support both Vertical and Horizontal
-        const diffX = navStartX - clientX;
-        const diffY = navStartY - clientY;
-
-        // Try Vertical Swipe first
-        if (Math.abs(diffY) > 60 && Math.abs(diffX) < 100) {
+        // Navigation is vertical only. Horizontal movement is reserved for seeking.
+        if (Math.abs(diffY) > 60 && Math.abs(diffY) > Math.abs(diffX)) {
             if (diffY > 0) playNext();
-            else playPrev();
-        }
-        // Then Horizontal Swipe
-        else if (Math.abs(diffX) > 60 && Math.abs(diffY) < 100) {
-            if (diffX > 0) playNext();
             else playPrev();
         }
     };
 
-    // Attach to window to support Fullscreen
     window.addEventListener('mousedown', e => {
-        if (modal.classList.contains('hidden')) return;
-        startAction(e.clientX, e.clientY, true, e.target);
+        startAction(e.clientX, e.clientY, e.target, true);
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (trackingMouse) moveAction(e.clientX, e.clientY, e);
+    });
+
+    window.addEventListener('mouseup', e => {
+        if (trackingMouse) endAction(e.clientX, e.clientY);
     });
 
     window.addEventListener('touchstart', e => {
-        if (modal.classList.contains('hidden')) return;
-        startAction(e.touches[0].clientX, e.touches[0].clientY, false, e.target);
+        if (!e.touches[0]) return;
+        startAction(e.touches[0].clientX, e.touches[0].clientY, e.target, false);
     }, { passive: true });
 
-    window.addEventListener('mousemove', e => { if (isMouseDown) moveAction(e.clientX, e.clientY, e); });
-    window.addEventListener('mouseup', e => { if (isMouseDown) endAction(e.clientX, e.clientY); });
-
     window.addEventListener('touchmove', e => {
-        if (isMouseDown || e.touches.length > 0) {
-            moveAction(e.touches[0].clientX, e.touches[0].clientY, e);
-        }
+        if (!trackingTouch || !e.touches[0]) return;
+        moveAction(e.touches[0].clientX, e.touches[0].clientY, e);
     }, { passive: false });
 
     window.addEventListener('touchend', e => {
-        if (e.changedTouches && e.changedTouches[0]) {
-            endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        }
+        if (!trackingTouch || !e.changedTouches[0]) return;
+        endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     });
 
-    // Wheel (Mouse Scroll) - Global for Fullscreen
+    window.addEventListener('touchcancel', resetGesture);
+
+    // Wheel navigation only over the actual player surface, never over playlist/controls.
     let lastScrollTime = 0;
     window.addEventListener('wheel', e => {
         if (modal.classList.contains('hidden')) return;
-
-        // If not fullscreen, only scroll if mouse is over modal
-        const isFullscreen = document.fullscreenElement !== null;
-        if (!isFullscreen && !modal.contains(e.target)) return;
+        if (isInteractiveTarget(e.target) || !isInsidePlayerSurface(e.target, modal)) return;
 
         const now = Date.now();
-        if (now - lastScrollTime < 1000) return;
+        if (now - lastScrollTime < 1000 || Math.abs(e.deltaY) <= 15) return;
 
-        if (Math.abs(e.deltaY) > 15) {
-            lastScrollTime = now;
-            if (e.deltaY > 0) playNext();
-            else playPrev();
-        }
+        lastScrollTime = now;
+        if (e.deltaY > 0) playNext();
+        else playPrev();
     }, { passive: true });
-
-    // Keyboard
-    window.addEventListener('keydown', e => {
-        if (modal.classList.contains('hidden')) return;
-        if (['ArrowUp', 'ArrowDown'].includes(e.key)) e.preventDefault();
-        if (e.key === 'ArrowUp') playPrev();
-        if (e.key === 'ArrowDown') playNext();
-        if (e.key === 'Escape') closeVideoModal();
-    });
 }
