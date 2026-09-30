@@ -56,6 +56,12 @@ def ensure_schema():
                     updated_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS runtime_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS media_catalog (
                     path_key TEXT PRIMARY KEY,
                     full_path TEXT NOT NULL,
