@@ -61,19 +61,32 @@ def _insert_rows(conn, items):
 
 def migrate_legacy_catalog(path):
     runtime_db.ensure_schema()
-    if not path or not os.path.exists(path):
-        return 0
-
     with runtime_db.db_session() as conn:
         conn.execute("BEGIN IMMEDIATE")
+        marker = conn.execute(
+            "SELECT value FROM runtime_meta WHERE key = 'media_catalog_migrated'"
+        ).fetchone()
+        if marker:
+            return 0
+
         count = conn.execute(
             "SELECT COUNT(*) FROM media_catalog"
         ).fetchone()[0]
-        if count:
-            return 0
+        items = []
+        if not count and path and os.path.exists(path):
+            items = _legacy_items(path)
+            _insert_rows(conn, items)
 
-        items = _legacy_items(path)
-        _insert_rows(conn, items)
+        conn.execute(
+            """
+            INSERT INTO runtime_meta(key, value, updated_at)
+            VALUES ('media_catalog_migrated', '1', ?)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value,
+                updated_at = excluded.updated_at
+            """,
+            (runtime_db.utc_now(),),
+        )
         return len(items)
 
 
