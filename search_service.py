@@ -1,8 +1,6 @@
 import json
 import re
 from llm_service import call_local_llm, parse_llm_json
-import warnings
-warnings.filterwarnings("ignore") # Tắt toàn bộ warning ngay từ đầu
 
 def extract_search_intent(query):
     """
@@ -58,11 +56,7 @@ def search_web(query, max_results=5):
     Sử dụng DuckDuckGo Search để tìm kiếm thông tin tổng quát.
     """
     try:
-        from duckduckgo_search import DDGS
-        import warnings
-        # Tắt mọi Warning phiền phức từ các thư viện con
-        warnings.filterwarnings("ignore")
-
+        from ddgs import DDGS
         # Tối ưu query: Hỗ trợ mã phim có dấu cách (VD: SBMX 054)
         code_match = re.search(r'([a-zA-Z]{2,6}[-_ \s]?\d{2,5})', query)
         if code_match:
