@@ -52,7 +52,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
         const groupHtml = items.map(({ v, globalIndex }) => {
             const isImage = v.type === 'image';
             const isSelected = state.selectedPaths?.includes(v.full_path);
-            const previewAttr = isImage ? '' : `data-preview-url="${getPreviewUrl(v.full_path)}"`;
+            const previewAttr = isImage ? '' : `data-preview-url="${escapeAttr(getPreviewUrl(v.full_path))}"`;
 
             return `
             <div class="movie-card group cursor-pointer relative ${isSelected ? 'selected' : ''} ${v.is_offline ? 'opacity-60 saturate-0' : ''}" 
@@ -223,7 +223,7 @@ export function renderFolders() {
     list.innerHTML = `
         <button onclick="filterByFolder('all')" class="folder-chip ${state.currentFolder === 'all' ? 'active' : ''}">TẤT CẢ</button>
         ${folders.map(f => `
-            <button onclick="filterByFolder('${f}')" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${(f || 'GỐC').toUpperCase()}</button>
+            <button onclick="filterByFolder('${escapeInlineJsSingleQuoted(f)}')" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${escapeHtml((f || 'GỐC').toUpperCase())}</button>
         `).join('')}
     `;
 }
