@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { deleteFile, apiRename } from './api.js';
 import { applyFilters } from './filter_service.js';
+import { escapeAttr } from './security.js';
 
 // Import from sub-services
 import * as selection from './selection_service.js';
@@ -40,7 +41,7 @@ export function handlePreview(el, active) {
     const url = el.getAttribute('data-preview-url');
     if (!url) return;
     const container = el.querySelector('.preview-container');
-    if (active) container.innerHTML = `<video class="preview-video w-full h-full object-cover" muted loop playsinline autoplay><source src="${url}" type="video/mp4"></video>`;
+    if (active) container.innerHTML = `<video class="preview-video w-full h-full object-cover" muted loop playsinline autoplay><source src="${escapeAttr(url)}" type="video/mp4"></video>`;
     else container.innerHTML = '';
 }
 
