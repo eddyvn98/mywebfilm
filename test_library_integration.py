@@ -47,7 +47,12 @@ def test_library_filesystem_flow_survives_restart(tmp_path, monkeypatch):
         assert renamed.status_code == 200
         renamed_path = media_root / "renamed.mp4"
 
-        cfg.increment_views(str(renamed_path))
+        with patch("routes.api_video.os.startfile", create=True):
+            played = client.post(
+                "/api/play",
+                json={"path": str(renamed_path), "type": "image"},
+            )
+        assert played.status_code == 200
 
         with patch("routes.api_fs.sync_artifacts"):
             moved = client.post(
