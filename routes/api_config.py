@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import os
 import config_manager as cfg
 import scanner_service as scanner
-import ffmpeg_service as ff
+from startup_checks import run_startup_checks
 from tag_service import tag_manager
 
 config_bp = Blueprint('api_config', __name__)
@@ -12,10 +12,10 @@ TUNNEL_URL = None
 @config_bp.route('/api/health')
 def health():
     config = cfg.load_config()
+    checks = run_startup_checks(config=config)
     return jsonify({
-        'status': 'ok',
-        'ffmpeg': ff.check_ffmpeg_presence(),
-        'configured_video_dirs': len(config.get('video_dirs', [])),
+        'status': 'ok' if checks['ready'] else 'degraded',
+        'readiness': checks,
         'gemini_configured': bool(config.get('gemini_api_key')),
         'tunnel_configured': bool(TUNNEL_URL),
     })
