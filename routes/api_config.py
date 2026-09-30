@@ -13,7 +13,14 @@ def get_tags():
 
 @config_bp.route('/api/config')
 def get_config():
-    return jsonify(cfg.load_config())
+    config = cfg.load_config()
+    safe_config = {
+        key: value for key, value in config.items()
+        if key not in {"gemini_api_key", "scrapper_cookies"}
+    }
+    safe_config["gemini_configured"] = bool(config.get("gemini_api_key"))
+    safe_config["scrapper_cookies_configured"] = bool(config.get("scrapper_cookies"))
+    return jsonify(safe_config)
 
 @config_bp.route('/api/config/update', methods=['POST'])
 def update_config():
