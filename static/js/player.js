@@ -1,5 +1,6 @@
 // static/js/player.js
 import { state } from './state.js';
+import { escapeHtml, escapeAttr } from './security.js';
 import { getStreamUrl, getThumbnailUrl } from './api.js';
 import { historyService } from './history_service.js';
 import { favoritesService } from './favorites_service.js';
@@ -95,11 +96,11 @@ function renderPlaylist() {
     container.innerHTML = state.currentGridVideos.map((v, i) => `
         <div class="playlist-item rounded-lg" id="plist-item-${i}" onclick="playVideoFromIndex(${i})">
             <div class="relative w-16 aspect-video rounded overflow-hidden bg-slate-800 shrink-0">
-                <img src="${getThumbnailUrl(v.full_path, v.type)}" class="w-full h-full object-cover" loading="lazy">
+                <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy">
                 ${v.ext && (v.ext.toLowerCase() === '.ts' || v.ext.toLowerCase() === '.m2ts') ? '<div class="absolute bottom-0 right-0 px-1 bg-red-600 text-[6px] font-bold text-white">TS</div>' : ''}
             </div>
             <div class="playlist-info overflow-hidden">
-                <div class="playlist-title text-xs font-medium text-slate-300 truncate">${v.name}</div>
+                <div class="playlist-title text-xs font-medium text-slate-300 truncate">${escapeHtml(v.name)}</div>
                 <div class="playlist-meta text-[10px] text-slate-500 flex gap-2">
                     <span>${formatDuration(v.duration)}</span>
                     <span>${formatSize(v.size)}</span>
