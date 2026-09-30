@@ -19,9 +19,11 @@ python webfilm.py
 
 Open `http://localhost:5000`.
 
+Normal execution uses Waitress instead of Flask's development server. Optional runtime settings: `CINEMA_HOST` (default `0.0.0.0`), `CINEMA_PORT` (default `5000`), and `CINEMA_THREADS` (default `8`).
+
 ## Runtime data
 
-Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory.
+Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory. History, favorites, media-job state, and destructive-operation journal entries are stored in `data/cinema_state.db` (SQLite/WAL).
 
 `CINEMA_SECRET_KEY` can be supplied explicitly. If omitted, the app creates a random persistent key in `data/flask_secret.key`.
 
@@ -31,9 +33,9 @@ For HTTPS/tunnel use, set `CINEMA_SECURE_COOKIES=1`.
 
 ### Upgrade note
 
-Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. If Git has already removed the old credential file, register the device/passkey again from localhost.
+Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. Legacy `history_cache.json`, `favorites_cache.json`, and `data/media_jobs.json` are imported into SQLite on first use when no corresponding SQLite state exists. If Git has already removed the old WebAuthn credential file, register the device/passkey again from localhost.
 
-Back up `data/` plus your local `config.json`, `tags.json`, and media-sidecar `.nfo` files before major upgrades.
+Back up `data/` (especially `cinema_state.db` and `credentials.json`) plus your local `config.json`, `tags.json`, and media-sidecar `.nfo` files before major upgrades.
 
 ## Highlight behavior
 
@@ -50,3 +52,14 @@ GitHub Actions runs Python compilation, pytest with coverage, security/data-safe
 ## Production hardening
 
 See `docs/PRODUCTION_HARDENING_PLAN.md`.
+
+
+## Recovery diagnostics
+
+Authenticated users can inspect incomplete or failed destructive filesystem operations at:
+
+`GET /api/diagnostics/operations`
+
+Delete, rename, and move operations are journaled before the filesystem changes. A response with `status: partial` means the filesystem change happened but a later metadata/artifact step needs attention. Keep the returned `operation_id` when troubleshooting.
+
+`GET /api/health` reports FFmpeg/FFprobe availability, writable runtime storage, SQLite readiness, and media-root availability without returning configured filesystem paths or secrets.
