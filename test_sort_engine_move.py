@@ -29,3 +29,20 @@ def test_execute_move_uses_cross_drive_safe_move(monkeypatch, tmp_path):
     assert engine.execute_move(plan) is True
     assert moved == {"source": str(src), "target": str(dst)}
     assert dst.exists()
+
+
+def test_run_does_not_report_failed_move(monkeypatch):
+    engine = SortEngine(dry_run=False)
+    video = {'path': 'D:/source.mp4', 'drive': 'D', 'filename': 'ABC-123.mp4', 'mtime': 0}
+    plan = {
+        'src': video['path'], 'studio_dst': 'G:/Sorted/ABC-123.mp4',
+        'filename': video['filename'], 'pending': False, 'code': 'ABC-123', 'actresses': []
+    }
+    monkeypatch.setattr(engine, 'scan', lambda: [video])
+    monkeypatch.setattr(engine, 'plan_move', lambda *args, **kwargs: plan)
+    monkeypatch.setattr(engine, 'execute_move', lambda _plan: False)
+    monkeypatch.setattr('sort_engine.save_cache', lambda _cache: None)
+
+    state = engine.run()
+
+    assert state['moved'] == []
