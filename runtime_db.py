@@ -2,7 +2,6 @@ import json
 import os
 import sqlite3
 import threading
-import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
@@ -14,7 +13,7 @@ _schema_lock = threading.Lock()
 _schema_path = None
 
 
-def _utc_now():
+def utc_now():
     return datetime.now(timezone.utc).isoformat()
 
 
@@ -29,7 +28,7 @@ def _connect():
 
 
 @contextmanager
-def _db():
+def db_session():
     conn = _connect()
     try:
         yield conn
@@ -48,7 +47,7 @@ def ensure_schema():
     with _schema_lock:
         if _schema_path == DB_PATH and os.path.exists(DB_PATH):
             return
-        with _db() as conn:
+        with db_session() as conn:
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS list_state (
@@ -104,7 +103,7 @@ def _read_legacy_list(path):
 
 def load_list_state(name, legacy_json_path=None):
     ensure_schema()
-    with _db() as conn:
+    with db_session() as conn:
         row = conn.execute(
             "SELECT payload FROM list_state WHERE name = ?",
             (name,),
@@ -117,7 +116,7 @@ def load_list_state(name, legacy_json_path=None):
         if legacy is None:
             return []
 
-        now = _utc_now()
+        now = utc_now()
         conn.execute(
             "INSERT INTO list_state(name, payload, updated_at) VALUES (?, ?, ?)",
             (name, json.dumps(legacy, ensure_ascii=False), now),
@@ -154,7 +153,7 @@ def mutate_list_state(name, mutator, legacy_json_path=None):
                 payload = excluded.payload,
                 updated_at = excluded.updated_at
             """,
-            (name, json.dumps(updated, ensure_ascii=False), _utc_now()),
+            (name, json.dumps(updated, ensure_ascii=False), utc_now()),
         )
         conn.commit()
         return updated
@@ -168,8 +167,8 @@ def mutate_list_state(name, mutator, legacy_json_path=None):
 def save_list_state(name, items):
     ensure_schema()
     payload = json.dumps(list(items or []), ensure_ascii=False)
-    now = _utc_now()
-    with _db() as conn:
+    now = utc_now()
+    with db_session() as conn:
         conn.execute(
             """
             INSERT INTO list_state(name, payload, updated_at)
@@ -179,133 +178,4 @@ def save_list_state(name, items):
                 updated_at = excluded.updated_at
             """,
             (name, payload, now),
-        )
-
-
-def migrate_media_jobs_json(path):
-    ensure_schema()
-    if not path or not os.path.exists(path):
-        return 0
-    with _db() as conn:
-        count = conn.execute("SELECT COUNT(*) FROM media_jobs").fetchone()[0]
-        if count:
-            return 0
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                items = json.load(f)
-        except Exception:
-            return 0
-        if not isinstance(items, list):
-            return 0
-
-        now = _utc_now()
-        inserted = 0
-        for item in items:
-            if not isinstance(item, dict) or not item.get("path"):
-                continue
-            status = item.get("status", "failed")
-            if status in {"pending", "processing"}:
-                status = "failed"
-                item["error"] = "Interrupted by application restart"
-            conn.execute(
-                """
-                INSERT INTO media_jobs(path, name, task_type, status, output, error, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    item["path"],
-                    item.get("name") or os.path.basename(item["path"]),
-                    item.get("type") or "highlight",
-                    status,
-                    item.get("output"),
-                    item.get("error"),
-                    now,
-                    now,
-                ),
-            )
-            inserted += 1
-        return inserted
-
-
-def load_media_jobs():
-    ensure_schema()
-    now = _utc_now()
-    with _db() as conn:
-        conn.execute(
-            """
-            UPDATE media_jobs
-            SET status = 'failed',
-                error = 'Interrupted by application restart',
-                updated_at = ?
-            WHERE status IN ('pending', 'processing')
-            """,
-            (now,),
-        )
-        rows = conn.execute(
-            """
-            SELECT id, path, name, task_type, status, output, error
-            FROM media_jobs
-            ORDER BY id
-            """
-        ).fetchall()
-    return [
-        {
-            "id": row["id"],
-            "path": row["path"],
-            "name": row["name"],
-            "type": row["task_type"],
-            "status": row["status"],
-            "output": row["output"],
-            "error": row["error"],
-        }
-        for row in rows
-    ]
-
-
-def add_media_job(path, name, task_type):
-    ensure_schema()
-    now = _utc_now()
-    try:
-        with _db() as conn:
-            cur = conn.execute(
-                """
-                INSERT INTO media_jobs(path, name, task_type, status, created_at, updated_at)
-                VALUES (?, ?, ?, 'pending', ?, ?)
-                """,
-                (path, name, task_type, now, now),
-            )
-            return {
-                "id": cur.lastrowid,
-                "path": path,
-                "name": name,
-                "type": task_type,
-                "status": "pending",
-                "output": None,
-                "error": None,
-            }
-    except sqlite3.IntegrityError:
-        return None
-
-
-def update_media_job(job_id, *, status=None, output=None, error=None):
-    ensure_schema()
-    assignments = ["updated_at = ?"]
-    values = [_utc_now()]
-    for column, value in (("status", status), ("output", output), ("error", error)):
-        if value is not None:
-            assignments.append(f"{column} = ?")
-            values.append(value)
-    values.append(job_id)
-    with _db() as conn:
-        conn.execute(
-            f"UPDATE media_jobs SET {', '.join(assignments)} WHERE id = ?",
-            values,
-        )
-
-
-def clear_finished_media_jobs():
-    ensure_schema()
-    with _db() as conn:
-        conn.execute(
-            "DELETE FROM media_jobs WHERE status NOT IN ('pending', 'processing')"
         )
