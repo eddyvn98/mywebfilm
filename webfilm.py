@@ -9,9 +9,11 @@ from functools import wraps
 import os
 import secrets
 import threading
+from logging_config import configure_logging
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
+configure_logging(DATA_DIR)
 
 def _load_secret_key():
     env_secret = os.environ.get("CINEMA_SECRET_KEY")
