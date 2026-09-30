@@ -3,6 +3,7 @@ import os
 import config_manager as cfg
 import ffmpeg_service as ff
 from queue_worker import media_queue
+from utils import check_path_safe
 
 process_bp = Blueprint('api_process', __name__)
 
@@ -11,6 +12,8 @@ def add_to_queue():
     paths = request.json.get('paths', [])
     task_type = request.json.get('type', 'highlight')
     if not paths: return "No paths provided", 400
+    if any(not check_path_safe(p) for p in paths):
+        return jsonify({"status": "err", "msg": "Access denied"}), 403
     valid_paths = [p for p in paths if os.path.exists(p)]
     if not valid_paths: return "No valid files found", 404
     media_queue.add_items(valid_paths, task_type=task_type)
@@ -28,7 +31,11 @@ def clear_completed():
 @process_bp.route('/api/process/highlight', methods=['POST'])
 def process_manual_highlight():
     p = request.json.get('path')
-    if not p or not os.path.exists(p): 
+    if not p:
+        return jsonify({"status":"err", "msg": "File not found"}), 404
+    if not check_path_safe(p):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
+    if not os.path.exists(p):
         return jsonify({"status":"err", "msg": "File not found"}), 404
     video_dir = os.path.dirname(p)
     processed_dir = os.path.join(video_dir, 'Processed')
