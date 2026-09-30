@@ -29,9 +29,29 @@ jobs:
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}/cinema-data
           CINEMA_SECRET_KEY: ci-only-test-secret
-        run: python -m pytest -q --cov=config_manager --cov=storage_utils --cov=runtime_db --cov=media_catalog --cov=media_job_store --cov=operation_journal --cov=fs_catalog --cov=sort_engine --cov=ffmpeg_service --cov=routes --cov=security_service --cov-report=term-missing --cov-fail-under=20
+        run: python -m pytest -q --cov=config_manager --cov=storage_utils --cov=runtime_db --cov=media_catalog --cov=media_job_store --cov=operation_journal --cov=fs_catalog --cov=backup_service --cov=ffmpeg_conversion --cov=sort_engine --cov=ffmpeg_service --cov=routes --cov=security_service --cov-report=term-missing --cov-fail-under=25
       - name: Check JavaScript syntax
         run: |
           for file in static/js/*.js; do
             node --check "$file"
           done
+
+
+  windows-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Compile Python
+        run: python -m compileall -q .
+      - name: Run Windows E2E and recovery tests
+        env:
+          CINEMA_DATA_DIR: ${{ runner.temp }}\cinema-data
+          CINEMA_SECRET_KEY: ci-only-test-secret
+        run: python -m pytest -q test_windows_e2e.py test_backup_restore.py test_failure_injection.py test_media_safety.py test_library_integration.py
