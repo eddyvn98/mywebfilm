@@ -10,11 +10,14 @@ logger = logging.getLogger(__name__)
 
 @fs_bp.route('/api/delete_file', methods=['POST'])
 def delete_file():
-    p = request.json.get('path')
-    if not p or not os.path.exists(p):
+    data = request.get_json(silent=True) or {}
+    p = data.get('path')
+    if not p:
         return jsonify({"status":"err", "msg": "File not found"}), 404
     if not check_path_safe(p):
         return jsonify({"status":"err", "msg": "Access denied"}), 403
+    if not os.path.exists(p):
+        return jsonify({"status":"err", "msg": "File not found"}), 404
     try:
         os.remove(p)
         logger.info("file_delete path=%r", p)
@@ -31,11 +34,14 @@ def delete_file():
 
 @fs_bp.route('/api/explorer', methods=['POST'])
 def open_explorer():
-    p = request.json.get('path')
-    if not p or not os.path.exists(p):
+    data = request.get_json(silent=True) or {}
+    p = data.get('path')
+    if not p:
         return jsonify({"status":"err", "msg": "File not found"}), 404
     if not check_path_safe(p):
         return jsonify({"status":"err", "msg": "Access denied"}), 403
+    if not os.path.exists(p):
+        return jsonify({"status":"err", "msg": "File not found"}), 404
     try:
         subprocess.run(['explorer', '/select,', os.path.normpath(p)])
         return jsonify({"status":"ok"})
