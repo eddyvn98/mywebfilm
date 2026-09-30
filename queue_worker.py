@@ -3,6 +3,9 @@ import queue
 import os
 import ffmpeg_service as ff
 import config_manager as cfg
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MediaQueue:
     def __init__(self):
@@ -47,6 +50,7 @@ class MediaQueue:
 
             with self.status_lock:
                 item['status'] = "processing"
+                logger.info("media_job_started type=%s path=%r", item['type'], item['path'])
 
             try:
                 res_path = None
@@ -69,6 +73,7 @@ class MediaQueue:
                     if res_path:
                         item['status'] = "completed"
                         item['output'] = res_path
+                        logger.info("media_job_completed type=%s source=%r output=%r", item['type'], item['path'], res_path)
                         
                         # Sync Cache
                         try:
@@ -109,10 +114,12 @@ class MediaQueue:
                     else:
                         item['status'] = "failed"
                         item['error'] = "FFmpeg task failed"
+                        logger.error("media_job_failed type=%s path=%r reason=ffmpeg", item['type'], item['path'])
             except Exception as e:
                 with self.status_lock:
                     item['status'] = "failed"
                     item['error'] = str(e)
+                    logger.exception("media_job_failed type=%s path=%r", item['type'], item['path'])
             finally:
                 self.queue.task_done()
 
