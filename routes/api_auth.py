@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify, session
 from security_service import security_manager
-import uuid
+import hmac
+import os
+import time
+from urllib.parse import urlsplit
 
 auth_bp = Blueprint('api_auth', __name__)
 
@@ -8,34 +11,51 @@ auth_bp = Blueprint('api_auth', __name__)
 ADMIN_USER_ID = "admin-123"
 ADMIN_USERNAME = "CinemaAdmin"
 CURRENT_OTT = None # One-Time Token for QR Login
+CURRENT_OTT_EXPIRES_AT = 0.0
+DEFAULT_OTT_TTL_SECONDS = 300
+
+def _is_local_request():
+    return request.remote_addr in ['127.0.0.1', '::1', 'localhost']
 
 def is_token_valid(token):
-    return CURRENT_OTT is not None and token == CURRENT_OTT
+    if not token or not CURRENT_OTT or time.time() >= CURRENT_OTT_EXPIRES_AT:
+        return False
+    return hmac.compare_digest(str(token), str(CURRENT_OTT))
+
+def _consume_token():
+    global CURRENT_OTT, CURRENT_OTT_EXPIRES_AT
+    CURRENT_OTT = None
+    CURRENT_OTT_EXPIRES_AT = 0.0
 
 def get_origin():
-    # 1. Determine protocol: Default to http, but trust X-Forwarded-Proto from Cloudflare
-    proto = request.headers.get('X-Forwarded-Proto', 'http')
-    
-    # 2. Determine host: Default to request.host, but trust X-Forwarded-Host
-    host = request.headers.get('X-Forwarded-Host', request.host)
-    
-    # 3. Security: All .trycloudflare.com domains REQUIRE https for WebAuthn
-    if 'trycloudflare.com' in host:
+    # Trust proxy headers only when the request comes from a local reverse proxy.
+    if _is_local_request():
+        proto = request.headers.get('X-Forwarded-Proto', request.scheme)
+        host = request.headers.get('X-Forwarded-Host', request.host)
+    else:
+        proto = request.scheme
+        host = request.host
+
+    proto = 'https' if proto == 'https' else 'http'
+    host = host.split(',')[0].strip()
+    parsed = urlsplit(f"{proto}://{host}")
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid request host")
+
+    if hostname == '127.0.0.1':
+        hostname = 'localhost'
+        port = parsed.port
+        host = f"localhost:{port}" if port else "localhost"
+
+    if hostname.endswith('.trycloudflare.com'):
         proto = 'https'
-        
-    # 4. WebAuthn Requirement: RP ID must be a valid domain string.
-    # IP addresses like 127.0.0.1 are NOT allowed. Standardize to localhost.
-    if host.startswith('127.0.0.1'):
-        host = host.replace('127.0.0.1', 'localhost')
-        
-    origin = f"{proto}://{host}".rstrip('/')
-    # Only print if origin changes or periodically to avoid spam
-    print(f"[DEBUG] WebAuthn Origin: {origin}")
-    return origin
+
+    return f"{proto}://{host}".rstrip('/')
 
 @auth_bp.route('/api/auth/tunnel/sync', methods=['POST'])
 def sync_tunnel():
-    global CURRENT_OTT
+    global CURRENT_OTT, CURRENT_OTT_EXPIRES_AT
     from .api_config import TUNNEL_URL
     import routes.api_config as cfg_module
     
@@ -44,17 +64,26 @@ def sync_tunnel():
     if not is_local:
         return jsonify({"status": "err", "msg": "Sync allowed only from localhost"}), 403
         
-    data = request.json
-    cfg_module.TUNNEL_URL = data.get('url')
-    CURRENT_OTT = data.get('token')
-    return jsonify({"status": "ok"})
+    data = request.get_json(silent=True) or {}
+    token = str(data.get('token') or '')
+    tunnel_url = str(data.get('url') or '')
+    if len(token) < 32 or not tunnel_url.startswith("https://"):
+        return jsonify({"status": "err", "msg": "Invalid tunnel credentials"}), 400
+
+    ttl = int(os.environ.get("CINEMA_OTT_TTL_SECONDS", DEFAULT_OTT_TTL_SECONDS))
+    ttl = max(60, min(ttl, 1800))
+    cfg_module.TUNNEL_URL = tunnel_url
+    CURRENT_OTT = token
+    CURRENT_OTT_EXPIRES_AT = time.time() + ttl
+    return jsonify({"status": "ok", "expires_in": ttl})
 
 @auth_bp.route('/api/auth/tunnel/info')
 def get_tunnel_info():
     from .api_config import TUNNEL_URL
     return jsonify({
         "url": TUNNEL_URL,
-        "token": CURRENT_OTT
+        "token_active": bool(CURRENT_OTT and time.time() < CURRENT_OTT_EXPIRES_AT),
+        "expires_at": CURRENT_OTT_EXPIRES_AT if CURRENT_OTT else None
     })
 @auth_bp.route('/api/auth/register/options')
 def register_options():
@@ -115,9 +144,16 @@ def login_options():
 def login_verify():
     try:
         origin = get_origin()
+        token_req = request.args.get('token')
+        is_local = _is_local_request()
+        if not is_local and not is_token_valid(token_req):
+            return jsonify({"status": "err", "msg": "Mã xác thực (Token) không hợp lệ hoặc đã hết hạn"}), 403
+
         # Use get_json() to ensure we pass a dict
         security_manager.verify_authentication(ADMIN_USER_ID, origin, request.get_json())
         session['authenticated'] = True
+        if not is_local:
+            _consume_token()
         return jsonify({"status": "ok"})
     except Exception as e:
         import traceback
