@@ -22,3 +22,10 @@ previews/
 .vscode/
 .idea/
 .DS_Store
+.gitnexus
+sorted_drive_map.json
+actress_cache.json
+rebalance_status.json
+*.log
+.playwright-mcp/
+.env*

@@ -1,91 +1,116 @@
-<header class="p-3 md:p-4 flex flex-col gap-3 border-b border-slate-800/50 bg-slate-900/90 backdrop-blur z-30">
-    <div class="flex items-center gap-3 w-full">
-        <button onclick="toggleSidebar()"
-            class="md:hidden w-10 h-10 -ml-1 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-800 rounded-full">
-            <i class="fa-solid fa-bars text-xl"></i>
-        </button>
-        <div class="relative flex-1 group/search">
-            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-            <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm kiếm phim..."
-                class="w-full bg-slate-800/50 rounded-lg py-2.5 pl-9 pr-12 text-base md:text-sm outline-none border border-slate-700/50 focus:border-blue-500/50 transition text-white placeholder-slate-500">
-            <button onclick="runAiSearch()" title="AI Semantic Search"
-                class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
-                <i class="fa-solid fa-robot text-xs"></i>
+<header class="p-3 flex flex-col gap-3 border-b border-white/5 bg-slate-900/30 backdrop-blur-xl z-30 select-none">
+    <div class="flex items-center justify-between gap-3 w-full">
+        <div class="flex items-center gap-2 flex-1">
+            <button onclick="toggleSidebar()"
+                class="md:hidden w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white active:bg-white/5 rounded-md">
+                <i class="fa-solid fa-bars text-lg"></i>
             </button>
+            
+            <!-- macOS Finder Style Search Bar -->
+            <div class="relative w-full max-w-[260px] group/search">
+                <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
+                <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm kiếm phim..."
+                    class="w-full bg-white/5 rounded-md py-1.5 pl-7 pr-8 text-xs outline-none border border-white/10 focus:border-blue-500/50 transition text-white placeholder-slate-500 focus:bg-white/10">
+                <button onclick="runAiSearch()" title="AI Semantic Search"
+                    class="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-[9px]"></i>
+                </button>
+            </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="refreshLibrary()" id="btn-refresh"
-                class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
-                <i class="fa-solid fa-rotate text-sm"></i>
+
+        <!-- macOS Toolbar Utilities (Grayscale Squircles) -->
+        <div class="flex items-center gap-1 bg-white/5 p-0.5 rounded-md border border-white/5">
+            <div class="relative">
+                <button onclick="refreshLibrary()" id="btn-refresh" title="Làm mới / Sắp xếp video mới"
+                    class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-rotate text-xs"></i>
+                </button>
+                <span id="sort-incoming-badge" style="display:none;position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;border-radius:999px;align-items:center;justify-content:center;line-height:1;z-index:10">0</span>
+            </div>
+            <button onclick="toggleBlur()" id="btn-blur" title="Ẩn/Hiện ảnh bìa"
+                class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-eye-slash text-xs"></i>
             </button>
-            <button onclick="toggleBlur()" id="btn-blur"
-                class="w-10 h-10 md:w-9 md:h-9 rounded-lg bg-slate-800/50 flex items-center justify-center hover:bg-slate-700 transition text-slate-400">
-                <i class="fa-solid fa-eye-slash text-sm"></i>
-            </button>
-            <button onclick="clearAllCache()"
-                class="hidden md:flex w-9 h-9 rounded-lg bg-red-900/10 items-center justify-center hover:bg-red-500 transition text-red-500 hover:text-white">
+            <button onclick="clearAllCache()" title="Xóa cache"
+                class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-red-400 hover:text-red-300">
                 <i class="fa-solid fa-broom text-xs"></i>
             </button>
         </div>
     </div>
-    <!-- Bottom Row: Filters -->
-    <div class="flex items-center gap-3 pb-1 md:pb-0 relative">
-        <!-- Separate scrollable wrapper for buttons that might wrap/overflow -->
-        <div class="flex items-center gap-3 overflow-x-auto no-scrollbar flex-nowrap md:flex-wrap flex-1">
-            <button onclick="toggleManageMode()" id="btn-manage-mode"
-                class="h-10 px-4 shrink-0 rounded-xl bg-slate-800/50 border border-white/5 text-[10px] font-black tracking-widest text-slate-400 hover:text-white transition uppercase">
-                Quản lý
-            </button>
-            <button onclick="selectAll()" id="btn-select-all"
-                class="hidden h-10 px-4 shrink-0 rounded-xl bg-slate-800/50 border border-white/5 text-[10px] font-black tracking-widest text-slate-400 hover:text-white transition uppercase">
-                Chọn tất cả
-            </button>
-            <button onclick="openDiscovery()"
-                class="h-10 px-4 shrink-0 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                <i class="fa-solid fa-compass"></i>
-                Khám phá
-            </button>
-            <div class="w-px h-4 bg-white/10 mx-1 shrink-0"></div>
 
-            <!-- Type Dropdown -->
-            <div class="custom-dropdown shrink-0" id="dropdown-type">
-                <div class="dropdown-trigger" onclick="openActionSheet('sheet-type'); event.stopPropagation()">
-                    <span id="type-label">TẤT CẢ</span>
-                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
+    <!-- Bottom Row: Filters (macOS Segmented Controls) -->
+    <div class="flex items-center gap-3 relative">
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap md:flex-wrap flex-1">
+            
+            <!-- View Segmented Control (Quản lý / Khám phá) -->
+            <div class="flex items-center bg-white/5 p-0.5 rounded-md border border-white/5 shrink-0">
+                <button onclick="toggleManageMode()" id="btn-manage-mode"
+                    class="h-6 px-3 rounded-md text-[10px] font-bold text-slate-400 hover:text-slate-200 transition uppercase">
+                    Quản lý
+                </button>
+                <button onclick="selectAll()" id="btn-select-all"
+                    class="hidden h-6 px-3 rounded-md text-[10px] font-bold text-slate-400 hover:text-slate-200 transition uppercase">
+                    Chọn tất cả
+                </button>
+                <button onclick="openDiscovery()" id="btn-discovery"
+                    class="h-6 px-3 rounded-md text-[10px] font-bold text-slate-400 hover:text-slate-200 transition uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-compass text-[9px]"></i>
+                    Khám phá
+                </button>
+            </div>
+
+            <div class="w-px h-3 bg-white/10 mx-0.5 shrink-0"></div>
+
+            <!-- Filters Group -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <!-- Type Dropdown -->
+                <div class="custom-dropdown" id="dropdown-type">
+                    <div class="dropdown-trigger" onclick="openActionSheet('sheet-type'); event.stopPropagation()">
+                        <span id="type-label">Tất cả</span>
+                        <i class="fa-solid fa-chevron-down opacity-50 text-[7px]"></i>
+                    </div>
+                </div>
+
+                <!-- Category Dropdown -->
+                <div class="custom-dropdown" id="dropdown-category">
+                    <div class="dropdown-trigger" onclick="openActionSheet('sheet-category'); event.stopPropagation()">
+                        <span id="category-label">Thể loại</span>
+                        <i class="fa-solid fa-chevron-down opacity-50 text-[7px]"></i>
+                    </div>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="custom-dropdown" id="dropdown-sort">
+                    <div class="dropdown-trigger !text-blue-400/90"
+                        onclick="openActionSheet('sheet-sort'); event.stopPropagation()">
+                        <span id="sort-label">Mới cập nhật</span>
+                        <i class="fa-solid fa-chevron-down opacity-50 text-[7px]"></i>
+                    </div>
                 </div>
             </div>
 
-            <!-- Category Dropdown -->
-            <div class="custom-dropdown shrink-0" id="dropdown-category">
-                <div class="dropdown-trigger" onclick="openActionSheet('sheet-category'); event.stopPropagation()">
-                    <span id="category-label">THỂ LOẠI</span>
-                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
-                </div>
-            </div>
+            <div class="w-px h-3 bg-white/10 mx-0.5 shrink-0"></div>
 
-            <!-- Sort Dropdown -->
-            <div class="custom-dropdown shrink-0" id="dropdown-sort">
-                <div class="dropdown-trigger !text-blue-400"
-                    onclick="openActionSheet('sheet-sort'); event.stopPropagation()">
-                    <span id="sort-label">MỚI CẬP NHẬT</span>
-                    <i class="fa-solid fa-chevron-down opacity-50 text-[8px]"></i>
-                </div>
+            <!-- AI & Remote Tools (Muted macOS Style) -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="openAiLab()" id="btn-ai-lab"
+                    class="h-7 px-3 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white transition text-[10px] font-bold uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-robot text-[9px]"></i>
+                    AI Lab
+                </button>
+                <button onclick="openRemoteModal()" id="btn-remote"
+                    class="h-7 px-3 rounded-md bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white transition text-[10px] font-bold uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud-arrow-up text-[9px]"></i>
+                    Remote
+                </button>
             </div>
-
-            <button onclick="openAiLab()" id="btn-ai-lab"
-                class="h-10 px-4 shrink-0 rounded-xl bg-purple-600/20 border border-purple-500/20 text-purple-400 hover:bg-purple-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                <i class="fa-solid fa-robot"></i>
-                AI Lab
-            </button>
-            <button onclick="openRemoteModal()" id="btn-remote"
-                class="h-10 px-4 shrink-0 rounded-xl bg-orange-600/20 border border-orange-500/20 text-orange-400 hover:bg-orange-600 hover:text-white transition text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                Remote
-            </button>
         </div>
+        
+        <!-- Stats Badge -->
         <div id="stats"
-            class="hidden md:block bg-blue-600/20 text-blue-500 font-black px-2.5 py-1 rounded-full text-[9px] tracking-widest whitespace-nowrap shrink-0">
-            0 FILE </div>
+            class="hidden md:block bg-white/5 border border-white/10 text-slate-400 font-bold px-2 py-0.5 rounded-md text-[9px] tracking-wider whitespace-nowrap shrink-0">
+            0 file
+        </div>
     </div>
 </header>
 

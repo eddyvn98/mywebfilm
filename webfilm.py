@@ -10,10 +10,10 @@ import os
 import threading
 
 # Pre-calculate common paths to avoid url_for overhead on every request
+# Removed '/api/auth/tunnel/sync' from ALLOWED_PATH_BASES to prevent remote sync bypass
 ALLOWED_PATH_BASES = [
     '/api/auth/login/options',
     '/api/auth/login/verify',
-    '/api/auth/tunnel/sync',
     '/static/',
     '/login'
 ]
@@ -45,31 +45,48 @@ def login_required(f):
 def check_auth():
     full_path = request.path
     
-    # 1. Media Fast-Pass (Stream, Thumbnail, Preview)
-    if full_path.startswith(('/api/stream', '/api/thumbnail', '/api/preview', '/static/')):
-        return
-    
-    # 2. Global Allowed Paths (Login, Sync, etc.)
-    if any(full_path.startswith(p) for p in ALLOWED_PATH_BASES):
-        return
-    
     is_api = full_path.startswith('/api/')
     is_localhost = (request.remote_addr in ['127.0.0.1', '::1', 'localhost'])
     is_authenticated = session.get('authenticated')
     
-    # 3. Authenticated or Localhost access to Sensitive/General paths
+    # 1. Localhost always has bypass for sync and initial setup
+    if full_path == '/api/auth/tunnel/sync':
+        if is_localhost:
+            return
+        else:
+            return jsonify({"status": "err", "msg": "Sync allowed only from localhost"}), 403
+
+    # 2. Token-based access validation (checked before media fast-pass)
+    token_req = request.args.get('token')
+    has_valid_token = token_req and is_token_valid(token_req)
+    
+    # 3. Media routes: Allow if authenticated OR token is valid
+    if full_path.startswith(('/api/stream', '/api/thumbnail', '/api/preview')):
+        if is_authenticated or has_valid_token:
+            return
+        else:
+            return jsonify({"status": "err", "msg": "Unauthorized media access"}), 401
+            
+    # 4. Global static path bypass
+    if full_path.startswith('/static/'):
+        return
+    
+    # 5. Global Allowed Paths (Login, etc.)
+    if any(full_path.startswith(p) for p in ALLOWED_PATH_BASES):
+        return
+    
+    # 6. Authenticated or Localhost access to Sensitive/General paths
     if is_localhost or is_authenticated:
         if any(full_path.startswith(p) for p in SENSITIVE_PATH_BASES):
             return
         if is_authenticated:
             return
             
-    # 4. Token-based access
-    token_req = request.args.get('token')
-    if token_req and is_token_valid(token_req):
+    # 7. Fallback Token-based access for general endpoints
+    if has_valid_token:
         return
 
-    # 5. Final Protection
+    # 8. Final Protection
     if not is_authenticated:
         if is_api:
             return jsonify({"status": "err", "msg": "Unauthorized"}), 401

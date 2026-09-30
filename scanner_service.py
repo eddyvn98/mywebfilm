@@ -14,6 +14,7 @@ from nfo_service import parse_nfo
 
 VIDEO_EXTS = ('.mp4', '.ts', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm')
 IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.gif')
+SORTED_ROOTS = [r"G:\Sorted_Videos", r"H:\Sorted_Videos", r"E:\Sorted_Videos"]
 
 
 def safe_print(message):
@@ -27,6 +28,35 @@ def safe_print(message):
         except Exception:
             # Last resort: avoid crashing scan due to logging.
             pass
+
+
+def _normalize_roots(video_dirs):
+    roots = []
+    seen = set()
+
+    for root in list(video_dirs) + SORTED_ROOTS:
+        if not root:
+            continue
+        norm = os.path.normpath(root)
+        key = norm.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        roots.append(norm)
+
+    # Keep parent roots first so child roots under the same tree are redundant.
+    roots.sort(key=len)
+    normalized = []
+    for root in roots:
+        root_low = root.lower()
+        if any(
+            root_low == parent.lower().rstrip("\\/")
+            or root_low.startswith(parent.lower().rstrip("\\/") + "\\")
+            for parent in normalized
+        ):
+            continue
+        normalized.append(root)
+    return normalized
 
 def scan_videos(video_dirs):
     """Quét các thư mục để tìm file video và hình ảnh"""
@@ -67,7 +97,7 @@ def scan_videos(video_dirs):
     # Determine reachable vs unreachable roots
     reachable_roots = []
     unreachable_roots = []
-    for bdir in video_dirs:
+    for bdir in _normalize_roots(video_dirs):
         # We consider a root reachable if its folder exists
         if os.path.exists(bdir):
             reachable_roots.append(bdir)

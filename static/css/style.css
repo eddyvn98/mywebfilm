@@ -721,3 +721,156 @@ body {
 .toggle-checkbox:checked+.toggle-label {
     background-color: #3b82f6;
 }
+
+/* --- UI/UX Upgrades (macOS Sonoma Native App Aesthetics) --- */
+
+/* macOS Dynamic Wallpaper Glow Bleed */
+body {
+    background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, transparent 45%),
+                radial-gradient(circle at 90% 10%, #0369a1 0%, transparent 45%),
+                radial-gradient(circle at 50% 100%, #0f172a 0%, #020617 100%) !important;
+}
+
+/* macOS Mica Sidebar (acrylic translucent) */
+#sidebar {
+    background-color: rgba(13, 17, 28, 0.45) !important;
+    backdrop-filter: blur(40px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+}
+
+/* macOS Window Toolbar Header */
+header {
+    background-color: rgba(15, 20, 30, 0.45) !important;
+    backdrop-filter: blur(35px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Segmented Control Buttons (macOS Style) */
+.dropdown-trigger {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 6px !important; /* Premium Squircle rounded */
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #cbd5e1 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+    transition: background 0.15s, border-color 0.15s !important;
+}
+
+.dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: white !important;
+}
+
+/* Override old JS active classes to match macOS Finder styling */
+.bg-blue-600\/10, [onclick="filterByFolder('all')"].bg-blue-600\/10 {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    font-weight: 600 !important;
+}
+
+.bg-red-600\/10, #btn-show-favorites.bg-red-600\/10 {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    font-weight: 600 !important;
+}
+
+/* macOS Squircle Buttons & Inputs */
+button, input, select {
+    border-radius: 6px !important;
+}
+
+/* Movie Card Apple TV-style Squircle & Glow */
+.movie-card {
+    border-radius: 12px !important;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease !important;
+}
+
+.poster-container {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+.movie-card:hover .poster-container {
+    transform: scale(1.03) !important;
+    box-shadow: 0 20px 30px -10px rgba(59, 130, 246, 0.25), 0 0 20px 2px rgba(59, 130, 246, 0.12) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.movie-title {
+    transition: color 0.2s ease;
+}
+
+.movie-card:hover .movie-title {
+    color: #3b82f6 !important;
+}
+
+/* macOS Sheet Modal (Slide down from top) */
+.modal-content, .ai-lab-content, .discovery-content {
+    border-radius: 14px !important;
+    background: rgba(20, 26, 38, 0.85) !important;
+    backdrop-filter: blur(35px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Shimmer Animation & Skeletons */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 1.5s infinite ease-in-out;
+}
+
+.skeleton-card {
+    pointer-events: none;
+}
+
+/* Sidebar lists - native style */
+.folder-chip {
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    text-transform: none !important; /* Avoid aggressive uppercase */
+    color: #94a3b8 !important;
+}
+
+.folder-chip:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #f1f5f9 !important;
+}
+
+.folder-chip.active {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    box-shadow: none !important;
+}
+
+/* Increase touch targets for mobile accessibility */
+@media (max-width: 768px) {
+    .w-10.h-10 {
+        width: 44px !important;
+        height: 44px !important;
+    }
+    .w-9.h-9 {
+        width: 44px !important;
+        height: 44px !important;
+    }
+    .plyr__control {
+        width: 44px !important;
+        height: 44px !important;
+    }
+}

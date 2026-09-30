@@ -91,3 +91,36 @@ def sync_artifacts(old_path, new_path):
     except Exception as e:
         print(f"Sync Artifact Error ({old_path} -> {new_path}): {e}")
         return False
+
+def check_path_safe(path):
+    """
+    Xác minh đường dẫn truyền vào có an toàn và nằm trong thư mục whitelist (video_dirs) hay không.
+    Sử dụng os.path.commonpath để giải quyết triệt để các vấn đề liên quan đến ký tự ổ đĩa gốc Windows.
+    """
+    if not path:
+        return False
+    try:
+        import config_manager as cfg
+        config = cfg.load_config()
+        # Lấy danh sách thư mục whitelist
+        whitelist_dirs = config.get('video_dirs', [])
+        
+        # Thêm thư mục static và templates của dự án vào whitelist cho phép (để lưu avatar/actor_image)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        whitelist_dirs.append(os.path.join(project_root, 'static'))
+        whitelist_dirs.append(os.path.join(project_root, 'templates'))
+        
+        abs_path = os.path.abspath(path)
+        for w_dir in whitelist_dirs:
+            abs_w = os.path.abspath(w_dir)
+            try:
+                # commonpath trả về tiền tố thư mục chung chính xác nhất
+                common = os.path.commonpath([abs_path, abs_w])
+                if os.path.normcase(common) == os.path.normcase(abs_w):
+                    return True
+            except ValueError:
+                continue
+        return False
+    except Exception:
+        return False
+

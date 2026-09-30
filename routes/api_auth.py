@@ -39,6 +39,11 @@ def sync_tunnel():
     from .api_config import TUNNEL_URL
     import routes.api_config as cfg_module
     
+    # Restrict synchronization to localhost to prevent token hijack
+    is_local = request.remote_addr in ['127.0.0.1', '::1', 'localhost']
+    if not is_local:
+        return jsonify({"status": "err", "msg": "Sync allowed only from localhost"}), 403
+        
     data = request.json
     cfg_module.TUNNEL_URL = data.get('url')
     CURRENT_OTT = data.get('token')

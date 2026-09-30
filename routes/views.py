@@ -4,7 +4,7 @@ views_bp = Blueprint('views', __name__)
 
 @views_bp.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('cinema_home.html')
 
 @views_bp.route('/watch')
 def watch_video():

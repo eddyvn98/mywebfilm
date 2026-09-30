@@ -1,178 +1,404 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Cinema Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/css/style.css?v=v3_player" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <link href="/static/css/clauwbot.css" rel="stylesheet">
-    <style>
-        /* Modal Animation specific */
-        .modal-open {
-            transform: translateY(0) !important;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 Video Library Manager</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222f;
+    --border: #2e2e40;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
 
-        .plyr {
-            width: 100%;
-            height: 100%;
-            max-height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #1a0533 0%, #0f0f13 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(90deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .badge {
+    background: var(--accent); color: white; border-radius: 999px;
+    padding: 4px 14px; font-size: 0.8rem; font-weight: 600;
+    display: none;
+  }
+  .badge.show { display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
 
-        .plyr__video-wrapper {
-            background: black;
-            height: 100% !important;
-            max-height: 100%;
-        }
+  /* Main layout */
+  main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; }
 
-        .plyr video {
-            object-fit: contain !important;
-        }
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card-title {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin-bottom: 16px; font-weight: 600;
+  }
 
-        /* Ensure controls are always visible and within safe areas */
-        .plyr--full-ui.plyr--video .plyr__controls {
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 15px) !important;
-            background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8)) !important;
-        }
+  /* Status row */
+  .status-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  .stat { background: var(--surface2); border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent2); line-height: 1; }
+  .stat-label { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
 
-        @media (max-width: 768px) {
-            .plyr__video-wrapper {
-                height: auto !important;
-            }
+  /* Sort panel */
+  .sort-panel { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .btn {
+    padding: 12px 28px; border-radius: 8px; border: none;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #9333ea); color: white; }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(124,58,237,.4); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent2); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-sm { padding: 6px 14px; font-size: 0.82rem; border-radius: 6px; }
+  .btn-warn { background: var(--warn); color: #000; }
+  .btn-warn:hover { opacity: .85; }
 
-            .plyr--fullscreen-fallback {
-                height: 100% !important;
-            }
-        }
+  /* Progress */
+  .progress-wrap { margin-top: 18px; }
+  .progress-track { background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .3s ease; }
+  .progress-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.82rem; color: var(--muted); }
+  .current-file { font-size: 0.8rem; color: var(--muted); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* Custom Plyr Controls */
-        .plyr--full-ui input[type=range] {
-            color: #3b82f6;
-        }
+  /* Status chip */
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+  .chip-idle    { background: #1e293b; color: var(--muted); }
+  .chip-running { background: #1e1b4b; color: #818cf8; }
+  .chip-done    { background: #052e16; color: var(--success); }
+  .chip-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: none; }
+  .chip-running .chip-dot { animation: blink .8s infinite alternate; }
+  @keyframes blink { to { opacity: .2; } }
 
-        .plyr__control--overlaid {
-            background: rgba(59, 130, 246, 0.8);
-        }
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(46,46,64,.5); }
+  tr:hover td { background: var(--surface2); }
+  .code-tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-family: monospace; font-size: 0.82rem; }
 
-        .plyr--video .plyr__control.plyr__tab-focus,
-        .plyr--video .plyr__control:hover,
-        .plyr--video .plyr__control[aria-expanded=true] {
-            background: #3b82f6;
-        }
+  /* Library grid */
+  .actress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .actress-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; text-align: center;
+    transition: border-color .2s, transform .2s;
+  }
+  .actress-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+  .actress-name { font-weight: 600; font-size: 0.9rem; word-break: break-all; }
+  .actress-count { color: var(--accent2); font-size: 0.8rem; margin-top: 6px; }
 
-        .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
-            background: #3b82f6;
-        }
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 0.9rem; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all .15s; }
+  .tab.active { color: var(--text); border-color: var(--border); background: var(--surface2); }
 
-        .plyr__captions {
-            font-weight: 500;
-            font-size: 14px;
-        }
+  .section { display: none; }
+  .section.active { display: block; }
 
-        .plyr__progress__container {
-            order: -1;
-        }
+  /* Empty state */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
 
-        input[type=range]::-webkit-slider-thumb {
-            height: 20px !important;
-            width: 20px !important;
-            margin-top: -8px !important;
-        }
-    </style>
+  /* Alert */
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 16px; }
+  .alert-info { background: #1e1b4b; border: 1px solid #3730a3; color: #a5b4fc; }
+</style>
 </head>
+<body>
 
-<body class="flex h-screen overflow-hidden bg-black">
-    <!-- Mobile Overlay -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()"
-        class="fixed inset-0 bg-black/80 z-40 hidden transition-opacity duration-300 backdrop-blur-sm md:hidden"></div>
+<header>
+  <h1>🎬 Video Library Manager</h1>
+  <span class="badge" id="badgeCount">0 video mới</span>
+</header>
 
-    <!-- Components -->
-    {% include 'components/sidebar.html' %}
+<main>
 
-    <main class="flex-1 flex flex-col bg-slate-950 w-full relative">
-        {% include 'components/header.html' %}
-
-
-        <!-- Video Grid Container -->
-        <div class="flex-1 flex overflow-hidden relative">
-            <div id="video-grid"
-                class="flex-1 overflow-y-auto p-4 md:p-6 content-start pb-24 md:pb-6 no-scrollbar h-full">
-                <div class="col-span-full py-40 text-center text-slate-600 font-bold italic text-sm">Đang tải dữ liệu...
-                </div>
-            </div>
-            <!-- Timeline Sidebar -->
-            <div id="grid-timeline"
-                class="hidden md:flex w-16 border-l border-white/5 flex-col items-center py-6 gap-8 overflow-y-auto no-scrollbar bg-slate-900/20 backdrop-blur-sm z-20">
-                <!-- Populated via JS -->
-            </div>
-        </div>
-    </main>
-
-    <!-- Modals & Overlays -->
-    {% include 'components/video_modal.html' %}
-
-    <!-- Image Modal -->
-    <div id="image-modal"
-        class="fixed inset-0 z-[150] bg-black/95 flex flex-col hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute top-4 right-4 z-[160] flex gap-3">
-            <button onclick="closeImageModal()"
-                class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
-        <div class="absolute top-4 left-6 z-[160]">
-            <h2 id="image-modal-title" class="text-white font-bold text-sm drop-shadow-lg opacity-80"></h2>
-        </div>
-        <div class="flex-1 flex items-center justify-center overflow-hidden p-4 select-none touch-none"
-            id="image-container">
-            <img id="modal-image-img" src=""
-                class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-300">
-        </div>
-        <!-- Navigation Area -->
-        <div class="absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
-            onclick="playPrev()">
-            <div
-                class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                <i class="fa-solid fa-chevron-left"></i></div>
-        </div>
-        <div class="absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
-            onclick="playNext()">
-            <div
-                class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                <i class="fa-solid fa-chevron-right"></i></div>
-        </div>
+  <!-- Stats row -->
+  <div class="card">
+    <p class="card-title">📊 Tổng quan kho video</p>
+    <div class="status-row">
+      <div class="stat">
+        <div class="stat-val" id="statIncoming">—</div>
+        <div class="stat-label">Video chờ sắp xếp</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statActress">—</div>
+        <div class="stat-label">Diễn viên</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statPending">—</div>
+        <div class="stat-label">Chờ nhận diện</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statLastRun">—</div>
+        <div class="stat-label">Lần sort cuối</div>
+      </div>
     </div>
-    {% include 'components/pin_overlay.html' %}
-    {% include 'components/ai_lab.html' %}
-    {% include 'components/discovery_overlay.html' %}
-    {% include 'components/remote_access_modal.html' %}
-    {% include 'components/mobile_menus.html' %}
+  </div>
 
-    <!-- Floating UI -->
-    {% include 'components/selection_toolbar.html' %}
+  <!-- Sort panel -->
+  <div class="card">
+    <p class="card-title">⚡ Sắp xếp tự động</p>
+    <div class="alert alert-info">
+      💡 Quăng video vào <strong>E:\Incoming\</strong>, <strong>G:\Incoming\</strong> hoặc <strong>H:\Incoming\</strong> — rồi bấm <strong>Bắt đầu Sort</strong>.
+      Video sẽ được tự động phân loại theo hãng và diễn viên.
+    </div>
+    <div class="sort-panel">
+      <button class="btn btn-primary" id="btnSort" onclick="startSort(false)">▶ Bắt đầu Sort</button>
+      <button class="btn btn-secondary" id="btnDryRun" onclick="startSort(true)">👁 Xem trước (Dry Run)</button>
+      <span id="statusChip" class="chip chip-idle"><span class="chip-dot"></span><span id="statusText">Chờ</span></span>
+    </div>
+    <div class="progress-wrap" id="progressWrap" style="display:none">
+      <div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+      <div class="progress-meta">
+        <span id="progressCount">0 / 0</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="current-file" id="currentFile"></div>
+    </div>
+  </div>
 
-    <!-- Floating UI -->
-    {% include 'components/selection_toolbar.html' %}
-    {% include 'components/back_to_top.html' %}
-    {% include 'components/rename_modal.html' %}
+  <!-- Tabs: Results / Pending / Library -->
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('moved')">✅ Đã sort</div>
+      <div class="tab" onclick="switchTab('pending')">⏳ Pending Review</div>
+      <div class="tab" onclick="switchTab('library')">🎭 Thư viện diễn viên</div>
+      <div class="tab" onclick="switchTab('errors')">❌ Lỗi</div>
+    </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-    <script type="module" src="/static/js/player.js?v=v3_player"></script>
-    <script type="module" src="/static/js/render_service.js?v=v3_player"></script>
-    <script type="module" src="/static/js/filter_service.js?v=v3_player"></script>
-    <script type="module" src="/static/js/manage_service.js?v=v3_player"></script>
-    <script type="module" src="/static/js/discovery_service.js?v=v3_player"></script>
-    <script type="module" src="/static/js/ai_search_service.js?v=v3_player"></script>
-    <script type="module" src="/static/js/grid.js?v=v3_player"></script>
-    <script type="module" src="/static/js/main.js?v=v3_player"></script>
-    <script src="/static/js/clauwbot.js"></script>
+    <div id="tab-moved" class="section active">
+      <div id="movedContent"><div class="empty"><div class="empty-icon">📁</div>Chưa có video nào được sort</div></div>
+    </div>
+
+    <div id="tab-pending" class="section">
+      <p style="color:var(--muted);font-size:.87rem;margin-bottom:16px;">
+        Video JAV không tìm thấy diễn viên trong cơ sở dữ liệu. Bấm <strong>Retry</strong> để thử lại.
+      </p>
+      <div id="pendingContent"><div class="empty"><div class="empty-icon">🔍</div>Không có video chờ nhận diện</div></div>
+    </div>
+
+    <div id="tab-library" class="section">
+      <div id="libraryContent"><div class="empty"><div class="empty-icon">🎭</div>
+        <p>Chưa có thư viện diễn viên</p><br>
+        <button class="btn btn-secondary btn-sm" onclick="loadLibrary()">Tải thư viện</button>
+      </div></div>
+    </div>
+
+    <div id="tab-errors" class="section">
+      <div id="errorsContent"><div class="empty"><div class="empty-icon">✅</div>Không có lỗi</div></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let polling = null;
+let lastSortTime = localStorage.getItem('lastSortTime') || null;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  if (lastSortTime) document.getElementById('statLastRun').textContent = lastSortTime;
+  await refreshIncomingCount();
+  await refreshStatus();
+}
+
+// ── Incoming count ────────────────────────────────────────────────────────────
+async function refreshIncomingCount() {
+  try {
+    const r = await fetch('/api/incoming_count');
+    const d = await r.json();
+    const n = d.count || 0;
+    document.getElementById('statIncoming').textContent = n;
+    const badge = document.getElementById('badgeCount');
+    if (n > 0) {
+      badge.textContent = `${n} video mới`;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  } catch(e) { document.getElementById('statIncoming').textContent = '?'; }
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+async function startSort(dryRun) {
+  try {
+    const r = await fetch('/api/sort', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({dry_run: dryRun})
+    });
+    const d = await r.json();
+    if (d.error) { alert(d.error); return; }
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('btnSort').disabled = true;
+    document.getElementById('btnDryRun').disabled = true;
+    if (!polling) polling = setInterval(pollStatus, 1000);
+  } catch(e) { alert('Lỗi kết nối: ' + e); }
+}
+
+// ── Poll status ───────────────────────────────────────────────────────────────
+async function refreshStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    updateUI(d);
+    if (d.status === 'sorting' || d.status === 'scanning' || d.status === 'starting') {
+      if (!polling) polling = setInterval(pollStatus, 1000);
+    }
+  } catch(e) {}
+}
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    updateUI(d);
+    if (d.status === 'done' || d.status === 'idle') {
+      clearInterval(polling); polling = null;
+      document.getElementById('btnSort').disabled = false;
+      document.getElementById('btnDryRun').disabled = false;
+      if (d.status === 'done') {
+        const t = new Date().toLocaleTimeString('vi-VN');
+        lastSortTime = t;
+        localStorage.setItem('lastSortTime', t);
+        document.getElementById('statLastRun').textContent = t;
+        await refreshIncomingCount();
+      }
+    }
+  } catch(e) {}
+}
+
+function updateUI(d) {
+  // Status chip
+  const chip = document.getElementById('statusChip');
+  const txt  = document.getElementById('statusText');
+  const map = {idle:'Chờ',starting:'Khởi động...',scanning:'Đang quét...',sorting:'Đang sort...',done:'Hoàn thành'};
+  txt.textContent = map[d.status] || d.status;
+  chip.className = 'chip ' + (d.status==='done' ? 'chip-done' : d.status==='idle' ? 'chip-idle' : 'chip-running');
+
+  // Progress
+  const pct = d.pct || 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = `${d.done || 0} / ${d.total || 0}`;
+  document.getElementById('progressPct').textContent = pct + '%';
+  if (d.current_file) document.getElementById('currentFile').textContent = '📄 ' + d.current_file;
+
+  // Stats
+  document.getElementById('statPending').textContent = (d.pending_review || []).length;
+
+  // Moved table
+  renderMoved(d.moved || []);
+  renderPending(d.pending_review || []);
+  renderErrors(d.errors || []);
+}
+
+// ── Render moved ──────────────────────────────────────────────────────────────
+function renderMoved(moved) {
+  const el = document.getElementById('movedContent');
+  if (!moved.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📁</div>Chưa có video nào được sort</div>'; return; }
+  let rows = moved.slice(-50).reverse().map(m => {
+    const actresses = (m.actresses||[]).join(', ') || '—';
+    return `<tr><td title="${m.dst}">${m.filename}</td><td>${actresses}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<table><thead><tr><th>File</th><th>Diễn viên</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:10px">Hiển thị ${Math.min(50,moved.length)} / ${moved.length} video gần nhất</p>`;
+}
+
+// ── Render pending ────────────────────────────────────────────────────────────
+function renderPending(pending) {
+  const el = document.getElementById('pendingContent');
+  if (!pending.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>Không có video chờ nhận diện</div>'; return; }
+  let rows = pending.map(p => {
+    const code = p.code || '';
+    return `<tr>
+      <td>${p.filename}</td>
+      <td>${code ? `<span class="code-tag">${code}</span>` : '—'}</td>
+      <td>${code ? `<button class="btn btn-warn btn-sm" onclick="retry('${code}',this)">↩ Retry</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<table><thead><tr><th>File</th><th>Mã phim</th><th>Thao tác</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ── Render errors ─────────────────────────────────────────────────────────────
+function renderErrors(errors) {
+  const el = document.getElementById('errorsContent');
+  if (!errors.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Không có lỗi</div>'; return; }
+  el.innerHTML = '<ul style="list-style:none;display:flex;flex-direction:column;gap:8px">' +
+    errors.map(e => `<li style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:10px 14px;border-radius:8px;font-size:.85rem;font-family:monospace">${e}</li>`).join('') + '</ul>';
+}
+
+// ── Retry lookup ──────────────────────────────────────────────────────────────
+async function retry(code, btn) {
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch('/api/retry', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const d = await r.json();
+    if (d.actresses && d.actresses.length) {
+      btn.textContent = '✅ ' + d.actresses.join(', ');
+      btn.className = 'btn btn-sm';
+      btn.style.background = 'var(--success)'; btn.style.color='#fff';
+    } else {
+      btn.textContent = '❌ Vẫn không tìm thấy';
+      btn.disabled = false;
+    }
+  } catch(e) { btn.textContent = 'Lỗi'; btn.disabled = false; }
+}
+
+// ── Library ───────────────────────────────────────────────────────────────────
+async function loadLibrary() {
+  const el = document.getElementById('libraryContent');
+  el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Đang tải...</div>';
+  try {
+    const r = await fetch('/api/library');
+    const data = await r.json();
+    document.getElementById('statActress').textContent = data.length;
+    if (!data.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🎭</div>Chưa có diễn viên nào được sort</div>';
+      return;
+    }
+    el.innerHTML = '<div class="actress-grid">' +
+      data.map(a => `<div class="actress-card"><div class="actress-name">${a.actress}</div><div class="actress-count">🎬 ${a.count} phim</div></div>`).join('') +
+      '</div>';
+  } catch(e) { el.innerHTML = '<div class="empty">Lỗi tải thư viện</div>'; }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'library') loadLibrary();
+}
+
+// Start
+init();
+setInterval(refreshIncomingCount, 30000);
+</script>
 </body>
-
 </html>

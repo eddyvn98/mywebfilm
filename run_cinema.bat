@@ -1,7 +1,7 @@
 @echo off
 title Cinema Home Server
 echo Starting Cinema Backend...
-cd /d "d:\trading\CinemaWeb"
+cd /d "%~dp0"
 start /b python webfilm.py
 echo Waiting for server to initialize...
 timeout /t 3 /nobreak > nul

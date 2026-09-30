@@ -7,7 +7,7 @@ import threading
 import config_manager as cfg
 import ffmpeg_service as ff
 from constants import MPC_PATH
-from utils import get_metadata_paths, ensure_metadata_dirs
+from utils import get_metadata_paths, ensure_metadata_dirs, check_path_safe
 
 video_bp = Blueprint('api_video', __name__)
 
@@ -26,6 +26,7 @@ def get_thumb():
     p = request.args.get('path')
     t = request.args.get('type', 'video')
     if not p: return "Path missing", 400
+    if not check_path_safe(p): return "Access denied", 403
     
     paths = get_metadata_paths(p)
     ensure_metadata_dirs(paths)
@@ -43,6 +44,7 @@ def get_thumb():
 def get_prev():
     p = request.args.get('path')
     if not p: return "Path missing", 400
+    if not check_path_safe(p): return "Access denied", 403
     
     paths = get_metadata_paths(p)
     ensure_metadata_dirs(paths)
@@ -63,6 +65,8 @@ def play():
     
     if not p or not os.path.exists(p):
         return jsonify({"status":"err", "msg": "File not found"}), 404
+    if not check_path_safe(p):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
 
     # Increase view count in background to avoid blocking initial stream request
     def update_views(p_val):
@@ -90,6 +94,7 @@ def play():
 def stream_video():
     path = request.args.get('path')
     if not path or not os.path.exists(path): return "File not found", 404
+    if not check_path_safe(path): return "Access denied", 403
     
     # Determine Mime Type safely
     ext = os.path.splitext(path)[1].lower()

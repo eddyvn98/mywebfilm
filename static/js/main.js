@@ -32,6 +32,18 @@ function syncUIFromState() {
     if (sortLabel) sortLabel.innerText = sortMap[state.sortOrder] || 'MỚI CẬP NHẬT';
 }
 
+function uniquePaths(paths) {
+    const seen = new Set();
+    const cleaned = [];
+    for (const path of paths || []) {
+        const normalized = (path || '').trim();
+        if (!normalized || seen.has(normalized)) continue;
+        seen.add(normalized);
+        cleaned.push(normalized);
+    }
+    return cleaned;
+}
+
 async function loadLibrary() {
     try {
         console.log("loadLibrary() started...");
@@ -66,7 +78,8 @@ async function init() {
             return;
         }
 
-        sourceList.innerHTML = (config.video_dirs || []).map(path => `
+        const videoDirs = uniquePaths(config.video_dirs);
+        sourceList.innerHTML = videoDirs.map(path => `
             <div class="group flex items-center justify-between gap-2 px-4 py-2 hover:bg-slate-800/40 rounded-lg transition-colors">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i class="fa-solid fa-folder text-blue-400"></i></div>
@@ -90,6 +103,10 @@ async function init() {
         if (sessionStorage.getItem('cinema_authenticated') === 'true') {
             console.log("Already authenticated, loading library...");
             loadLibrary();
+            // Auto-sort Incoming folders silently on page open
+            autoSortIncoming({ silent: true });
+            // Check incoming count for badge
+            fetch('/api/sort/incoming_count').then(r => r.json()).then(d => _updateSortBadge(d.count || 0)).catch(() => {});
         }
     } catch (e) {
         console.error("Init failed with error:", e);
@@ -145,12 +162,17 @@ window.refreshLibrary = async () => {
     if (!btn) return;
     btn.classList.add('animate-spin');
     try {
-        // Use a small timeout for scan so it doesn't hang the UI too long
-        // If it fails with "Failed to fetch", it's likely the server is restarting
+        // Step 1: Auto-sort Incoming folders before scanning library
+        await autoSortIncoming({ silent: false });
+
+        // Step 2: Rebalance already sorted movies across G -> H -> E
+        await autoRebalanceLibrary({ silent: false });
+
+        // Step 3: Normal library scan (picks up newly moved files)
         await fetch('/api/scan', { method: 'POST' }).catch(e => console.warn("Scan fetch failed (server restarting?):", e));
         state.allVideos = await fetchVideos().catch(e => {
             console.error("Fetch videos failed:", e);
-            return state.allVideos; // Fallback to current state
+            return state.allVideos;
         });
         renderFolders();
         applyFilters();
@@ -161,6 +183,121 @@ window.refreshLibrary = async () => {
         setTimeout(() => btn.classList.remove('animate-spin'), 500);
     }
 };
+
+/**
+ * autoSortIncoming - Triggers the sort engine for Incoming folders.
+ * If silent=true, only runs when Incoming has videos (no UI toast).
+ * If silent=false, shows a small toast overlay with progress.
+ */
+window.autoSortIncoming = async ({ silent = true } = {}) => {
+    return runSortJob({ mode: 'incoming', silent });
+};
+
+window.autoRebalanceLibrary = async ({ silent = true } = {}) => {
+    return runSortJob({ mode: 'rebalance', silent });
+};
+
+async function runSortJob({ mode, silent }) {
+    try {
+        let count = 0;
+        if (mode === 'incoming') {
+            // Check if there are videos to sort
+            const countRes = await fetch('/api/sort/incoming_count').then(r => r.json());
+            count = countRes.count || 0;
+
+            if (count === 0) {
+                // Update badge to 0
+                _updateSortBadge(0);
+                return;
+            }
+        }
+
+        // Show toast if not silent
+        const toast = silent ? null : _showSortToast(mode === 'incoming' ? count : 0);
+        if (toast && mode === 'rebalance') {
+            const title = toast.querySelector('div');
+            if (title) title.textContent = 'Đang cân bằng lại kho phim...';
+        }
+
+        // Trigger job (non-dry-run)
+        const sortRes = await fetch('/api/sort/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dry_run: false, mode })
+        }).then(r => r.json());
+
+        if (!sortRes.ok && sortRes.msg !== 'Sort already running') return;
+
+        // Poll until done
+        await _pollSortUntilDone(toast);
+
+        // Refresh badge only for Incoming sort
+        if (mode === 'incoming') {
+            const afterCount = await fetch('/api/sort/incoming_count').then(r => r.json());
+            _updateSortBadge(afterCount.count || 0);
+        }
+    } catch (e) {
+        console.warn('[AutoSort] Error:', e);
+    }
+}
+
+async function _pollSortUntilDone(toast) {
+    while (true) {
+        await new Promise(r => setTimeout(r, 800));
+        const s = await fetch('/api/sort/status').then(r => r.json()).catch(() => ({ status: 'done' }));
+        if (toast) _updateSortToast(toast, s);
+        if (s.status === 'done' || s.status === 'idle') break;
+    }
+}
+
+function _updateSortBadge(count) {
+    let badge = document.getElementById('sort-incoming-badge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function _showSortToast(count) {
+    let toast = document.getElementById('sort-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'sort-toast';
+        toast.style.cssText = [
+            'position:fixed', 'bottom:80px', 'left:50%', 'transform:translateX(-50%)',
+            'background:rgba(15,15,25,0.95)', 'border:1px solid #7c3aed',
+            'border-radius:12px', 'padding:14px 20px', 'z-index:9999',
+            'font-size:0.88rem', 'color:#e2e8f0', 'min-width:280px', 'text-align:center',
+            'box-shadow:0 4px 30px rgba(124,58,237,0.3)'
+        ].join(';');
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<div style="color:#a855f7;font-weight:700;margin-bottom:6px">📦 Đang sắp xếp ${count} video mới...</div>
+        <div id="sort-toast-bar" style="background:#1e1e2e;border-radius:999px;height:6px;overflow:hidden">
+          <div id="sort-toast-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#a855f7);transition:width .3s"></div>
+        </div>
+        <div id="sort-toast-info" style="color:#64748b;font-size:0.78rem;margin-top:6px">Đang khởi động...</div>`;
+    toast.style.display = 'block';
+    return toast;
+}
+
+function _updateSortToast(toast, s) {
+    if (!toast) return;
+    const fill = document.getElementById('sort-toast-fill');
+    const info = document.getElementById('sort-toast-info');
+    if (fill) fill.style.width = (s.pct || 0) + '%';
+    if (info) {
+        if (s.status === 'done') {
+            info.textContent = `✅ Xong! Đã sort ${(s.moved||[]).length} phim.`;
+            setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+        } else {
+            info.textContent = s.current_file ? `📄 ${s.current_file}` : (s.status === 'scanning' ? 'Đang quét...' : `${s.done||0}/${s.total||0}`);
+        }
+    }
+}
 
 window.clearAllCache = async () => {
     if (confirm('Xóa toàn bộ cache (thumbnail/preview)? Thao tác này sẽ làm máy chậm lúc đầu.')) {

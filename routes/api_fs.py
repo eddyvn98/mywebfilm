@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import os
 import subprocess
 import config_manager as cfg
-from utils import get_metadata_paths
+from utils import get_metadata_paths, check_path_safe
 
 fs_bp = Blueprint('api_fs', __name__)
 
@@ -11,6 +11,8 @@ def delete_file():
     p = request.json.get('path')
     if not p or not os.path.exists(p):
         return jsonify({"status":"err", "msg": "File not found"}), 404
+    if not check_path_safe(p):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
     try:
         os.remove(p)
         paths = get_metadata_paths(p)
@@ -39,9 +41,20 @@ def fs_rename():
     old_p = request.json.get('old_path')
     new_name = request.json.get('new_name')
     if not old_p or not new_name: return "Params missing", 400
+    
+    # Strip any directory separators from new_name to prevent path traversal
+    new_name = os.path.basename(new_name)
+    if not new_name or new_name in ['.', '..']:
+        return jsonify({"status":"err", "msg": "Invalid name"}), 400
+        
+    if not check_path_safe(old_p):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
+        
     try:
         parent = os.path.dirname(old_p)
         new_p = os.path.join(parent, new_name)
+        if not check_path_safe(new_p):
+            return jsonify({"status":"err", "msg": "Access denied"}), 403
         if os.path.exists(new_p): return jsonify({"status":"err", "msg": "Tên này đã tồn tại"}), 400
         
         # 1. OS Rename
@@ -99,8 +112,18 @@ def fs_mkdir():
     parent = request.json.get('parent_path')
     name = request.json.get('name')
     if not parent or not name: return "Params missing", 400
+    
+    name = os.path.basename(name)
+    if not name or name in ['.', '..']:
+        return jsonify({"status":"err", "msg": "Invalid folder name"}), 400
+        
+    if not check_path_safe(parent):
+        return jsonify({"status":"err", "msg": "Access denied"}), 403
+        
     try:
         new_p = os.path.join(parent, name)
+        if not check_path_safe(new_p):
+            return jsonify({"status":"err", "msg": "Access denied"}), 403
         if not os.path.exists(new_p): os.makedirs(new_p)
         return jsonify({"status":"ok", "path": new_p})
     except Exception as e:
@@ -111,6 +134,10 @@ def fs_move():
     paths = request.json.get('paths', [])
     target_dir = request.json.get('target_dir')
     if not paths or not target_dir: return "Params missing", 400
+    
+    if not check_path_safe(target_dir):
+        return jsonify({"status":"err", "msg": "Access denied to target directory"}), 403
+        
     try:
         results = []
         cache_updated = False
@@ -119,6 +146,9 @@ def fs_move():
 
         for p in paths:
             if not os.path.exists(p): continue
+            if not check_path_safe(p):
+                results.append({"path": p, "status": "access_denied"})
+                continue
             name = os.path.basename(p)
             new_p = os.path.join(target_dir, name)
             if os.path.exists(new_p):

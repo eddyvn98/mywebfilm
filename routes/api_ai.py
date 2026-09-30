@@ -21,15 +21,25 @@ def get_unverified():
 @ai_bp.route('/api/admin/upload_actor_image', methods=['POST'])
 def upload_actor_image():
     """Lưu ảnh diễn viên vào thư mục static/img/actors"""
+    from werkzeug.utils import secure_filename
     name = request.form.get('name')
     file = request.files.get('image')
     if not name or not file: return "Missing data", 400
     
-    safe_name = name.strip().replace(' ', '_')
+    # Sanitize name to prevent path traversal in filename
+    safe_name = secure_filename(name.strip().replace(' ', '_'))
+    if not safe_name: return "Invalid name", 400
+    
     save_dir = os.path.join('static', 'img', 'actors')
     if not os.path.exists(save_dir): os.makedirs(save_dir)
     
     save_path = os.path.join(save_dir, f"{safe_name}.jpg")
+    
+    # Path safety verification
+    from utils import check_path_safe
+    if not check_path_safe(save_path):
+        return jsonify({"status": "error", "msg": "Access denied"}), 403
+        
     file.save(save_path)
     
     return jsonify({"status": "ok", "url": f"/static/img/actors/{safe_name}.jpg"})

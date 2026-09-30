@@ -1,73 +1,87 @@
 <aside id="sidebar"
-    class="fixed inset-y-0 left-0 w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50 shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative">
-    <div class="p-6 text-center">
-        <h1 class="text-2xl font-black text-blue-500 italic tracking-tighter uppercase cursor-default">My Cinema
-        </h1>
+    class="fixed inset-y-0 left-0 w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50 shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative select-none">
+    
+    <!-- macOS Window Controls (Traffic Lights) & App Title -->
+    <div class="px-5 pt-6 pb-4 flex items-center justify-between gap-3 border-b border-white/5 bg-black/10 select-none">
+        <div class="flex items-center gap-2 group/lights">
+            <span class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] relative flex items-center justify-center cursor-default">
+                <span class="text-[7px] text-red-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[2px]">×</span>
+            </span>
+            <span class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dfa023] relative flex items-center justify-center cursor-default">
+                <span class="text-[7px] text-yellow-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[1px]">−</span>
+            </span>
+            <span class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] relative flex items-center justify-center cursor-default">
+                <span class="text-[5px] text-green-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[3px] left-[3px]">+</span>
+            </span>
+        </div>
+        <h1 class="text-[10px] font-bold text-slate-400 tracking-widest uppercase cursor-default select-none pr-1">My Cinema</h1>
     </div>
 
-    <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 space-y-2">
-        <button onclick="filterByFolder('all')"
-            class="w-full flex items-center justify-between px-4 py-3 bg-blue-600/10 text-blue-400 rounded-xl font-bold text-sm transition hover:bg-blue-600/20 active:scale-95 group mb-2">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
+        <!-- Sidebar Navigation Buttons (macOS Style) -->
+        <button onclick="filterByFolder('all')" id="btn-show-all"
+            class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1">
             <span class="flex items-center gap-3">
-                <i class="fa-solid fa-house text-xs"></i>
-                TẤT CẢ FILE
+                <i class="fa-solid fa-house text-[10px] opacity-75"></i>
+                Tất cả tệp
             </span>
-            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+            <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
         <button onclick="filterByFavorites()" id="btn-show-favorites"
-            class="w-full flex items-center justify-between px-4 py-3 bg-red-600/10 text-red-400 rounded-xl font-bold text-sm transition hover:bg-red-600/20 active:scale-95 group mb-2">
+            class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1">
             <span class="flex items-center gap-3">
-                <i class="fa-solid fa-heart text-xs"></i>
-                YÊU THÍCH
+                <i class="fa-solid fa-heart text-[10px] text-red-400/90"></i>
+                Yêu thích
             </span>
-            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+            <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
         <button onclick="filterByHistory()" id="btn-show-history"
-            class="w-full flex items-center justify-between px-4 py-3 bg-blue-600/10 text-blue-400 rounded-xl font-bold text-sm transition hover:bg-blue-600/20 active:scale-95 group">
+            class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1.5">
             <span class="flex items-center gap-3">
-                <i class="fa-solid fa-clock-rotate-left text-xs"></i>
-                LỊCH SỬ
+                <i class="fa-solid fa-clock-rotate-left text-[10px] opacity-75"></i>
+                Lịch sử
             </span>
-            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition"></i>
+            <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
-        <div class="h-px bg-slate-800 my-2"></div>
+        <div class="h-px bg-white/5 my-3 mx-1"></div>
 
         <!-- Collapsible Sources -->
-        <div>
+        <div class="mb-3">
             <button onclick="toggleSection('sources-wrapper', this)"
-                class="w-full flex items-center justify-between px-2 py-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-slate-300 transition group">
-                Nguồn File
+                class="w-full flex items-center justify-between px-2 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest hover:text-slate-300 transition group">
+                Nguồn tệp
                 <i class="fa-solid fa-chevron-down text-[8px] transition-transform duration-300"></i>
             </button>
-            <div id="sources-wrapper" class="space-y-1 overflow-hidden transition-all duration-300 origin-top">
-                <div id="source-list" class="space-y-1"></div>
+            <div id="sources-wrapper" class="space-y-0.5 overflow-hidden transition-all duration-300 origin-top mt-1">
+                <div id="source-list" class="space-y-0.5"></div>
             </div>
         </div>
 
-        <div class="h-px bg-slate-800 my-2"></div>
+        <div class="h-px bg-white/5 my-3 mx-1"></div>
 
         <!-- Collapsible Folders -->
-        <div>
+        <div class="mb-3">
             <button onclick="toggleSection('folders-wrapper', this)"
-                class="w-full flex items-center justify-between px-2 py-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-slate-300 transition group">
+                class="w-full flex items-center justify-between px-2 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest hover:text-slate-300 transition group">
                 Thư mục
                 <i class="fa-solid fa-chevron-down text-[8px] transition-transform duration-300"></i>
             </button>
-            <div id="folders-wrapper" class="space-y-1 overflow-hidden transition-all duration-300 origin-top">
-                <nav class="space-y-1" id="folder-list"></nav>
+            <div id="folders-wrapper" class="space-y-0.5 overflow-hidden transition-all duration-300 origin-top mt-1">
+                <nav class="space-y-0.5" id="folder-list"></nav>
             </div>
         </div>
     </div>
 
-    <div class="p-4 border-t border-slate-800 bg-slate-950/40">
-        <div class="flex gap-2">
-            <input type="text" id="new-folder-path" placeholder="Thêm folder..."
-                class="flex-1 bg-slate-800/50 rounded-lg py-2 px-3 text-xs outline-none border border-slate-700/50 focus:border-blue-500 text-white">
+    <!-- macOS style inline add folder input at bottom -->
+    <div class="p-3 border-t border-white/5 bg-black/10">
+        <div class="flex gap-1.5">
+            <input type="text" id="new-folder-path" placeholder="Thêm thư mục..."
+                class="flex-1 bg-white/5 rounded-md py-1.5 px-2.5 text-xs outline-none border border-white/10 focus:border-blue-500/50 text-white placeholder-slate-500 transition">
             <button onclick="addFolder()"
-                class="bg-blue-600 w-9 h-9 rounded-lg flex items-center justify-center text-white transition hover:bg-blue-500 active:scale-95">
+                class="bg-white/10 w-8 h-8 rounded-md flex items-center justify-center text-slate-300 border border-white/5 transition hover:bg-white/20 active:scale-95">
                 <i class="fa-solid fa-plus text-xs"></i>
             </button>
         </div>
