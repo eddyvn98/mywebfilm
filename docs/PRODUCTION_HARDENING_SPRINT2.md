@@ -51,5 +51,10 @@ Finish the reliability layer that was intentionally deferred from Sprint 1: tran
 - [x] SQLite runtime state complete.
 - [x] Operation journal complete.
 - [x] Production runtime complete.
-- [ ] Final test gate green.
+- [x] Final test gate green — commit `0a7da3b027c0abd30e601e09cea6c0b3a1f67def`: dependency import + compileall + 46 passed, 3 skipped, coverage 47.12%, `CI_FINAL_EXIT=0` on isolated Railway fallback.
 - [ ] PR merged.
+
+
+## Validation note
+
+GitHub-hosted Actions is still failing before runner allocation for this private repository, the same external condition recorded in Sprint 1. Sprint 2 therefore reused the isolated Railway validator connected directly to the hardening branch. The validator installed the current requirements, imported `ddgs` and `waitress`, compiled the Python tree, and ran the full pytest coverage gate on the code head above.
