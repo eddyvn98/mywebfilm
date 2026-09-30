@@ -73,7 +73,7 @@ The pull request may merge only when:
 - [x] Checkpoint 5 complete.
 - [x] Fallback CI green — Railway checked out commit `926612916f1954d81be8522e8ed22588e5b77a94` from `production-hardening-2026-09-30`: 36 passed, 3 skipped, coverage 40.50%.
 - [!] GitHub Actions remains unavailable at the runner-provisioning layer (`runner_id=0`, `steps=[]`) on Linux and Windows runner labels; this is recorded as an external CI infrastructure exception, not a test failure.
-- [ ] PR merged.
+- [x] PR merged — squash merge `693771a2bec90e04d9ccb5e0774e3464d1ad5a62`.
 
 
 ## Release validation exception
