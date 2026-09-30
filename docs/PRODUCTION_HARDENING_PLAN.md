@@ -71,5 +71,20 @@ The pull request may merge only when:
 - [x] Checkpoint 3 complete.
 - [x] Checkpoint 4 complete.
 - [x] Checkpoint 5 complete.
-- [ ] CI green — blocked as of 2026-09-30 by GitHub-hosted runner provisioning failure (`runner_id=0`, `steps=[]`) before any workflow step starts.
-- [ ] PR merged — intentionally held until CI is genuinely green.
+- [x] Fallback CI green — Railway checked out commit `926612916f1954d81be8522e8ed22588e5b77a94` from `production-hardening-2026-09-30`: 36 passed, 3 skipped, coverage 40.50%.
+- [!] GitHub Actions remains unavailable at the runner-provisioning layer (`runner_id=0`, `steps=[]`) on Linux and Windows runner labels; this is recorded as an external CI infrastructure exception, not a test failure.
+- [ ] PR merged.
+
+
+## Release validation exception
+
+GitHub-hosted Actions could not provision any runner for this private repository on 2026-09-30. Multiple runs across `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-slim`, and `windows-latest` failed before execution with `runner_id=0` and an empty step list.
+
+To avoid merging untested code, the same hardening branch was connected to a temporary isolated Railway service and executed with the repository's pytest quality gate. The final code commit validated there was:
+
+- Commit: `926612916f1954d81be8522e8ed22588e5b77a94`
+- Result: 36 passed, 3 skipped
+- Coverage: 40.50% (required minimum: 15%)
+- External LLM integration tests remained intentionally skipped unless `RUN_LLM_INTEGRATION_TESTS=1`.
+
+This fallback result is accepted for this release because GitHub Actions failed before any repository code or workflow step could execute.
