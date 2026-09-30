@@ -81,6 +81,19 @@ def check_auth():
     is_api = full_path.startswith('/api/')
     is_localhost = (request.remote_addr in ['127.0.0.1', '::1', 'localhost'])
     is_authenticated = session.get('authenticated')
+
+    # Browser CSRF defense: reject cross-origin state-changing requests when Origin is present.
+    if request.method in {'POST', 'PUT', 'PATCH', 'DELETE'}:
+        origin = request.headers.get('Origin')
+        if origin:
+            proto = request.scheme
+            host = request.host
+            if is_localhost:
+                proto = request.headers.get('X-Forwarded-Proto', proto).split(',')[0].strip()
+                host = request.headers.get('X-Forwarded-Host', host).split(',')[0].strip()
+            expected_origin = f"{proto}://{host}".rstrip('/')
+            if origin.rstrip('/') != expected_origin:
+                return jsonify({'status': 'err', 'msg': 'Cross-origin request blocked'}), 403
     
     # 1. Localhost always has bypass for sync and initial setup
     if full_path == '/api/auth/tunnel/sync':
