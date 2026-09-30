@@ -56,7 +56,7 @@ Add recovery-grade backup/restore, failure-injection coverage, and a Windows-nat
 - [x] Failure injection complete.
 - [x] Windows E2E suite complete — suite and `windows-latest` CI job are ready; GitHub still fails before runner allocation (`runner_id=0`, `steps=[]`).
 - [x] Final validation green — code head `7b56e9e1e53fee6af9e81bb94ed8ad337ee2ee5f`: import smoke + compileall + 63 passed, 9 skipped, coverage 60.48%, `CI_FINAL_EXIT=0`.
-- [ ] PR merged.
+- [x] PR merged — squash merge `2f1ba884e43989d58c7bf5f21bac983769674cec`.
 
 
 ## Validation note
