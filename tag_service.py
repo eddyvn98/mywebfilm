@@ -1,6 +1,7 @@
 import json
 import os
 from constants import CONFIG_FILE
+from storage_utils import atomic_write_json
 
 TAGS_FILE = "tags.json"
 
@@ -22,8 +23,7 @@ class TagManager:
         }
 
     def save_tags(self):
-        with open(TAGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.tags, f, ensure_ascii=False, indent=4)
+        atomic_write_json(TAGS_FILE, self.tags)
 
     def get_all(self):
         return self.tags
