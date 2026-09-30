@@ -143,3 +143,18 @@ def test_restore_api_requires_explicit_confirmation(backup_env):
 
     assert resp.status_code == 400
     assert "RESTORE" in resp.get_json()["msg"]
+
+
+def test_restore_removes_files_absent_from_backup(backup_env):
+    backup_env["credentials"].unlink()
+    target = backup_service.create_backup(cleanup=False)
+
+    backup_env["credentials"].write_text(
+        json.dumps({"admin": [{"id": "new"}]}),
+        encoding="utf-8",
+    )
+    assert backup_env["credentials"].exists()
+
+    backup_service.restore_backup(target["backup_id"])
+
+    assert not backup_env["credentials"].exists()
