@@ -120,14 +120,19 @@ def check_auth():
     if any(full_path.startswith(p) for p in ALLOWED_PATH_BASES):
         return
     
-    # 6. Authenticated or Localhost access to Sensitive/General paths
-    if is_localhost or is_authenticated:
-        if any(full_path.startswith(p) for p in SENSITIVE_PATH_BASES):
+    # 6. Registration bootstrap: localhost, authenticated session, or valid OTT.
+    if any(full_path.startswith(p) for p in SENSITIVE_PATH_BASES):
+        if is_localhost or is_authenticated or has_valid_token:
             return
-        if is_authenticated:
-            return
+        if is_api:
+            return jsonify({"status": "err", "msg": "Unauthorized"}), 401
+        return redirect(url_for('views.login', **request.args))
+
+    # 7. All remaining application routes require the authenticated session.
+    if is_authenticated:
+        return
             
-    # 7. Final Protection
+    # 8. Final Protection
     if not is_authenticated:
         if is_api:
             return jsonify({"status": "err", "msg": "Unauthorized"}), 401
