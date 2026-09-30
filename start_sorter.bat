@@ -1,6 +1,6 @@
 @echo off
 title Video Library Manager
-cd /d D:\CinemaProject
+cd /d "%~dp0"
 echo Starting Video Library Manager...
 echo Dashboard: http://localhost:5500
 echo.
