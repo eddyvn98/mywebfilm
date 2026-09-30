@@ -2,6 +2,7 @@ import subprocess
 import os
 import threading
 from constants import FFMPEG_PATH, FFPROBE_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
+import ffmpeg_conversion
 
 # Giới hạn tối đa 2 tiến trình FFmpeg chạy cùng lúc để tránh quá tải RAM/CPU
 ffmpeg_semaphore = threading.Semaphore(2)
@@ -218,151 +219,19 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
             print(f"FFmpeg Highlight Exception: {e}")
             return None
 def remux_ts_to_mp4(input_path, output_path):
-    """
-    Thực hiện Remux (copy stream) cực nhanh từ TS sang MP4.
-    Thử nghiệm nhiều chiến thuật để đảm bảo tỷ lệ thành công cao nhất.
-    """
-    with ffmpeg_semaphore:
-        # Chiến thuật 1: Remux tiêu chuẩn với AAC bitstream filter (Dành cho đại đa số file)
-        try:
-            cmd = [
-                FFMPEG_PATH, "-y",
-                "-fflags", "+genpts",
-                "-err_detect", "ignore_err",
-                "-i", input_path,
-                "-map", "0:v:0?", "-map", "0:a:0?", # Lấy luồng video/audio đầu tiên nếu có
-                "-c", "copy",
-                "-bsf:a", "aac_adtstoasc",
-                "-movflags", "+faststart",
-                output_path
-            ]
-            print(f"Attempting Fast Remux (Standard): {' '.join(cmd)}")
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            if res.returncode == 0: return True
-            
-            # Chiến thuật 2: Nếu fail, thử bỏ AAC bitstream filter (Có thể audio không phải AAC)
-            print("Standard Remux failed, trying without AAC bitstream filter...")
-            cmd_no_bsf = [c for c in cmd if c not in ["-bsf:a", "aac_adtstoasc"]]
-            res = subprocess.run(cmd_no_bsf, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            if res.returncode == 0: return True
+    return ffmpeg_conversion.remux_ts_to_mp4(
+        input_path,
+        output_path,
+        ffmpeg_semaphore,
+    )
 
-            # Chiến thuật 3: Nếu vẫn fail, thử Encode riêng Audio (Video vẫn copy - Vẫn rất nhanh)
-            print("Copy Remux failed, trying Video Copy + Audio Encode (AAC)...")
-            cmd_hybrid = [
-                FFMPEG_PATH, "-y",
-                "-fflags", "+genpts",
-                "-i", input_path,
-                "-c:v", "copy",
-                "-c:a", "aac", "-b:a", "128k",
-                "-movflags", "+faststart",
-                output_path
-            ]
-            res = subprocess.run(cmd_hybrid, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            if res.returncode == 0: return True
-
-            print(f"All Fast Remux strategies failed for {input_path}. Error: {res.stderr}")
-            return False
-        except Exception as e:
-            print(f"Remux Exception: {e}")
-            return False
 
 def convert_ts_to_mp4(input_path, delete_src=True):
-    """
-    Chuyển đổi file video sang .mp4 (H264/H265): 
-    - Nếu là .ts: Thử Remux trước, nếu hỏng mới Encode.
-    - Nếu là .mp4: Encode thẳng (để đổi Codec hoặc nén lại).
-    """
-    filename = os.path.basename(input_path)
-    name, ext = os.path.splitext(filename)
-    ext = ext.lower()
-    
-    # Đường dẫn đích mặc định
-    output_path = os.path.join(os.path.dirname(input_path), f"{name}.mp4")
-    temp_output = False
-    
-    # Xử lý xung đột tên: Nếu file nguồn đã là .mp4, ta cần tên tạm để tránh ghi đè chính nó
-    if ext == '.mp4':
-        output_path = os.path.join(os.path.dirname(input_path), f"{name}.converting.mp4")
-        temp_output = True
-
-    # BƯỚC 1: Nếu là .ts, thử Remux (Cực nhanh, 5-20 giây)
-    if ext == '.ts' or ext == '.m2ts':
-        if remux_ts_to_mp4(input_path, output_path):
-            if validate_media_output(output_path):
-                if delete_src:
-                    os.remove(input_path)
-                    print("Auto-cleanup: Deleted original TS after validated REMUX")
-                return output_path
-            if os.path.exists(output_path):
-                os.remove(output_path)
-            print(f"Remux output validation failed for {input_path}; falling back to encode")
-
-    # BƯỚC 2: Fallback Encode (Vài phút) - Dành cho .mp4 hoặc khi Remux .ts thất bại
-    with ffmpeg_semaphore:
-        try:
-            from config_manager import load_config
-            cfg = load_config()
-            pref_codec = cfg.get("preferred_codec", "h264").lower()
-            
-            encoder = get_best_gpu_encoder(pref_codec)
-            cmd = [
-                FFMPEG_PATH, '-y',
-                '-i', input_path,
-                '-c:v', encoder,
-            ]
-            
-            if "libx264" in encoder or "libx265" in encoder:
-                # Dùng CRF 18 cho chất lượng gần như không suy giảm (Visually Lossless)
-                cmd.extend(['-preset', 'veryfast', '-crf', '18'])
-            else:
-                # GPU: Giảm giá trị CQ để tăng chất lượng (CQ thấp = chất lượng cao)
-                if 'nvenc' in encoder:
-                    cmd.extend(['-rc', 'vbr', '-cq', '18', '-qmin', '15', '-qmax', '22'])
-                elif 'qsv' in encoder:
-                    cmd.extend(['-global_quality', '18'])
-                else:
-                    cmd.extend(['-b:v', '10M', '-maxrate', '15M', '-bufsize', '30M'])
-                
-                cmd.extend(['-preset', 'p4' if 'nvenc' in encoder else 'veryfast'])
-                
-            cmd.extend(['-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output_path])
-            
-            print(f"Encoding Task (Target: {pref_codec}): {' '.join(cmd)}")
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            
-            if res.returncode != 0:
-                print(f"Conversion Error: {res.stderr}")
-                return None
-            if not validate_media_output(output_path):
-                print(f"Conversion validation failed for {input_path}")
-                if os.path.exists(output_path) and output_path != input_path:
-                    os.remove(output_path)
-                return None
-                
-            final_path = output_path
-            
-            # BƯỚC 3: Tráo đổi file nguyên tử nếu dùng tên tạm
-            if temp_output:
-                original_final = os.path.join(os.path.dirname(input_path), f"{name}.mp4")
-                if delete_src:
-                    try:
-                        os.remove(input_path)
-                        os.rename(output_path, original_final)
-                        final_path = original_final
-                        print(f"Atomic Swap: Replaced original with NEW {pref_codec} file")
-                    except Exception as e:
-                        print(f"Atomic Swap Error: {e}")
-                else:
-                    # Nếu không xóa nguồn, giữ nguyên tên .converting.mp4 hoặc đổi sang tên khác
-                    pass
-                    
-            elif delete_src and os.path.exists(output_path) and input_path != output_path:
-                try:
-                    os.remove(input_path)
-                    print(f"Cleanup: Deleted source {ext} after encoding")
-                except: pass
-                    
-            return final_path
-        except Exception as e:
-            print(f"Convert Exception: {e}")
-            return None
+    return ffmpeg_conversion.convert_ts_to_mp4(
+        input_path,
+        delete_src,
+        semaphore=ffmpeg_semaphore,
+        validate_output=validate_media_output,
+        get_encoder=get_best_gpu_encoder,
+        remux=remux_ts_to_mp4,
+    )
