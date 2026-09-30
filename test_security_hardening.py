@@ -77,3 +77,55 @@ def test_valid_token_is_consumed_after_remote_login(client, monkeypatch):
     assert resp.status_code == 200
     assert api_auth.CURRENT_OTT is None
     assert api_auth.CURRENT_OTT_EXPIRES_AT == 0.0
+
+
+def test_cross_origin_state_change_is_blocked(client):
+    authenticate(client)
+    resp = client.post(
+        '/api/config/update',
+        json={'auto_convert_ts': True},
+        headers={'Origin': 'https://evil.example'},
+    )
+    assert resp.status_code == 403
+
+
+def test_explorer_rejects_unsafe_path_before_launch(client):
+    authenticate(client)
+    with patch('routes.api_fs.os.path.exists', return_value=True), \
+         patch('routes.api_fs.check_path_safe', return_value=False), \
+         patch('routes.api_fs.subprocess.run') as run:
+        resp = client.post('/api/explorer', json={'path': 'C:/Windows/win.ini'})
+    assert resp.status_code == 403
+    run.assert_not_called()
+
+
+def test_path_guard_does_not_mutate_video_dirs(monkeypatch, tmp_path):
+    import utils
+    import config_manager as cfg
+
+    allowed = tmp_path / 'allowed'
+    allowed.mkdir()
+    config = {'video_dirs': [str(allowed)]}
+    monkeypatch.setattr(cfg, 'load_config', lambda: config)
+
+    assert utils.check_path_safe(str(allowed / 'movie.mp4')) is True
+    assert config['video_dirs'] == [str(allowed)]
+
+
+def test_path_guard_resolves_symlink_escape(monkeypatch, tmp_path):
+    import utils
+    import config_manager as cfg
+
+    allowed = tmp_path / 'allowed'
+    outside = tmp_path / 'outside'
+    allowed.mkdir()
+    outside.mkdir()
+    link = allowed / 'escape'
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip('symlinks unavailable on this platform')
+
+    config = {'video_dirs': [str(allowed)]}
+    monkeypatch.setattr(cfg, 'load_config', lambda: config)
+    assert utils.check_path_safe(str(link / 'secret.txt')) is False
