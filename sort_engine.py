@@ -2,7 +2,7 @@
 sort_engine.py - Core engine for Video Auto-Sort Web Dashboard.
 Handles: scan, classify, actress lookup (jav321), move files.
 """
-import os, re, json, time, urllib.request, shutil
+import os, re, json, time, urllib.request, shutil, ntpath
 from storage_utils import atomic_write_json
 from collections import Counter
 from datetime import datetime
@@ -197,23 +197,23 @@ class SortEngine:
             sf = sub if sub in {"TOKYO_HOT","CARIBBEANCOM"} else (sub if pcounts[sub]>=5 else others_group(sub))
             group_key = f"JAV/{sf}"
             dest_drive = pick_destination_drive(group_key, self.drive_map)
-            sdst = unique_path(src, os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV",sf,fn))
+            sdst = unique_path(src, ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV",sf,fn))
             code = jav_code(fn); actresses=[]
             if code and sub not in {"TOKYO_HOT","CARIBBEANCOM"}:
                 actresses = self.lookup_actress(code)
                 time.sleep(0.3)
             if actresses:
-                adsts=[{"actress":n,"dst":unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress",sanitize(n),fn))} for n in actresses]
+                adsts=[{"actress":n,"dst":unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress",sanitize(n),fn))} for n in actresses]
                 pending=False
             else:
-                adsts=[{"actress":"PENDING_REVIEW","dst":unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress","PENDING_REVIEW",fn))}]
+                adsts=[{"actress":"PENDING_REVIEW","dst":unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress","PENDING_REVIEW",fn))}]
                 pending=True
             return {"src":src,"cat":cat,"sub":sub,"studio_dst":sdst,"actress_dsts":adsts,"actresses":actresses,"pending":pending,"code":code,"filename":fn}
         else:
             dp = date_prefix(fn,mt)
             group_key = f"{cat}/{dp}"
             dest_drive = pick_destination_drive(group_key, self.drive_map)
-            dst = unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos",cat,dp,fn))
+            dst = unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos",cat,dp,fn))
             return {"src":src,"cat":cat,"sub":sub,"studio_dst":dst,"actress_dsts":[],"actresses":[],"pending":False,"code":None,"filename":fn}
 
     def execute_move(self, plan):
