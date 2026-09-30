@@ -4,7 +4,7 @@ from constants import CONFIG_FILE, CACHE_FILE, HISTORY_FILE, FAVORITES_FILE
 import time
 import threading
 from storage_utils import atomic_write_json
-from runtime_db import load_list_state, save_list_state
+from runtime_db import load_list_state, mutate_list_state, save_list_state
 
 # Thread locks to prevent concurrent write data corruption
 _config_lock = threading.Lock()
@@ -120,9 +120,17 @@ def load_history():
 
 def save_history(data):
     save_list_state("history", data)
+
+
+def mutate_history(mutator):
+    return mutate_list_state("history", mutator, HISTORY_FILE)
 def load_favorites():
     return load_list_state("favorites", FAVORITES_FILE)
 
 
 def save_favorites(data):
     save_list_state("favorites", data)
+
+
+def mutate_favorites(mutator):
+    return mutate_list_state("favorites", mutator, FAVORITES_FILE)
