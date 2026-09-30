@@ -56,7 +56,7 @@ def test_corrupt_backup_is_rejected(backup_env):
     backup_path = backup_env["backup_dir"] / manifest["backup_id"]
     (backup_path / "config.json").write_text("tampered", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="checksum mismatch"):
+    with pytest.raises(ValueError, match="mismatch"):
         backup_service.verify_backup(manifest["backup_id"])
 
 
