@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -16,6 +17,14 @@ BACKUP_DIR = os.environ.get("CINEMA_BACKUP_DIR", os.path.join(DATA_DIR, "backups
 TAGS_FILE = os.path.join(BASE_DIR, "tags.json")
 CREDENTIALS_FILE = os.path.join(DATA_DIR, "credentials.json")
 MANIFEST_FILE = "manifest.json"
+
+BACKUP_ID_RE = re.compile(r"^\d{8}T\d{6}Z_[0-9a-f]{8}$")
+
+
+def _backup_path(backup_id):
+    if not BACKUP_ID_RE.fullmatch(str(backup_id or "")):
+        raise ValueError("Invalid backup id")
+    return os.path.join(BACKUP_DIR, backup_id)
 
 
 def _utc_stamp():
@@ -141,7 +150,7 @@ def _load_manifest(backup_dir):
 
 
 def verify_backup(backup_id):
-    backup_dir = os.path.join(BACKUP_DIR, backup_id)
+    backup_dir = _backup_path(backup_id)
     if not os.path.isdir(backup_dir):
         raise FileNotFoundError("Backup not found")
 
@@ -207,26 +216,35 @@ def _atomic_restore_file(source, destination):
         raise
 
 
+def _apply_backup_dir(backup_dir):
+    db_source = os.path.join(backup_dir, "cinema_state.db")
+    _atomic_restore_file(db_source, runtime_db.DB_PATH)
+    for suffix in ("-wal", "-shm"):
+        stale = runtime_db.DB_PATH + suffix
+        if os.path.exists(stale):
+            os.remove(stale)
+
+    destinations = _source_files()
+    for name in ("credentials.json", "config.json", "tags.json"):
+        source = os.path.join(backup_dir, name)
+        if os.path.isfile(source):
+            _atomic_restore_file(source, destinations[name])
+
+    runtime_db._schema_path = None
+
+
 def restore_backup(backup_id):
     manifest = verify_backup(backup_id)
-    backup_dir = os.path.join(BACKUP_DIR, backup_id)
+    backup_dir = _backup_path(backup_id)
 
-    emergency = create_backup(keep=None)
     with runtime_db.database_maintenance():
-        db_source = os.path.join(backup_dir, "cinema_state.db")
-        _atomic_restore_file(db_source, runtime_db.DB_PATH)
-        for suffix in ("-wal", "-shm"):
-            stale = runtime_db.DB_PATH + suffix
-            if os.path.exists(stale):
-                os.remove(stale)
-
-        destinations = _source_files()
-        for name in ("credentials.json", "config.json", "tags.json"):
-            source = os.path.join(backup_dir, name)
-            if os.path.isfile(source):
-                _atomic_restore_file(source, destinations[name])
-
-        runtime_db._schema_path = None
+        emergency = create_backup(keep=None)
+        emergency_dir = _backup_path(emergency["backup_id"])
+        try:
+            _apply_backup_dir(backup_dir)
+        except Exception:
+            _apply_backup_dir(emergency_dir)
+            raise
 
     return {
         "restored_backup_id": backup_id,
