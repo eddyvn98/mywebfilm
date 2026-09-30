@@ -250,8 +250,11 @@ class SortEngine:
         for i,v in enumerate(videos):
             self._emit(current_file=v["filename"], done=i)
             plan = self.plan_move(v, pcounts)
+            move_ok = True
             if not self.dry_run:
-                self.execute_move(plan)
+                move_ok = self.execute_move(plan)
+            if not move_ok:
+                continue
             if plan["pending"]:
                 self._state["pending_review"].append({"src":plan["src"],"code":plan.get("code",""),"filename":v["filename"]})
             else:
@@ -275,7 +278,9 @@ class SortEngine:
         for i,v in enumerate(videos):
             self._emit(current_file=v["filename"],done=i)
             plan = self.plan_move(v, pcounts)
-            if not self.dry_run: self.execute_move(plan)
+            move_ok = True if self.dry_run else self.execute_move(plan)
+            if not move_ok:
+                continue
             if plan["pending"]:
                 self._state["pending_review"].append({"src":plan["src"],"code":plan.get("code",""),"filename":v["filename"]})
             else:
