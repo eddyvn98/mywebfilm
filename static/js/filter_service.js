@@ -1,6 +1,7 @@
 import { state, saveState } from './state.js';
 import { renderGrid } from './render_service.js';
 import { favoritesService } from './favorites_service.js';
+import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
 
 function closeDropdowns() {
@@ -107,15 +108,15 @@ export function renderDynamicCategories() {
             const count = state.allVideos.filter(v => v.categories?.includes(val)).length;
             if (count === 0) return '';
             return `
-                <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${val}', '${s.toUpperCase()}'); event.stopPropagation(); event.preventDefault()">
-                    <span class="truncate pr-2">${s}</span>
+                <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${escapeInlineJsSingleQuoted(val)}', '${escapeInlineJsSingleQuoted(s.toUpperCase())}'); event.stopPropagation(); event.preventDefault()">
+                    <span class="truncate pr-2">${escapeHtml(s)}</span>
                     <span class="text-[8px] opacity-40 group-hover/cat:opacity-100 transition shrink-0">${count}</span>
                 </div>
             `;
         }).join('');
 
         if (sectionHtml.trim()) {
-            html += `<div class="px-3 py-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-2 border-b border-white/5 pb-1 mb-1">${title}</div>`;
+            html += `<div class="px-3 py-1 text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-2 border-b border-white/5 pb-1 mb-1">${escapeHtml(title)}</div>`;
             html += sectionHtml;
         }
     }
