@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { renderGrid } from './render_service.js';
+import { escapeHtml } from './security.js';
 
 export async function runAiSearch() {
     const searchInput = document.getElementById('search');
@@ -15,7 +16,7 @@ export async function runAiSearch() {
                 <i class="fa-solid fa-robot text-blue-500 text-3xl animate-bounce"></i>
             </div>
             <p class="text-blue-500 font-black text-xs uppercase tracking-[0.2em]">AI đang phân tích yêu cầu...</p>
-            <p class="text-slate-500 text-[10px] italic">"${query}"</p>
+            <p class="text-slate-500 text-[10px] italic">"${escapeHtml(query)}"</p>
         </div>
     `;
 
@@ -44,7 +45,7 @@ export async function runAiSearch() {
                     <i class="fa-solid fa-wand-magic-sparkles text-blue-500"></i>
                     <div>
                         <p class="text-blue-400 font-bold text-[10px] uppercase tracking-wider">KẾT QUẢ TÌM KIẾM AI</p>
-                        <p class="text-white text-xs">${intentMsg}</p>
+                        <p class="text-white text-xs">${escapeHtml(intentMsg)}</p>
                     </div>
                 </div>
                 <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-white transition">
