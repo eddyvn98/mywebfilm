@@ -216,3 +216,12 @@ def get_item(path, legacy_json_path=None):
     except Exception:
         return None
     return item if isinstance(item, dict) else None
+
+
+def clear_catalog(legacy_json_path=None):
+    runtime_db.ensure_schema()
+    with runtime_db.db_session() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("DELETE FROM media_catalog")
+    if legacy_json_path and os.path.exists(legacy_json_path):
+        os.remove(legacy_json_path)
