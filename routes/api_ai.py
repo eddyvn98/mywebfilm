@@ -37,7 +37,7 @@ def upload_actor_image():
     
     # Path safety verification
     from utils import check_path_safe
-    if not check_path_safe(save_path):
+    if not check_path_safe(save_path, allow_project_assets=True):
         return jsonify({"status": "error", "msg": "Access denied"}), 403
         
     file.save(save_path)
