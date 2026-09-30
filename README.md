@@ -27,6 +27,14 @@ Runtime authentication state and generated secrets live under `data/` by default
 
 For HTTPS/tunnel use, set `CINEMA_SECURE_COOKIES=1`.
 
+`cloudflared.exe` is intentionally not stored in Git. Install Cloudflare Tunnel separately or place a local copy next to `setup_tunnel.py`; it is ignored by Git.
+
+### Upgrade note
+
+Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. If Git has already removed the old credential file, register the device/passkey again from localhost.
+
+Back up `data/` plus your local `config.json`, `tags.json`, and media-sidecar `.nfo` files before major upgrades.
+
 ## Highlight behavior
 
 Highlight processing intentionally replaces storage usage by deleting the original source after the generated highlight passes media validation. If FFmpeg or FFprobe validation fails, the source is retained.
