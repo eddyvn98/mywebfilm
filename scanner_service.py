@@ -5,7 +5,7 @@ import json
 import sys
 from datetime import datetime
 import ffmpeg_service
-from config_manager import save_cache, load_cache, load_config
+from config_manager import save_scanned_cache, load_cache, load_config
 from category_service import get_categories
 from queue_worker import media_queue
 from nfo_service import parse_nfo
@@ -305,7 +305,7 @@ def scan_videos(video_dirs):
             items.append(v)
             processed_paths.add(path) # Mark as kept
     
-    save_cache(items)
+    save_scanned_cache(items)
     safe_print(f"Quét hoàn tất! Tổng cộng: {len(items)} items ({len(reachable_roots)} online, {len(unreachable_roots)} offline roots)")
     return items
 
