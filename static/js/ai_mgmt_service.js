@@ -21,7 +21,12 @@ export async function loadScrapperConfig() {
         const res = await fetch('/api/config');
         const cfg = await res.json();
         const cookieEl = document.getElementById('mgmt-cookies');
-        if (cookieEl) cookieEl.value = cfg.scrapper_cookies || "";
+        if (cookieEl) {
+            cookieEl.value = "";
+            cookieEl.placeholder = cfg.scrapper_cookies_configured
+                ? "Đã cấu hình cookie — nhập giá trị mới để thay"
+                : "Chưa cấu hình cookie";
+        }
     } catch (err) {
         console.error("Failed to load config:", err);
     }
