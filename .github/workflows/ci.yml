@@ -14,20 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
+      - name: Checkout without reusable actions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.extraHeader="Authorization: Basic $AUTH" fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+      - name: Show toolchain
+        run: |
+          python3 --version
+          node --version
       - name: Install Python dependencies
-        run: python -m pip install -r requirements.txt
+        run: python3 -m pip install -r requirements.txt
       - name: Compile Python
-        run: python -m compileall -q .
+        run: python3 -m compileall -q .
       - name: Run tests
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}/cinema-data
           CINEMA_SECRET_KEY: ci-only-secret-key-that-is-long-enough-for-tests
-        run: pytest -q --cov=. --cov-report=term-missing --cov-fail-under=25
+        run: python3 -m pytest -q --cov=. --cov-report=term-missing --cov-fail-under=25
       - name: Check JavaScript syntax
         run: |
           for file in static/js/*.js; do
