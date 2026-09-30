@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 import config_manager as cfg
-from runtime_db import begin_operation, update_operation
+from operation_journal import begin_operation, update_operation
 from utils import check_path_safe, get_metadata_paths, sync_artifacts
 
 fs_bp = Blueprint("api_fs", __name__)
