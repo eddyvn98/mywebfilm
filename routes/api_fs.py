@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request
 import os
 import subprocess
+import logging
 import config_manager as cfg
 from utils import get_metadata_paths, check_path_safe
 
 fs_bp = Blueprint('api_fs', __name__)
+logger = logging.getLogger(__name__)
 
 @fs_bp.route('/api/delete_file', methods=['POST'])
 def delete_file():
@@ -15,6 +17,7 @@ def delete_file():
         return jsonify({"status":"err", "msg": "Access denied"}), 403
     try:
         os.remove(p)
+        logger.info("file_delete path=%r", p)
         paths = get_metadata_paths(p)
         if os.path.exists(paths['thumb_path']): os.remove(paths['thumb_path'])
         if os.path.exists(paths['prev_path']): os.remove(paths['prev_path'])
@@ -23,6 +26,7 @@ def delete_file():
         cfg.save_cache(items)
         return jsonify({"status":"ok"})
     except Exception as e:
+        logger.exception("filesystem_operation_failed path=%r", locals().get('p'))
         return jsonify({"status":"err", "msg": str(e)}), 500
 
 @fs_bp.route('/api/explorer', methods=['POST'])
@@ -59,6 +63,7 @@ def fs_rename():
         
         # 1. OS Rename
         os.rename(old_p, new_p)
+        logger.info("file_rename old=%r new=%r", old_p, new_p)
         
         # 2. Config Update (If it's a source root)
         config = cfg.load_config()
@@ -156,6 +161,7 @@ def fs_move():
             
             # 1. OS Move
             os.rename(p, new_p)
+            logger.info("file_move old=%r new=%r", p, new_p)
             
             # 2. Artifact Sync (OldHash -> NewHash)
             try:
