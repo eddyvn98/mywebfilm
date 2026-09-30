@@ -4,21 +4,16 @@ from constants import CONFIG_FILE, CACHE_FILE, HISTORY_FILE, FAVORITES_FILE
 import time
 import threading
 from storage_utils import atomic_write_json
+from runtime_db import load_list_state, save_list_state
 
 # Thread locks to prevent concurrent write data corruption
 _config_lock = threading.Lock()
 _movies_lock = threading.Lock()
-_history_lock = threading.Lock()
-_favorites_lock = threading.Lock()
 
 _config_cache = None
 _config_mtime = 0
 _movies_cache = None
 _movies_mtime = 0
-_history_cache = None
-_history_mtime = 0
-_favorites_cache = None
-_favorites_mtime = 0
 
 
 def normalize_video_dirs(video_dirs):
@@ -120,57 +115,14 @@ def save_cache(data):
             _movies_mtime = time.time()
 
 def load_history():
-    global _history_cache, _history_mtime
-    if not os.path.exists(HISTORY_FILE):
-        return []
-    with _history_lock:
-        try:
-            current_mtime = os.path.getmtime(HISTORY_FILE)
-            if _history_cache is not None and current_mtime <= _history_mtime:
-                return _history_cache
+    return load_list_state("history", HISTORY_FILE)
 
-            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                _history_cache = json.load(f)
-                _history_mtime = current_mtime
-                return _history_cache
-        except Exception as e:
-            print(f"Lỗi load history: {e}")
-            return []
 
 def save_history(data):
-    global _history_cache, _history_mtime
-    with _history_lock:
-        atomic_write_json(HISTORY_FILE, data)
-        _history_cache = data
-        try:
-            _history_mtime = os.path.getmtime(HISTORY_FILE)
-        except:
-            _history_mtime = time.time()
-
+    save_list_state("history", data)
 def load_favorites():
-    global _favorites_cache, _favorites_mtime
-    if not os.path.exists(FAVORITES_FILE):
-        return []
-    with _favorites_lock:
-        try:
-            current_mtime = os.path.getmtime(FAVORITES_FILE)
-            if _favorites_cache is not None and current_mtime <= _favorites_mtime:
-                return _favorites_cache
+    return load_list_state("favorites", FAVORITES_FILE)
 
-            with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
-                _favorites_cache = json.load(f)
-                _favorites_mtime = current_mtime
-                return _favorites_cache
-        except Exception as e:
-            print(f"Lỗi load favorites: {e}")
-            return []
 
 def save_favorites(data):
-    global _favorites_cache, _favorites_mtime
-    with _favorites_lock:
-        atomic_write_json(FAVORITES_FILE, data)
-        _favorites_cache = data
-        try:
-            _favorites_mtime = os.path.getmtime(FAVORITES_FILE)
-        except:
-            _favorites_mtime = time.time()
+    save_list_state("favorites", data)
