@@ -8,6 +8,8 @@ import { favoritesService } from './favorites_service.js';
 let isAutoNext = false;
 let isShuffle = false;
 let currentRotation = 0;
+let lastProgressSaveAt = 0;
+const PROGRESS_SAVE_INTERVAL_MS = 3000;
 
 export function openVideoModal(idx) {
     state.currentIndex = idx;
@@ -80,13 +82,6 @@ function injectPlaylistUI() {
     document.getElementById('auto-next-toggle').checked = isAutoNext;
     updateShuffleBtn();
 
-    // Attach Mobile Gesture Zone (Mid-screen swipe)
-    const gestureZone = document.createElement('div');
-    gestureZone.className = 'absolute top-0 bottom-0 right-12 w-24 z-[100] md:hidden';
-    // ^ Right area but not edge. Actually user asked for "swipe from middle". 
-    // We'll attach touch listener to the whole modal but filter coordinate.
-    modal.addEventListener('touchstart', handleTouchStart, { passive: true });
-    modal.addEventListener('touchmove', handleTouchMove, { passive: true });
 }
 
 function renderPlaylist() {
@@ -175,88 +170,122 @@ function updateShuffleBtn() {
 
 export function closeVideoModal() {
     if (state.player) state.player.pause();
+    window.togglePlaylist?.(false);
+
     const modal = document.getElementById('video-modal');
+    // Clear any inline drag transform/transition so Tailwind transform classes can take over.
+    modal.style.transform = '';
+    modal.style.transition = '';
     modal.classList.add('translate-y-full');
     modal.classList.remove('translate-y-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
+function getCurrentMedia() {
+    return state.currentGridVideos[state.currentIndex] || null;
+}
+
+function stopAndUnloadVideo(video) {
+    if (state.player) state.player.pause();
+    video.pause?.();
+    video.removeAttribute('src');
+    video.load?.();
+}
+
+function ensurePlayer(video) {
+    if (state.player) return;
+
+    state.player = new Plyr(video, {
+        controls: [
+            'play-large', 'restart', 'rewind', 'play', 'fast-forward', 'progress',
+            'current-time', 'duration', 'mute', 'volume', 'captions', 'settings',
+            'pip', 'airplay', 'fullscreen'
+        ],
+        fullscreen: { container: '#video-modal' },
+        seekTime: 10,
+        i18n: {
+            restart: 'Phát lại', rewind: 'Tua lại {seektime}s', play: 'Phát',
+            pause: 'Tạm dừng', fastForward: 'Tua nhanh {seektime}s',
+            seek: 'Tua', seekLabel: '{currentTime}s',
+            played: 'Đã phát', buffered: 'Đã tải',
+            currentTime: 'Thời gian hiện tại', duration: 'Thời lượng',
+            enterFullscreen: 'Toàn màn hình', exitFullscreen: 'Thoát toàn màn hình',
+        }
+    });
+
+    state.player.on('ended', () => {
+        const current = getCurrentMedia();
+        if (current?.full_path) {
+            localStorage.removeItem('resume_' + current.full_path);
+        }
+        if (isAutoNext) playNext(true);
+    });
+
+    state.player.on('timeupdate', () => {
+        const now = Date.now();
+        if (!state.player || state.player.currentTime <= 5 || now - lastProgressSaveAt < PROGRESS_SAVE_INTERVAL_MS) {
+            return;
+        }
+
+        const current = getCurrentMedia();
+        if (!current?.full_path) return;
+
+        localStorage.setItem('resume_' + current.full_path, String(state.player.currentTime));
+        lastProgressSaveAt = now;
+    });
+
+    state.player.on('error', (e) => {
+        console.warn("Player error:", e);
+        const current = getCurrentMedia();
+        if (current) {
+            renderFallbackUI(video.parentElement, current, "Không thể giải mã video này trên trình duyệt");
+        }
+    });
+}
+
 function loadVideoSource(v) {
-    currentRotation = 0; // Reset rotation for new video
-    let video = document.getElementById('modal-player');
-    if (video) video.style.transform = ''; // Clear previous transform
-    if (!video && state.player) video = state.player.media;
+    currentRotation = 0;
+    const video = document.getElementById('modal-player') || state.player?.media;
     if (!video) return;
+
+    video.style.transform = '';
+
+    const fallback = video.parentElement?.querySelector('.fallback-overlay');
+    if (fallback) fallback.style.display = 'none';
 
     const ext = (v.ext || '').toLowerCase();
     if (ext === '.ts' || ext === '.m2ts') {
+        stopAndUnloadVideo(video);
         renderFallbackUI(video.parentElement, v, "Trình duyệt không hỗ trợ định dạng này (.TS)");
         return;
     }
 
-    // Reset fallback if needed
-    const overlay = video.parentElement.querySelector('.fallback-overlay');
-    if (overlay) overlay.style.display = 'none';
+    ensurePlayer(video);
 
-    const sourceUrl = getStreamUrl(v.full_path);
+    const requestedPath = v.full_path;
+    const resumeTime = Number.parseFloat(localStorage.getItem('resume_' + requestedPath) || '0');
 
-    if (state.player) {
-        state.player.source = { type: 'video', sources: [{ src: sourceUrl }] };
-    } else {
-        video.src = sourceUrl;
+    if (Number.isFinite(resumeTime) && resumeTime > 5) {
+        state.player.once('loadedmetadata', () => {
+            const current = getCurrentMedia();
+            if (!current || current.full_path !== requestedPath) return;
+
+            const duration = Number(state.player.duration);
+            const safeTime = Number.isFinite(duration) && duration > 1
+                ? Math.min(resumeTime, duration - 1)
+                : resumeTime;
+            state.player.currentTime = Math.max(0, safeTime);
+        });
     }
 
-    const savedTime = localStorage.getItem('resume_' + v.full_path);
-    if (savedTime) {
-        if (state.player) {
-            state.player.once('ready', () => state.player.currentTime = parseFloat(savedTime));
-        } else {
-            video.currentTime = parseFloat(savedTime);
-        }
-    }
+    state.player.source = {
+        type: 'video',
+        title: v.name,
+        sources: [{ src: getStreamUrl(v.full_path) }]
+    };
 
-    if (!state.player) {
-        state.player = new Plyr(video, {
-            controls: [
-                'play-large', 'restart', 'rewind', 'play', 'fast-forward', 'progress',
-                'current-time', 'duration', 'mute', 'volume', 'captions', 'settings',
-                'pip', 'airplay', 'fullscreen'
-            ],
-            fullscreen: { container: '#video-modal' }, // Fix: include sidebar in fullscreen
-            seekTime: 10,
-            i18n: {
-                restart: 'Phát lại', rewind: 'Tua lại {seektime}s', play: 'Phát',
-                pause: 'Tạm dừng', fastForward: 'Tua nhanh {seektime}s',
-                seek: 'Tua', seekLabel: '{currentTime}s',
-                played: 'Đã phát', buffered: 'Đã tải',
-                currentTime: 'Thời gian hiện tại', duration: 'Thời lượng',
-                enterFullscreen: 'Toàn màn hình', exitFullscreen: 'Thoát toàn màn hình',
-            }
-        });
-
-        // Add Custom Playlist Toggle to Plyr controls
-        // We do this by injecting HTML because Plyr doesn't support custom buttons easily via config
-        setTimeout(injectPlyrCustomControls, 500);
-
-        state.player.on('ended', () => {
-            if (isAutoNext) playNext(true);
-        });
-
-        state.player.on('timeupdate', () => {
-            if (state.player && state.player.currentTime > 5) {
-                localStorage.setItem('resume_' + v.full_path, state.player.currentTime);
-            }
-        });
-
-        state.player.on('error', (e) => {
-            console.warn("Player error:", e);
-            renderFallbackUI(video.parentElement, v, "Không thể giải mã video này trên trình duyệt");
-        });
-    } else {
-        // Ensure custom button is there if player reused
-        setTimeout(injectPlyrCustomControls, 500);
-    }
-
+    lastProgressSaveAt = 0;
+    setTimeout(injectPlyrCustomControls, 0);
     state.player.play().catch(() => { });
 }
 
@@ -317,95 +346,54 @@ window.rotateVideo = () => {
     }
 };
 
-// --- Gestures ---
-let touchStartX = 0;
-let touchStartY = 0;
+// --- Navigation ---
 
-function handleTouchStart(e) {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
+function isImageMedia(item) {
+    if (!item) return false;
+    const lowerPath = (item.full_path || '').toLowerCase();
+    return item.type === 'image' || ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => lowerPath.endsWith(ext));
 }
 
-function handleTouchMove(e) {
-    // Basic swipe detection
-    // User wants "Swipe from right to left" but "Not from edge"
-    // And "Mid screen"
+function openMediaAtIndex(idx) {
+    const item = state.currentGridVideos[idx];
+    if (!item) return;
 
-    // We handle 'touchend' normally, but user might want responsive drag.
-    // Let's stick to simple swipe detection on End for now for simplicity & stability.
-}
+    const videoModal = document.getElementById('video-modal');
+    const imageModal = document.getElementById('image-modal');
 
-window.addEventListener('touchend', (e) => {
-    // Only if modal is open
-    const modal = document.getElementById('video-modal');
-    if (modal.classList.contains('hidden')) return;
-
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
-
-    const screenW = window.innerWidth;
-
-    // Check constraints
-    // 1. Not from edge (e.g. < 20px or > width - 20px)
-    // User said: "quẹt từ phải qua trái, ko để quẹt từ cạnh" -> Swipe Left to open sidebar
-    // So StartX should be < ScreenWidth - 30px (Not right edge)
-    // AND StartX > 40px (Not left edge, though swipe left implies starting right)
-
-    const isEdge = touchStartX < 40 || touchStartX > (screenW - 20);
-
-    // 2. Swipe Left Strength
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60 && !isEdge) {
-        // Horizontal Swipe
-        if (deltaX < 0) {
-            // Swipe Left -> Open Playlist
-            togglePlaylist(true);
-        } else {
-            // Swipe Right -> Close Playlist
-            togglePlaylist(false);
-        }
+    if (isImageMedia(item)) {
+        if (videoModal && !videoModal.classList.contains('hidden')) closeVideoModal();
+        openImageModal(idx);
+    } else {
+        if (imageModal && !imageModal.classList.contains('hidden')) closeImageModal();
+        openVideoModal(idx);
     }
-}, { passive: true });
-
-
-// --- Nav ---
+}
 
 export function playNext(auto = false) {
+    const count = state.currentGridVideos.length;
+    if (!count) return;
+
     let nextIdx = -1;
-
     if (isShuffle) {
-        // Simple random calc
-        nextIdx = Math.floor(Math.random() * state.currentGridVideos.length);
-    } else {
-        if (state.currentIndex < state.currentGridVideos.length - 1) {
-            nextIdx = state.currentIndex + 1;
-        } else if (auto) {
-            // Loop back to start if auto next? Or stop.
-            // Let's stop to be safe, or loop if user requested. Standard is stop or loop.
-            // We'll loop for continuous 'Flow'.
-            nextIdx = 0;
+        if (count === 1) nextIdx = 0;
+        else {
+            do {
+                nextIdx = Math.floor(Math.random() * count);
+            } while (nextIdx === state.currentIndex);
         }
+    } else if (state.currentIndex < count - 1) {
+        nextIdx = state.currentIndex + 1;
+    } else if (auto) {
+        nextIdx = 0;
     }
 
-    if (nextIdx !== -1) {
-        state.currentIndex = nextIdx;
-        const next = state.currentGridVideos[nextIdx];
-        if (next.type === 'image') {
-            openImageModal(nextIdx);
-        } else {
-            openVideoModal(nextIdx);
-        }
-    }
+    if (nextIdx !== -1) openMediaAtIndex(nextIdx);
 }
 
 export function playPrev() {
     if (state.currentIndex > 0) {
-        state.currentIndex--;
-        const prev = state.currentGridVideos[state.currentIndex];
-        if (prev.type === 'image') openImageModal(state.currentIndex);
-        else openVideoModal(state.currentIndex);
+        openMediaAtIndex(state.currentIndex - 1);
     }
 }
 
@@ -516,21 +504,7 @@ async function handleImageWheel(e) {
 window.closeVideoModal = closeVideoModal;
 window.closeImageModal = closeImageModal;
 window.playVideoFromIndex = (idx) => {
-    const v = state.currentGridVideos[idx];
-    if (!v) return;
-
-    // Phát hiện ảnh thông minh dựa trên extension hoặc type
-    const imgExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-    const lowerPath = v.full_path.toLowerCase();
-    const isActuallyImage = v.type === 'image' || imgExts.some(ext => lowerPath.endsWith(ext));
-
-    if (isActuallyImage) {
-        openImageModal(idx);
-        closeVideoModal(); // Đảm bảo đóng video modal nếu đang mở
-    } else {
-        openVideoModal(idx);
-        closeImageModal(); // Đảm bảo đóng image modal nếu đang mở
-    }
+    openMediaAtIndex(idx);
 };
 window.playStreamFromIndex = (event, idx) => {
     event.stopPropagation();
@@ -552,9 +526,11 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         closeVideoModal();
         closeImageModal();
-    } else if (e.code === 'ArrowRight') {
+    } else if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+        e.preventDefault();
         playNext();
-    } else if (e.code === 'ArrowLeft') {
+    } else if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
+        e.preventDefault();
         playPrev();
     }
 });
