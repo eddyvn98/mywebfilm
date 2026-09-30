@@ -129,3 +129,67 @@ def test_path_guard_resolves_symlink_escape(monkeypatch, tmp_path):
     config = {'video_dirs': [str(allowed)]}
     monkeypatch.setattr(cfg, 'load_config', lambda: config)
     assert utils.check_path_safe(str(link / 'secret.txt')) is False
+
+
+def test_config_update_response_never_returns_server_secrets(client):
+    authenticate(client)
+    fake = {
+        'video_dirs': ['D:/Media'],
+        'gemini_api_key': 'secret-key',
+        'scrapper_cookies': 'secret-cookie',
+        'auto_convert_ts': True,
+    }
+    with patch('routes.api_config.cfg.load_config', return_value=fake), \
+         patch('routes.api_config.cfg.save_config'):
+        payload = client.post(
+            '/api/config/update',
+            json={'auto_convert_ts': False},
+        ).get_json()
+
+    assert payload['status'] == 'ok'
+    assert 'gemini_api_key' not in payload['config']
+    assert 'scrapper_cookies' not in payload['config']
+    assert payload['config']['gemini_configured'] is True
+    assert payload['config']['scrapper_cookies_configured'] is True
+
+
+def test_valid_ott_does_not_bypass_general_api(client):
+    api_auth.CURRENT_OTT = 'c' * 32
+    api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
+    resp = client.get(
+        '/api/videos?token=' + ('c' * 32),
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert resp.status_code == 401
+
+
+def test_valid_ott_does_not_bypass_media_api(client):
+    api_auth.CURRENT_OTT = 'd' * 32
+    api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
+    resp = client.get(
+        '/api/stream?path=C:/Windows/win.ini&token=' + ('d' * 32),
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert resp.status_code == 401
+
+
+def test_valid_ott_can_bootstrap_remote_registration_page(client):
+    api_auth.CURRENT_OTT = 'e' * 32
+    api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
+    resp = client.get(
+        '/register_security?token=' + ('e' * 32),
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert resp.status_code == 200
+
+
+def test_project_static_is_not_a_media_root_by_default(monkeypatch):
+    import os
+    import utils
+    import config_manager as cfg
+
+    monkeypatch.setattr(cfg, 'load_config', lambda: {'video_dirs': []})
+    project_static_file = os.path.join(os.path.dirname(utils.__file__), 'static', 'img', 'actors', 'x.jpg')
+
+    assert utils.check_path_safe(project_static_file) is False
+    assert utils.check_path_safe(project_static_file, allow_project_assets=True) is True
