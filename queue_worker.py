@@ -4,7 +4,7 @@ import os
 import ffmpeg_service as ff
 import config_manager as cfg
 import logging
-from runtime_db import (
+from media_job_store import (
     add_media_job,
     clear_finished_media_jobs,
     load_media_jobs,
