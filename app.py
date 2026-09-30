@@ -97,5 +97,5 @@ def api_incoming_count():
 
 
 if __name__ == "__main__":
-    print("Starting Video Sort Dashboard at http://localhost:5500")
-    app.run(debug=False, host="0.0.0.0", port=5500, threaded=True)
+    print("Starting LOCAL-ONLY Video Sort Dashboard at http://localhost:5500")
+    app.run(debug=False, host="127.0.0.1", port=5500, threaded=True)

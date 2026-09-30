@@ -1,6 +1,7 @@
 // static/js/mgmt_ui_service.js
 import { state } from './state.js';
 import { allTags, loadAllTags, uploadActorImage } from './ai_mgmt_service.js';
+import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 
 export let mgmtListVisible = [];
 
@@ -35,7 +36,7 @@ export async function loadUnverifiedList() {
         renderMgmtList();
         updateMgmtCount();
     } catch (err) {
-        listEl.innerHTML = `<div class="text-red-500 text-[8px] p-4">Lỗi: ${err.message}</div>`;
+        listEl.innerHTML = `<div class="text-red-500 text-[8px] p-4">Lỗi: ${escapeHtml(err.message)}</div>`;
     }
 }
 
@@ -57,8 +58,8 @@ export function renderMgmtList() {
                     <i class="fa-solid fa-file-video text-slate-600 text-[10px]"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-white text-[10px] font-bold truncate">${v.name}</div>
-                    <div class="text-slate-500 text-[8px] uppercase font-black tracking-tighter">${v.ext} • ${v.size_fmt}</div>
+                    <div class="text-white text-[10px] font-bold truncate">${escapeHtml(v.name)}</div>
+                    <div class="text-slate-500 text-[8px] uppercase font-black tracking-tighter">${escapeHtml(v.ext)} • ${escapeHtml(v.size_fmt)}</div>
                 </div>
             </div>
         </div>
@@ -101,12 +102,12 @@ export function renderMgmtSidebars() {
             const imgPath = `/static/img/actors/${safeName}.jpg?t=${Date.now()}`;
             return `
                 <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-800 border border-white/5 group shadow-lg">
-                    <img src="${imgPath}" class="w-full h-full object-cover" 
-                        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 font-family=%22Arial%22 font-size=%2210%22 fill=%22%23475569%22 text-anchor=%22middle%22 dy=%22.3em%22 uppercase>${name.substring(0, 2)}</text></svg>'">
+                    <img src="${escapeAttr(imgPath)}" class="w-full h-full object-cover" 
+                        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 font-family=%22Arial%22 font-size=%2210%22 fill=%22%23475569%22 text-anchor=%22middle%22 dy=%22.3em%22 uppercase>${escapeHtml(name.substring(0, 2))}</text></svg>'">
                     <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
-                        <span class="text-[8px] text-white font-black uppercase mb-2 truncate w-full">${name}</span>
-                        <input type="file" id="upload-${safeName}" class="hidden" onchange="uploadActorImage('${name}', this)">
-                        <button onclick="document.getElementById('upload-${safeName}').click()" 
+                        <span class="text-[8px] text-white font-black uppercase mb-2 truncate w-full">${escapeHtml(name)}</span>
+                        <input type="file" id="upload-${escapeAttr(safeName)}" class="hidden" onchange="uploadActorImage('${escapeInlineJsSingleQuoted(name)}', this)">
+                        <button onclick="document.getElementById('upload-${escapeInlineJsSingleQuoted(safeName)}').click()" 
                             class="bg-blue-600 p-1.5 rounded-lg text-white hover:bg-blue-500 transition active:scale-95 shadow-lg">
                             <i class="fa-solid fa-camera text-[10px]"></i>
                         </button>
@@ -123,9 +124,9 @@ export function renderMgmtSidebars() {
     chipsEl.innerHTML = mergedGenres.map(g => {
         const isActive = currentGenres.includes(g.toLowerCase());
         return `
-            <button onclick="toggleGenreTag('${g}')" 
+            <button onclick="toggleGenreTag('${escapeInlineJsSingleQuoted(g)}')" 
                 class="px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all duration-300 border ${isActive ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20' : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300'}">
-                ${g}
+                ${escapeHtml(g)}
             </button>
         `;
     }).join('');
@@ -136,7 +137,7 @@ export function renderMgmtSidebars() {
         let studios = (allTags.studios || []).sort();
         studioContainer.innerHTML = studios.map(s => {
             const isActive = currentStudio.toLowerCase() === s.toLowerCase();
-            return `<button onclick="setStudio('${s}')" class="px-2 py-1 rounded text-[8px] border transition ${isActive ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}">${s}</button>`;
+            return `<button onclick="setStudio('${escapeInlineJsSingleQuoted(s)}')" class="px-2 py-1 rounded text-[8px] border transition ${isActive ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}">${escapeHtml(s)}</button>`;
         }).join('');
     }
     renderActorQuickSelect();
@@ -164,9 +165,9 @@ export function renderActorQuickSelect() {
     container.innerHTML = allActors.map(actor => {
         const isActive = currentActors.includes(actor.toLowerCase());
         return `
-            <button onclick="toggleActorTag('${actor}')" 
+            <button onclick="toggleActorTag('${escapeInlineJsSingleQuoted(actor)}')" 
                 class="px-2 py-1 rounded text-[8px] border transition text-left truncate w-full ${isActive ? 'bg-purple-600 text-white border-purple-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'}">
-                ${actor}
+                ${escapeHtml(actor)}
             </button>
         `;
     }).join('');

@@ -2,7 +2,8 @@
 sort_engine.py - Core engine for Video Auto-Sort Web Dashboard.
 Handles: scan, classify, actress lookup (jav321), move files.
 """
-import os, re, json, time, urllib.request, shutil
+import os, re, json, time, urllib.request, shutil, ntpath
+from storage_utils import atomic_write_json
 from collections import Counter
 from datetime import datetime
 
@@ -38,8 +39,7 @@ def load_drive_map():
 
 def save_drive_map(data):
     try:
-        with open(DRIVE_MAP_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        atomic_write_json(DRIVE_MAP_FILE, data, indent=2)
     except Exception:
         pass
 
@@ -76,7 +76,7 @@ def load_cache():
     return json.load(open(CACHE_FILE,encoding="utf-8")) if os.path.exists(CACHE_FILE) else {}
 
 def save_cache(c):
-    json.dump(c, open(CACHE_FILE,"w",encoding="utf-8"), ensure_ascii=False, indent=2)
+    atomic_write_json(CACHE_FILE, c, indent=2)
 
 def classify(fn):
     fl = fn.lower()
@@ -197,23 +197,23 @@ class SortEngine:
             sf = sub if sub in {"TOKYO_HOT","CARIBBEANCOM"} else (sub if pcounts[sub]>=5 else others_group(sub))
             group_key = f"JAV/{sf}"
             dest_drive = pick_destination_drive(group_key, self.drive_map)
-            sdst = unique_path(src, os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV",sf,fn))
+            sdst = unique_path(src, ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV",sf,fn))
             code = jav_code(fn); actresses=[]
             if code and sub not in {"TOKYO_HOT","CARIBBEANCOM"}:
                 actresses = self.lookup_actress(code)
                 time.sleep(0.3)
             if actresses:
-                adsts=[{"actress":n,"dst":unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress",sanitize(n),fn))} for n in actresses]
+                adsts=[{"actress":n,"dst":unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress",sanitize(n),fn))} for n in actresses]
                 pending=False
             else:
-                adsts=[{"actress":"PENDING_REVIEW","dst":unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress","PENDING_REVIEW",fn))}]
+                adsts=[{"actress":"PENDING_REVIEW","dst":unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos","JAV_By_Actress","PENDING_REVIEW",fn))}]
                 pending=True
             return {"src":src,"cat":cat,"sub":sub,"studio_dst":sdst,"actress_dsts":adsts,"actresses":actresses,"pending":pending,"code":code,"filename":fn}
         else:
             dp = date_prefix(fn,mt)
             group_key = f"{cat}/{dp}"
             dest_drive = pick_destination_drive(group_key, self.drive_map)
-            dst = unique_path(src,os.path.join(f"{dest_drive}:\\Sorted_Videos",cat,dp,fn))
+            dst = unique_path(src,ntpath.join(f"{dest_drive}:\\Sorted_Videos",cat,dp,fn))
             return {"src":src,"cat":cat,"sub":sub,"studio_dst":dst,"actress_dsts":[],"actresses":[],"pending":False,"code":None,"filename":fn}
 
     def execute_move(self, plan):
@@ -250,8 +250,11 @@ class SortEngine:
         for i,v in enumerate(videos):
             self._emit(current_file=v["filename"], done=i)
             plan = self.plan_move(v, pcounts)
+            move_ok = True
             if not self.dry_run:
-                self.execute_move(plan)
+                move_ok = self.execute_move(plan)
+            if not move_ok:
+                continue
             if plan["pending"]:
                 self._state["pending_review"].append({"src":plan["src"],"code":plan.get("code",""),"filename":v["filename"]})
             else:
@@ -275,7 +278,9 @@ class SortEngine:
         for i,v in enumerate(videos):
             self._emit(current_file=v["filename"],done=i)
             plan = self.plan_move(v, pcounts)
-            if not self.dry_run: self.execute_move(plan)
+            move_ok = True if self.dry_run else self.execute_move(plan)
+            if not move_ok:
+                continue
             if plan["pending"]:
                 self._state["pending_review"].append({"src":plan["src"],"code":plan.get("code",""),"filename":v["filename"]})
             else:

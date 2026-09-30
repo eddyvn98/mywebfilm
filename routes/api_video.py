@@ -63,10 +63,12 @@ def play():
     p = request.json.get('path')
     t = request.json.get('type', 'video')
     
-    if not p or not os.path.exists(p):
+    if not p:
         return jsonify({"status":"err", "msg": "File not found"}), 404
     if not check_path_safe(p):
         return jsonify({"status":"err", "msg": "Access denied"}), 403
+    if not os.path.exists(p):
+        return jsonify({"status":"err", "msg": "File not found"}), 404
 
     # Increase view count in background to avoid blocking initial stream request
     def update_views(p_val):
@@ -93,8 +95,9 @@ def play():
 @video_bp.route('/api/stream')
 def stream_video():
     path = request.args.get('path')
-    if not path or not os.path.exists(path): return "File not found", 404
+    if not path: return "File not found", 404
     if not check_path_safe(path): return "Access denied", 403
+    if not os.path.exists(path): return "File not found", 404
     
     # Determine Mime Type safely
     ext = os.path.splitext(path)[1].lower()

@@ -3,14 +3,47 @@ import queue
 import os
 import ffmpeg_service as ff
 import config_manager as cfg
+import logging
+import json
+from storage_utils import atomic_write_json
+
+logger = logging.getLogger(__name__)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "data"))
+JOBS_FILE = os.path.join(DATA_DIR, "media_jobs.json")
 
 class MediaQueue:
     def __init__(self):
         self.queue = queue.Queue()
         self.status_lock = threading.Lock()
-        self.items = [] # List of {path, type, status, output, error}
+        self.items = self._load_items()
         self.worker_thread = None
         self.is_running = False
+
+    def _load_items(self):
+        if not os.path.exists(JOBS_FILE):
+            return []
+        try:
+            with open(JOBS_FILE, "r", encoding="utf-8") as f:
+                items = json.load(f)
+            if not isinstance(items, list):
+                return []
+            changed = False
+            for item in items:
+                if item.get("status") in {"pending", "processing"}:
+                    item["status"] = "failed"
+                    item["error"] = "Interrupted by application restart"
+                    changed = True
+            if changed:
+                atomic_write_json(JOBS_FILE, items)
+            return items
+        except Exception:
+            logger.exception("media_job_state_load_failed")
+            return []
+
+    def _persist_unlocked(self):
+        atomic_write_json(JOBS_FILE, self.items)
 
     def add_items(self, paths, task_type="highlight"):
         with self.status_lock:
@@ -29,6 +62,7 @@ class MediaQueue:
                 }
                 self.items.append(item)
                 self.queue.put(item)
+            self._persist_unlocked()
         
         self.ensure_worker_started()
 
@@ -47,6 +81,8 @@ class MediaQueue:
 
             with self.status_lock:
                 item['status'] = "processing"
+                self._persist_unlocked()
+                logger.info("media_job_started type=%s path=%r", item['type'], item['path'])
 
             try:
                 res_path = None
@@ -69,6 +105,8 @@ class MediaQueue:
                     if res_path:
                         item['status'] = "completed"
                         item['output'] = res_path
+                        self._persist_unlocked()
+                        logger.info("media_job_completed type=%s source=%r output=%r", item['type'], item['path'], res_path)
                         
                         # Sync Cache
                         try:
@@ -109,10 +147,14 @@ class MediaQueue:
                     else:
                         item['status'] = "failed"
                         item['error'] = "FFmpeg task failed"
+                        self._persist_unlocked()
+                        logger.error("media_job_failed type=%s path=%r reason=ffmpeg", item['type'], item['path'])
             except Exception as e:
                 with self.status_lock:
                     item['status'] = "failed"
                     item['error'] = str(e)
+                    self._persist_unlocked()
+                    logger.exception("media_job_failed type=%s path=%r", item['type'], item['path'])
             finally:
                 self.queue.task_done()
 
@@ -126,6 +168,7 @@ class MediaQueue:
     def clear_completed(self):
         with self.status_lock:
             self.items = [i for i in self.items if i['status'] in ['pending', 'processing']]
+            self._persist_unlocked()
 
 # Global instance
 media_queue = MediaQueue()

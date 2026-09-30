@@ -29,3 +29,12 @@ rebalance_status.json
 *.log
 .playwright-mcp/
 .env*
+
+# Runtime state / secrets
+data/
+credentials.json
+history_cache.json
+favorites_cache.json
+
+# Local tool binaries
+cloudflared.exe

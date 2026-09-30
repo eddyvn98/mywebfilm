@@ -37,7 +37,7 @@ def upload_actor_image():
     
     # Path safety verification
     from utils import check_path_safe
-    if not check_path_safe(save_path):
+    if not check_path_safe(save_path, allow_project_assets=True):
         return jsonify({"status": "error", "msg": "Access denied"}), 403
         
     file.save(save_path)
@@ -85,6 +85,12 @@ def ai_inject():
     should_rename = request.json.get('rename', False)
 
     if not filename or not full_path: return "Missing path", 400
+
+    from utils import check_path_safe
+    if not check_path_safe(full_path):
+        return jsonify({"status": "error", "msg": "Access denied"}), 403
+    if not os.path.exists(full_path):
+        return jsonify({"status": "error", "msg": "File not found"}), 404
     
     final_meta = custom_metadata
     if not final_meta:

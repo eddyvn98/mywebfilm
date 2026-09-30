@@ -1,0 +1,52 @@
+# MyWebFilm
+
+Local-first Flask media library manager for Windows with streaming, metadata management, WebAuthn login, FFmpeg processing, and automatic sorting.
+
+## Requirements
+
+- Python 3.12 recommended.
+- FFmpeg and FFprobe available on PATH.
+- Windows is required for desktop-launch features such as Explorer/MPC-HC; the core test suite is platform-neutral.
+
+## Setup
+
+```bash
+python -m venv .venv
+# Windows: .venv\\Scripts\\activate
+pip install -r requirements.txt
+python webfilm.py
+```
+
+Open `http://localhost:5000`.
+
+## Runtime data
+
+Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory.
+
+`CINEMA_SECRET_KEY` can be supplied explicitly. If omitted, the app creates a random persistent key in `data/flask_secret.key`.
+
+For HTTPS/tunnel use, set `CINEMA_SECURE_COOKIES=1`.
+
+`cloudflared.exe` is intentionally not stored in Git. Install Cloudflare Tunnel separately or place a local copy next to `setup_tunnel.py`; it is ignored by Git.
+
+### Upgrade note
+
+Older revisions tracked `credentials.json`, `history_cache.json`, and `favorites_cache.json`. The hardened version no longer tracks these files. WebAuthn credentials now live in `data/credentials.json`; if an old local `credentials.json` is still present on first run, it is migrated automatically. If Git has already removed the old credential file, register the device/passkey again from localhost.
+
+Back up `data/` plus your local `config.json`, `tags.json`, and media-sidecar `.nfo` files before major upgrades.
+
+## Highlight behavior
+
+Highlight processing intentionally replaces storage usage by deleting the original source after the generated highlight passes media validation. If FFmpeg or FFprobe validation fails, the source is retained.
+
+## Tests
+
+```bash
+pytest -q
+```
+
+GitHub Actions runs Python compilation, pytest with coverage, security/data-safety regressions, and JavaScript syntax checks for pushes and pull requests.
+
+## Production hardening
+
+See `docs/PRODUCTION_HARDENING_PLAN.md`.

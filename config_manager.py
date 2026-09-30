@@ -3,6 +3,7 @@ import os
 from constants import CONFIG_FILE, CACHE_FILE, HISTORY_FILE, FAVORITES_FILE
 import time
 import threading
+from storage_utils import atomic_write_json
 
 # Thread locks to prevent concurrent write data corruption
 _config_lock = threading.Lock()
@@ -66,8 +67,7 @@ def load_config():
                 raw_config = {**default_config, **cfg}
                 _config_cache = normalize_config(raw_config)
                 if _config_cache != raw_config:
-                    with open(CONFIG_FILE, 'w', encoding='utf-8') as wf:
-                        json.dump(_config_cache, wf, ensure_ascii=False, indent=4)
+                    atomic_write_json(CONFIG_FILE, _config_cache)
                 _config_mtime = current_mtime
                 return _config_cache
         except Exception as e:
@@ -78,8 +78,7 @@ def save_config(config):
     global _config_cache, _config_mtime
     config = normalize_config(config)
     with _config_lock:
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(config, f, ensure_ascii=False, indent=4)
+        atomic_write_json(CONFIG_FILE, config)
         _config_cache = config
         try:
             _config_mtime = os.path.getmtime(CONFIG_FILE)
@@ -113,8 +112,7 @@ def load_cache():
 def save_cache(data):
     global _movies_cache, _movies_mtime
     with _movies_lock:
-        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        atomic_write_json(CACHE_FILE, data)
         _movies_cache = [v for v in data if v is not None]
         try:
             _movies_mtime = os.path.getmtime(CACHE_FILE)
@@ -142,8 +140,7 @@ def load_history():
 def save_history(data):
     global _history_cache, _history_mtime
     with _history_lock:
-        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        atomic_write_json(HISTORY_FILE, data)
         _history_cache = data
         try:
             _history_mtime = os.path.getmtime(HISTORY_FILE)
@@ -171,8 +168,7 @@ def load_favorites():
 def save_favorites(data):
     global _favorites_cache, _favorites_mtime
     with _favorites_lock:
-        with open(FAVORITES_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+        atomic_write_json(FAVORITES_FILE, data)
         _favorites_cache = data
         try:
             _favorites_mtime = os.path.getmtime(FAVORITES_FILE)

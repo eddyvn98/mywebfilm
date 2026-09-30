@@ -1,5 +1,6 @@
 // static/js/main.js
 import { state } from './state.js';
+import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 import { historyService } from './history_service.js';
 import { favoritesService } from './favorites_service.js';
 import { checkPinStatus } from './auth.js';
@@ -83,14 +84,14 @@ async function init() {
             <div class="group flex items-center justify-between gap-2 px-4 py-2 hover:bg-slate-800/40 rounded-lg transition-colors">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <div class="p-2 bg-blue-500/10 rounded-lg shrink-0"><i class="fa-solid fa-folder text-blue-400"></i></div>
-                    <span class="text-slate-300 font-medium text-sm truncate" title="${path}">${path}</span>
+                    <span class="text-slate-300 font-medium text-sm truncate" title="${escapeAttr(path)}">${escapeHtml(path)}</span>
                 </div>
                 <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                     <button onclick="renameFolder('${path.replace(/\\/g, '\\\\')}')" 
+                     <button onclick="renameFolder('${escapeInlineJsSingleQuoted(path)}')" 
                             class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition" title="Đổi tên an toàn (giữ thumbnail)">
                         <i class="fa-solid fa-pen text-xs"></i>
                     </button>
-                    <button onclick="removeFolder('${path.replace(/\\/g, '\\\\')}')" 
+                    <button onclick="removeFolder('${escapeInlineJsSingleQuoted(path)}')" 
                             class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-md transition" title="Xóa nguồn">
                         <i class="fa-solid fa-trash-can text-xs"></i>
                     </button>

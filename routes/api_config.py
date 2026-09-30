@@ -2,22 +2,48 @@ from flask import Blueprint, jsonify, request
 import os
 import config_manager as cfg
 import scanner_service as scanner
+import ffmpeg_service as ff
 from tag_service import tag_manager
 
 config_bp = Blueprint('api_config', __name__)
 TUNNEL_URL = None
 
+
+@config_bp.route('/api/health')
+def health():
+    config = cfg.load_config()
+    return jsonify({
+        'status': 'ok',
+        'ffmpeg': ff.check_ffmpeg_presence(),
+        'configured_video_dirs': len(config.get('video_dirs', [])),
+        'gemini_configured': bool(config.get('gemini_api_key')),
+        'tunnel_configured': bool(TUNNEL_URL),
+    })
+
 @config_bp.route('/api/tags')
 def get_tags():
     return jsonify(tag_manager.get_all())
 
+def _public_config(config):
+    public_keys = {
+        "video_dirs",
+        "auto_convert_ts",
+        "preferred_codec",
+        "llm_model",
+        "enable_jav_scraping",
+    }
+    safe_config = {key: config[key] for key in public_keys if key in config}
+    safe_config["gemini_configured"] = bool(config.get("gemini_api_key"))
+    safe_config["scrapper_cookies_configured"] = bool(config.get("scrapper_cookies"))
+    return safe_config
+
 @config_bp.route('/api/config')
 def get_config():
-    return jsonify(cfg.load_config())
+    return jsonify(_public_config(cfg.load_config()))
 
 @config_bp.route('/api/config/update', methods=['POST'])
 def update_config():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     c = cfg.load_config()
     changed = False
     if 'auto_convert_ts' in data:
@@ -28,7 +54,7 @@ def update_config():
         changed = True
     if changed:
         cfg.save_config(c)
-        return jsonify({"status": "ok", "config": c})
+        return jsonify({"status": "ok", "config": _public_config(c)})
     return jsonify({"status": "no_change"})
 
 @config_bp.route('/api/clear_cache', methods=['POST'])

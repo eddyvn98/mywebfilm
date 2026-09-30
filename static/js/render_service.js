@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { getThumbnailUrl, getPreviewUrl } from './api.js';
 import { favoritesService } from './favorites_service.js';
+import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 
 function formatDuration(seconds) {
     if (!seconds || seconds <= 0) return '';
@@ -51,18 +52,18 @@ export function renderGrid(videos, append = false, resetPage = true) {
         const groupHtml = items.map(({ v, globalIndex }) => {
             const isImage = v.type === 'image';
             const isSelected = state.selectedPaths?.includes(v.full_path);
-            const previewAttr = isImage ? '' : `data-preview-url="${getPreviewUrl(v.full_path)}"`;
+            const previewAttr = isImage ? '' : `data-preview-url="${escapeAttr(getPreviewUrl(v.full_path))}"`;
 
             return `
             <div class="movie-card group cursor-pointer relative ${isSelected ? 'selected' : ''} ${v.is_offline ? 'opacity-60 saturate-0' : ''}" 
-                 data-path="${v.full_path}"
+                 data-path="${escapeAttr(v.full_path)}"
                  onclick="handleCardClick(event, ${globalIndex})"
                  onmouseenter="handlePreview(this, true); handleMouseEnter(event, ${globalIndex})"
                  onmouseleave="handlePreview(this, false)"
                  ${previewAttr}>
                 <div class="poster-container bg-slate-900 overflow-hidden rounded-2xl border border-white/5 shadow-2xl transition duration-500">
                     <div class="poster-content h-full w-full relative">
-                        <img src="${getThumbnailUrl(v.full_path, v.type)}" 
+                        <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" 
                              class="w-full h-full object-cover transition duration-500 ${v.is_offline ? '' : 'group-hover:scale-110'}" 
                              loading="lazy"
                              onerror="this.style.display='none'">
@@ -71,15 +72,15 @@ export function renderGrid(videos, append = false, resetPage = true) {
                             ${v.is_offline ? '<span class="badge bg-red-600 text-white px-2 py-0.5 rounded shadow-lg font-bold flex items-center gap-1"><i class="fa-solid fa-plug-circle-exclamation"></i> OFFLINE</span>' : ''}
                             ${isImage ? '<span class="badge bg-purple-600/90 text-white px-2 py-0.5 rounded shadow-lg">IMG</span>' : ''}
                             <span class="badge ${isImage ? 'bg-purple-900/80 text-purple-200 border-purple-500/30' : 'bg-blue-900/80 text-blue-200 border-blue-500/30'} 
-                                 px-2 py-0.5 rounded border shadow-md">${v.ext}</span>
+                                 px-2 py-0.5 rounded border shadow-md">${escapeHtml(v.ext)}</span>
                             ${(v.categories || []).map(c => {
                 let color = 'bg-blue-600/80';
                 let label = c;
                 if (c.startsWith('Studio:')) { color = 'bg-indigo-600/80'; label = c.replace('Studio: ', ''); }
                 else if (c.startsWith('Diễn viên:')) { color = 'bg-teal-600/80'; label = c.replace('Diễn viên: ', ''); }
                 return `<span class="badge ${color} text-white px-1.5 py-0.5 rounded text-[7px] uppercase tracking-tighter pointer-events-auto hover:brightness-125 transition" 
-                                               onclick="handleBadgeClick(event, '${c}', '${label.toUpperCase()}')">
-                                            ${label}
+                                               onclick="handleBadgeClick(event, '${escapeInlineJsSingleQuoted(c)}', '${escapeInlineJsSingleQuoted(label.toUpperCase())}')">
+                                            ${escapeHtml(label)}
                                         </span>`;
             }).join('')}
                         </div>
@@ -114,9 +115,9 @@ export function renderGrid(videos, append = false, resetPage = true) {
                     </div>
                 </div>
                 <div class="px-1 py-2">
-                    <p class="movie-title mb-1.5 line-clamp-2" title="${v.name}">${v.name}</p>
+                    <p class="movie-title mb-1.5 line-clamp-2" title="${escapeAttr(v.name)}">${escapeHtml(v.name)}</p>
                     <div class="flex items-center gap-1.5 opacity-40 text-[10px] font-bold tracking-tight">
-                        <span class="font-mono uppercase">${v.size_fmt}</span>
+                        <span class="font-mono uppercase">${escapeHtml(v.size_fmt)}</span>
                         <span class="opacity-50 text-[6px]">•</span>
                         <span class="uppercase">${v.views || 0} VIEW</span>
                     </div>
@@ -162,9 +163,9 @@ export function renderTimeline(allVisibleVideos) {
     timeline.innerHTML = uniqueMonths.map(m => `
         <button onclick="scrollToDate('${m.fullDate}')" 
                 class="group flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95">
-            <span class="text-[8px] font-black text-slate-500 group-hover:text-blue-400 transition">${m.key.split('/')[1]}</span>
+            <span class="text-[8px] font-black text-slate-500 group-hover:text-blue-400 transition">${escapeHtml(m.key.split('/')[1])}</span>
             <div class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition"></div>
-            <span class="text-[9px] font-black text-slate-400 group-hover:text-white transition">${m.key.split('/')[0]}</span>
+            <span class="text-[9px] font-black text-slate-400 group-hover:text-white transition">${escapeHtml(m.key.split('/')[0])}</span>
         </button>
     `).join('');
 
@@ -222,7 +223,7 @@ export function renderFolders() {
     list.innerHTML = `
         <button onclick="filterByFolder('all')" class="folder-chip ${state.currentFolder === 'all' ? 'active' : ''}">TẤT CẢ</button>
         ${folders.map(f => `
-            <button onclick="filterByFolder('${f}')" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${(f || 'GỐC').toUpperCase()}</button>
+            <button onclick="filterByFolder('${escapeInlineJsSingleQuoted(f)}')" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${escapeHtml((f || 'GỐC').toUpperCase())}</button>
         `).join('')}
     `;
 }
