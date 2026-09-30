@@ -193,3 +193,21 @@ def test_project_static_is_not_a_media_root_by_default(monkeypatch):
 
     assert utils.check_path_safe(project_static_file) is False
     assert utils.check_path_safe(project_static_file, allow_project_assets=True) is True
+
+
+def test_public_config_is_allowlisted_not_blacklisted(client):
+    authenticate(client)
+    fake = {
+        'video_dirs': ['D:/Media'],
+        'auto_convert_ts': True,
+        'preferred_codec': 'h264',
+        'future_secret': 'must-never-leak',
+        'pin': '9999',
+    }
+    with patch('routes.api_config.cfg.load_config', return_value=fake):
+        payload = client.get('/api/config').get_json()
+
+    assert payload['video_dirs'] == ['D:/Media']
+    assert payload['preferred_codec'] == 'h264'
+    assert 'future_secret' not in payload
+    assert 'pin' not in payload
