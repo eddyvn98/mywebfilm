@@ -1,7 +1,27 @@
 import os
+import json
 import subprocess
-from constants import FFMPEG_PATH
+from constants import FFMPEG_PATH, FFPROBE_PATH
 from .ffmpeg_core import ffmpeg_semaphore
+
+def validate_media_output(path):
+    if not os.path.exists(path) or os.path.getsize(path) <= 0:
+        return False
+    try:
+        cmd = [
+            FFPROBE_PATH, '-v', 'error',
+            '-show_entries', 'stream=codec_type:format=duration',
+            '-of', 'json', path
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        if res.returncode != 0:
+            return False
+        payload = json.loads(res.stdout or '{}')
+        has_video = any(s.get('codec_type') == 'video' for s in payload.get('streams', []))
+        duration = float((payload.get('format') or {}).get('duration') or 0)
+        return has_video and duration > 0
+    except Exception:
+        return False
 
 def get_best_gpu_encoder():
     try:
@@ -23,7 +43,10 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
             filename = os.path.basename(input_path)
             name, _ = os.path.splitext(filename)
             output_path = os.path.join(output_dir, f"{name}_highlight.mp4")
+            temp_output = output_path + '.partial.mp4'
             if not os.path.exists(output_dir): os.makedirs(output_dir)
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
 
             # High-thread count CPU (i7-8750H) is faster here than GPU 1050Ti
             cmd = [
@@ -38,16 +61,19 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
                 '-crf', '26',
                 '-c:a', 'aac',
                 '-b:a', '128k',
-                output_path
+                temp_output
             ]
             
             res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            if res.returncode == 0:
-                if delete_src and os.path.exists(output_path):
-                    try: os.remove(input_path)
-                    except: pass
-                return output_path
-            return None
+            if res.returncode != 0 or not validate_media_output(temp_output):
+                if os.path.exists(temp_output):
+                    os.remove(temp_output)
+                return None
+
+            os.replace(temp_output, output_path)
+            if delete_src:
+                os.remove(input_path)
+            return output_path
         except Exception as e:
             print(f"Highlight Exception: {e}")
             return None
@@ -61,6 +87,9 @@ def convert_ts_to_mp4(input_path, delete_src=True):
             filename = os.path.basename(input_path)
             name, _ = os.path.splitext(filename)
             output_path = os.path.join(os.path.dirname(input_path), f"{name}.mp4")
+            temp_output = output_path + '.partial.mp4'
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
             encoder = get_best_gpu_encoder()
             
             cmd = [
@@ -75,15 +104,18 @@ def convert_ts_to_mp4(input_path, delete_src=True):
                 preset = 'fast' if 'nvenc' in encoder else 'ultrafast'
                 cmd.extend(['-preset', preset, '-b:v', '5M'])
                 
-            cmd.extend(['-c:a', 'aac', '-b:a', '128k', output_path])
+            cmd.extend(['-c:a', 'aac', '-b:a', '128k', temp_output])
             
             res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            if res.returncode == 0:
-                if delete_src and os.path.exists(output_path):
-                    try: os.remove(input_path)
-                    except: pass
-                return output_path
-            return None
+            if res.returncode != 0 or not validate_media_output(temp_output):
+                if os.path.exists(temp_output):
+                    os.remove(temp_output)
+                return None
+
+            os.replace(temp_output, output_path)
+            if delete_src:
+                os.remove(input_path)
+            return output_path
         except Exception as e:
             print(f"Conversion Exception: {e}")
             return None
