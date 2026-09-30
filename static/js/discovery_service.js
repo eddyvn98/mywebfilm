@@ -1,5 +1,6 @@
 // static/js/discovery_service.js
 import { state } from './state.js';
+import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 // selectCategory is used from window.selectCategory to avoid circular imports
 
 export function openDiscovery() {
@@ -43,16 +44,16 @@ export function renderDiscoveryContent() {
         const visibleItems = sortedItems.slice(0, LIMIT);
         const hiddenItems = sortedItems.slice(LIMIT);
 
-        let sectionHtml = `<div class="discovery-section"><h3 class="discovery-section-title">${title}</h3><div class="discovery-grid">`;
+        let sectionHtml = `<div class="discovery-section"><h3 class="discovery-section-title">${escapeHtml(title)}</h3><div class="discovery-grid">`;
         sectionHtml += visibleItems.map(renderItemFn).join('');
         if (hasMore) {
-            sectionHtml += `<div id="${sectionId}-hidden" class="contents hidden">`;
+            sectionHtml += `<div id="${escapeAttr(sectionId)}-hidden" class="contents hidden">`;
             sectionHtml += hiddenItems.map(renderItemFn).join('');
             sectionHtml += `</div>`;
         }
         sectionHtml += `</div>`;
         if (hasMore) {
-            sectionHtml += `<button onclick="toggleDiscoverySection('${sectionId}-hidden', this)" class="show-more-btn">Tất cả (${sortedItems.length})</button>`;
+            sectionHtml += `<button onclick="toggleDiscoverySection('${escapeInlineJsSingleQuoted(sectionId)}-hidden', this)" class="show-more-btn">Tất cả (${sortedItems.length})</button>`;
         }
         sectionHtml += `</div>`;
         return sectionHtml;
@@ -62,19 +63,19 @@ export function renderDiscoveryContent() {
         const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
         const colorHue = Math.abs(name.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % 360;
         const imgPath = `/static/img/actors/${name.replace(/ /g, '_')}.jpg`;
-        return `<div class="idol-avatar-container" onclick="window.selectCategory('Diễn viên: ${name}', '${name.toUpperCase()}')">
+        return `<div class="idol-avatar-container" onclick="window.selectCategory('Diễn viên: ${escapeInlineJsSingleQuoted(name)}', '${escapeInlineJsSingleQuoted(name.toUpperCase())}')">
             <div class="idol-avatar-circle" style="background: linear-gradient(135deg, hsl(${colorHue}, 60%, 40%), hsl(${colorHue}, 60%, 20%))">
-                <img src="${imgPath}" class="idol-avatar-img absolute inset-0 hidden" onload="this.classList.remove('hidden')" onerror="this.style.display='none'">
-                <span class="idol-avatar-initials">${initials}</span>
-            </div><div class="idol-name">${name}</div></div>`;
+                <img src="${escapeAttr(imgPath)}" class="idol-avatar-img absolute inset-0 hidden" onload="this.classList.remove('hidden')" onerror="this.style.display='none'">
+                <span class="idol-avatar-initials">${escapeHtml(initials)}</span>
+            </div><div class="idol-name">${escapeHtml(name)}</div></div>`;
     });
 
     const icons = { 'Học sinh / Teen': 'fa-graduation-cap', 'Show hàng / Live': 'fa-video', 'Thủ dâm / Solo': 'fa-hand', 'Gái múp / Vú to': 'fa-heart', 'Gạ gẫm / Call sex': 'fa-phone', 'Người quen / MILF': 'fa-user-tie' };
-    html += renderSection('Khám phá chủ đề', sections['Chủ đề'], t => `<div class="category-card" onclick="window.selectCategory('${t}', '${t.toUpperCase()}')">
-        <i class="fa-solid ${icons[t] || 'fa-tags'}"></i><span>${t}</span></div>`);
+    html += renderSection('Khám phá chủ đề', sections['Chủ đề'], t => `<div class="category-card" onclick="window.selectCategory('${escapeInlineJsSingleQuoted(t)}', '${escapeInlineJsSingleQuoted(t.toUpperCase())}')">
+        <i class="fa-solid ${icons[t] || 'fa-tags'}"></i><span>${escapeHtml(t)}</span></div>`);
 
-    html += renderSection('Hãng phim (Studio)', sections['Studio'], s => `<div class="category-card !w-24 !h-16" onclick="window.selectCategory('Studio: ${s}', '${s.toUpperCase()}')">
-        <span class="!text-[9px]">${s}</span></div>`);
+    html += renderSection('Hãng phim (Studio)', sections['Studio'], s => `<div class="category-card !w-24 !h-16" onclick="window.selectCategory('Studio: ${escapeInlineJsSingleQuoted(s)}', '${escapeInlineJsSingleQuoted(s.toUpperCase())}')">
+        <span class="!text-[9px]">${escapeHtml(s)}</span></div>`);
 
     content.innerHTML = html || '<div class="text-center py-20 text-slate-500 italic">Chưa có dữ liệu phân loại</div>';
 }
