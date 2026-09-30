@@ -52,8 +52,15 @@ Add recovery-grade backup/restore, failure-injection coverage, and a Windows-nat
 ## Checkpoint log
 
 - [x] Sprint 4 plan recorded.
-- [ ] Backup/restore complete.
-- [ ] Failure injection complete.
-- [ ] Windows E2E suite complete.
-- [ ] Final validation green.
+- [x] Backup/restore complete.
+- [x] Failure injection complete.
+- [x] Windows E2E suite complete — suite and `windows-latest` CI job are ready; GitHub still fails before runner allocation (`runner_id=0`, `steps=[]`).
+- [x] Final validation green — code head `7b56e9e1e53fee6af9e81bb94ed8ad337ee2ee5f`: import smoke + compileall + 63 passed, 9 skipped, coverage 60.48%, `CI_FINAL_EXIT=0`.
 - [ ] PR merged.
+
+
+## Validation note
+
+The platform-neutral and failure-injection gate ran on the isolated Railway validator. Windows-specific tests were collected and skipped on Linux by design. GitHub Actions accepted both the Linux and `windows-latest` jobs, but both failed before any step executed with `runner_id=0` and empty step lists. This is the same external runner-provisioning condition documented in prior sprints, not a Windows test failure.
+
+Failure injection found and fixed a real data-loss risk in MP4 re-encoding: the old swap sequence deleted the original before renaming the new file. The hardened path now uses `os.replace()` so a locked/failed replacement leaves the original intact.
