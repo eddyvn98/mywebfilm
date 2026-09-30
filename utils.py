@@ -110,9 +110,9 @@ def check_path_safe(path):
         whitelist_dirs.append(os.path.join(project_root, 'static'))
         whitelist_dirs.append(os.path.join(project_root, 'templates'))
         
-        abs_path = os.path.abspath(path)
+        abs_path = os.path.realpath(os.path.abspath(path))
         for w_dir in whitelist_dirs:
-            abs_w = os.path.abspath(w_dir)
+            abs_w = os.path.realpath(os.path.abspath(w_dir))
             try:
                 # commonpath trả về tiền tố thư mục chung chính xác nhất
                 common = os.path.commonpath([abs_path, abs_w])
