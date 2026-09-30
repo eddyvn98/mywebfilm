@@ -129,24 +129,24 @@ def ai_inject():
         if 'actors' in final_meta: tag_manager.add_tags('actors', final_meta['actors'])
         if 'studio' in final_meta and final_meta['studio']: tag_manager.add_tags('studio', [final_meta['studio']])
 
-        # Update Cache
-        items = cfg.load_cache()
-        updated = False
-        for v in items:
-            if v['full_path'] == full_path:
-                v['full_path'] = new_path
-                v['name'] = os.path.splitext(new_filename)[0]
-                v['jav_metadata'] = final_meta
-                cats = list(v.get('categories', []))
-                for g in final_meta.get('genres', []): cats.append(g)
-                if final_meta.get('studio'): cats.append(f"Studio: {final_meta['studio'].upper()}")
-                for a in final_meta.get('actors', []): cats.append(f"Diễn viên: {a}")
-                v['categories'] = list(dict.fromkeys(cats))
-                updated = True
+        # Update catalog inside one SQLite transaction.
+        def update_catalog(items):
+            for video in items:
+                if video.get('full_path') != full_path:
+                    continue
+                video['full_path'] = new_path
+                video['name'] = os.path.splitext(new_filename)[0]
+                video['jav_metadata'] = final_meta
+                cats = list(video.get('categories', []))
+                cats.extend(final_meta.get('genres', []))
+                if final_meta.get('studio'):
+                    cats.append(f"Studio: {final_meta['studio'].upper()}")
+                cats.extend(f"Diễn viên: {actor}" for actor in final_meta.get('actors', []))
+                video['categories'] = list(dict.fromkeys(cats))
                 break
-        
-        if updated:
-            cfg.save_cache(items)
+            return items
+
+        cfg.mutate_cache(update_catalog)
 
         return jsonify({
             "status": "ok", 
