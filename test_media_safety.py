@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import ffmpeg_service as ff
+import ffmpeg_conversion
 
 
 def _fake_successful_ffmpeg(monkeypatch):
@@ -54,12 +55,12 @@ def test_mp4_replacement_failure_keeps_original(tmp_path, monkeypatch):
                 handle.write(b'new-video')
         return SimpleNamespace(returncode=0, stdout='', stderr='')
 
-    monkeypatch.setattr(ff.subprocess, 'run', fake_run)
+    monkeypatch.setattr(ffmpeg_conversion.subprocess, 'run', fake_run)
     monkeypatch.setattr(ff, 'get_best_gpu_encoder', lambda codec='h264': 'libx264')
     monkeypatch.setattr(ff, 'validate_media_output', lambda path: True)
     monkeypatch.setattr(config_manager, 'load_config', lambda: {'preferred_codec': 'h264'})
     monkeypatch.setattr(
-        ff.os,
+        ffmpeg_conversion.os,
         'replace',
         lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError('file locked')),
     )
