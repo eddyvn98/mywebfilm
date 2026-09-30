@@ -62,11 +62,12 @@ def delete_file():
             if os.path.exists(artifact):
                 os.remove(artifact)
 
-        items = [
-            item for item in cfg.load_cache()
-            if item.get("full_path") != path
-        ]
-        cfg.save_cache(items)
+        cfg.mutate_cache(
+            lambda items: [
+                item for item in items
+                if item.get("full_path") != path
+            ]
+        )
         update_operation(op_id, "completed")
         return jsonify({"status": "ok", "operation_id": op_id})
     except Exception as exc:
@@ -132,28 +133,35 @@ def fs_rename():
             ]
             cfg.save_config(config)
 
-        items = cfg.load_cache()
+        snapshot = cfg.load_cache()
         old_folder = _basename(old_path)
-        for item in items:
+        for item in snapshot:
             full_path = item.get("full_path", "")
             if full_path == old_path:
                 try:
                     sync_artifacts(old_path, new_path)
                 except Exception as exc:
                     warnings.append(f"artifact sync: {exc}")
-                item["full_path"] = new_path
-                item["name"] = new_name
             elif full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
                 new_full_path = full_path.replace(old_path, new_path, 1)
                 try:
                     sync_artifacts(full_path, new_full_path)
                 except Exception as exc:
                     warnings.append(f"artifact sync {full_path}: {exc}")
-                item["full_path"] = new_full_path
-                if item.get("folder") == old_folder:
-                    item["folder"] = new_name
 
-        cfg.save_cache(items)
+        def update_catalog(items):
+            for item in items:
+                full_path = item.get("full_path", "")
+                if full_path == old_path:
+                    item["full_path"] = new_path
+                    item["name"] = new_name
+                elif full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
+                    item["full_path"] = full_path.replace(old_path, new_path, 1)
+                    if item.get("folder") == old_folder:
+                        item["folder"] = new_name
+            return items
+
+        cfg.mutate_cache(update_catalog)
         if warnings:
             detail = "; ".join(warnings[:5])
             update_operation(op_id, "failed", detail)
@@ -209,9 +217,8 @@ def fs_move():
         return jsonify({"status": "err", "msg": "Access denied to target directory"}), 403
 
     results = []
-    items = cfg.load_cache()
-    cache_updated = False
     operations = []
+    moved_paths = []
 
     for path in paths:
         if not check_path_safe(path):
@@ -244,16 +251,7 @@ def fs_move():
             except Exception as exc:
                 warnings.append(f"artifact sync: {exc}")
 
-            for item in items:
-                full_path = item.get("full_path", "")
-                if full_path == path:
-                    item["full_path"] = new_path
-                    item["folder"] = _basename(target_dir)
-                    cache_updated = True
-                elif full_path.startswith(path + os.sep) or full_path.startswith(path + "\\"):
-                    item["full_path"] = full_path.replace(path, new_path, 1)
-                    cache_updated = True
-
+            moved_paths.append((path, new_path))
             operations.append((op_id, warnings))
             results.append({
                 "path": path,
@@ -273,10 +271,24 @@ def fs_move():
             })
 
     try:
-        if cache_updated:
-            cfg.save_cache(items)
+        if moved_paths:
+            def update_catalog(items):
+                for item in items:
+                    full_path = item.get("full_path", "")
+                    for old_path, new_path in moved_paths:
+                        if full_path == old_path:
+                            item["full_path"] = new_path
+                            item["folder"] = _basename(target_dir)
+                            full_path = new_path
+                            break
+                        if full_path.startswith(old_path + os.sep) or full_path.startswith(old_path + "\\"):
+                            item["full_path"] = full_path.replace(old_path, new_path, 1)
+                            break
+                return items
+
+            cfg.mutate_cache(update_catalog)
     except Exception as exc:
-        detail = f"filesystem changed but cache update failed: {exc}"
+        detail = f"filesystem changed but catalog update failed: {exc}"
         for op_id, _ in operations:
             update_operation(op_id, "failed", detail)
         return jsonify({
