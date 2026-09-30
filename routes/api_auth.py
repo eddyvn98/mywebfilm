@@ -130,7 +130,7 @@ def login_options():
     # Validation: If remote, MUST have a valid OTT. If local, optional.
     is_local = request.remote_addr == '127.0.0.1' or request.remote_addr == '::1'
     if not is_local:
-        if not CURRENT_OTT or token_req != CURRENT_OTT:
+        if not is_token_valid(token_req):
             return jsonify({"status": "err", "msg": "Mã xác thực (Token) không hợp lệ hoặc đã hết hạn"}), 403
     
     try:
