@@ -2,6 +2,7 @@ import json
 import threading
 
 import runtime_db
+import operation_journal
 
 
 def use_temp_db(tmp_path, monkeypatch):
@@ -51,12 +52,12 @@ def test_transactional_list_mutation_preserves_concurrent_updates(tmp_path, monk
 def test_operation_journal_lists_non_completed_operations(tmp_path, monkeypatch):
     use_temp_db(tmp_path, monkeypatch)
 
-    pending = runtime_db.begin_operation("move", "a.mp4", "b.mp4")
-    done = runtime_db.begin_operation("delete", "c.mp4")
-    runtime_db.update_operation(done, "completed")
-    runtime_db.update_operation(pending, "filesystem_done")
+    pending = operation_journal.begin_operation("move", "a.mp4", "b.mp4")
+    done = operation_journal.begin_operation("delete", "c.mp4")
+    operation_journal.update_operation(done, "completed")
+    operation_journal.update_operation(pending, "filesystem_done")
 
-    incomplete = runtime_db.list_incomplete_operations()
+    incomplete = operation_journal.list_incomplete_operations()
 
     assert [row["id"] for row in incomplete] == [pending]
     assert incomplete[0]["status"] == "filesystem_done"
