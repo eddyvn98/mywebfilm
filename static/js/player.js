@@ -1,6 +1,6 @@
 // static/js/player.js
 import { state } from './state.js';
-import { escapeHtml, escapeAttr } from './security.js';
+import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 import { getStreamUrl, getThumbnailUrl } from './api.js';
 import { historyService } from './history_service.js';
 import { favoritesService } from './favorites_service.js';
@@ -434,10 +434,10 @@ function renderFallbackUI(container, v, msg) {
         <div class="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-2 animate-pulse">
             <i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-500"></i>
         </div>
-        <h3 class="text-white font-bold text-lg">${msg}</h3>
-        <p class="text-slate-400 text-sm max-w-md">File <b>${v.name}</b> không hỗ trợ phát trực tiếp trên web.</p>
+        <h3 class="text-white font-bold text-lg">${escapeHtml(msg)}</h3>
+        <p class="text-slate-400 text-sm max-w-md">File <b>${escapeHtml(v.name)}</b> không hỗ trợ phát trực tiếp trên web.</p>
         <div class="flex gap-3 mt-4">
-             <button onclick="playExternal('${v.full_path.replace(/\\/g, '\\\\')}')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/50 flex items-center gap-2"><i class="fa-solid fa-external-link-alt"></i> Mở ngoài</button>
+             <button onclick="playExternal('${escapeInlineJsSingleQuoted(v.full_path)}')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/50 flex items-center gap-2"><i class="fa-solid fa-external-link-alt"></i> Mở ngoài</button>
              <button onclick="closeVideoModal()" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold">Đóng</button>
         </div>
     `;
