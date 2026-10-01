@@ -33,6 +33,7 @@ export function openVideoModal(idx) {
     }
     modal.classList.add('translate-y-0');
     modal.classList.remove('translate-y-full');
+    document.documentElement.classList.add('media-modal-open');
 
     // Update Title & Favorite
     const titleEl = document.getElementById('video-modal-title');
@@ -230,6 +231,7 @@ export function closeVideoModal() {
     modal.classList.add('translate-y-full');
     modal.classList.remove('translate-y-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
+    document.documentElement.classList.remove('media-modal-open');
 }
 
 function getCurrentMedia() {
@@ -499,6 +501,7 @@ export function openImageModal(idx) {
     img.src = getStreamUrl(v.full_path);
 
     modal.classList.remove('hidden');
+    document.documentElement.classList.add('media-modal-open');
     setTimeout(() => modal.classList.add('opacity-100'), 10);
 
     // Add Wheel Event for navigation
@@ -513,6 +516,7 @@ export function closeImageModal() {
         document.getElementById('modal-image-img').src = '';
     }, 300);
     window.removeEventListener('wheel', handleImageWheel);
+    document.documentElement.classList.remove('media-modal-open');
 }
 
 let lastWheelTime = 0;
