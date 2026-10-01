@@ -368,23 +368,46 @@ def apply_security_headers(response):
         "same-origin",
     )
 
-    csp = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' "
-        "https://cdn.tailwindcss.com "
-        "https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' "
-        "https://cdnjs.cloudflare.com; "
-        "font-src 'self' data: "
-        "https://cdnjs.cloudflare.com; "
-        "img-src 'self' data: blob:; "
-        "media-src 'self' blob:; "
-        "connect-src 'self'; "
-        "object-src 'none'; "
-        "base-uri 'none'; "
-        "frame-ancestors 'none'; "
-        "form-action 'self'"
-    )
+    auth_surface = request.path.startswith((
+        "/login",
+        "/register_security",
+        "/api/auth/",
+    ))
+    if auth_surface:
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "font-src 'none'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "media-src 'none'; "
+            "object-src 'none'; "
+            "base-uri 'none'; "
+            "frame-src 'none'; "
+            "frame-ancestors 'none'; "
+            "worker-src 'none'; "
+            "form-action 'self'"
+        )
+    else:
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' "
+            "https://cdn.tailwindcss.com "
+            "https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' "
+            "https://cdnjs.cloudflare.com; "
+            "font-src 'self' data: "
+            "https://cdnjs.cloudflare.com; "
+            "img-src 'self' data: blob:; "
+            "media-src 'self' blob:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'none'; "
+            "frame-src 'none'; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'"
+        )
     response.headers.setdefault(
         "Content-Security-Policy",
         csp,
