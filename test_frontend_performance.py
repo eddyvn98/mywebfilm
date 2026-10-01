@@ -182,3 +182,8 @@ def test_security_client_initialization_is_idempotent():
 def test_selection_toolbar_is_rendered_once():
     source = read("templates/cinema_home.html")
     assert source.count("{% include 'components/selection_toolbar.html' %}") == 1
+
+
+def test_queue_polling_does_not_rerender_grid_for_internal_state_only():
+    source = read("static/js/queue_service.js")
+    assert "applyFilters" not in source
