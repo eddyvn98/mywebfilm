@@ -92,3 +92,17 @@ def test_thumbnails_decode_asynchronously():
     player = read("static/js/player.js")
     assert 'decoding="async"' in grid
     assert 'decoding="async"' in player
+
+
+def test_manage_mode_does_not_rebuild_loaded_grid():
+    source = read("static/js/selection_service.js")
+    assert "manage-mode-active" in source
+    assert "renderGrid(state.currentGridVideos, false, false)" not in source
+
+
+def test_favorite_toggle_updates_card_without_grid_rerender():
+    grid = read("static/js/grid.js")
+    player = read("static/js/player.js")
+    assert "renderGrid(state.currentGridVideos, false, false)" not in grid
+    assert "import('./render_service.js')" not in player
+    assert "CSS.escape(video.full_path)" in player
