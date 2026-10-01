@@ -28,8 +28,13 @@ def start_tunnel():
     print("-" * 40)
     
     try:
+        tunnel_args = [cf_cmd, "tunnel", "--protocol", "http2", "--url", "http://localhost:5000"]
+        allowed_mail = os.environ.get("CINEMA_ALLOWED_EMAIL", "").strip()
+        if allowed_mail:
+            tunnel_args.extend(["--allowed-mail", allowed_mail])
+
         process = subprocess.Popen(
-            [cf_cmd, "tunnel", "--protocol", "http2", "--url", "http://localhost:5000"],
+            tunnel_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
