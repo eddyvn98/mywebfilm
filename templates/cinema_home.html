@@ -107,13 +107,13 @@
 
     <div id="image-modal"
         class="fixed inset-0 z-[150] bg-black/95 flex flex-col hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute top-4 right-4 z-[160] flex gap-3">
+        <div class="image-modal-close absolute top-4 right-4 z-[160] flex gap-3">
             <button onclick="closeImageModal()"
                 class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
-        <div class="absolute top-4 left-6 z-[160]">
+        <div class="image-modal-title absolute top-4 left-6 z-[160]">
             <h2 id="image-modal-title" class="text-white font-bold text-sm drop-shadow-lg opacity-80"></h2>
         </div>
         <div class="flex-1 flex items-center justify-center overflow-hidden p-4 select-none touch-none"
@@ -121,13 +121,13 @@
             <img id="modal-image-img" src=""
                 class="max-w-full max-h-full object-contain pointer-events-none transition-transform duration-300">
         </div>
-        <div class="absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
+        <div class="image-nav image-nav-prev absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
             onclick="playPrev()">
             <div
                 class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                 <i class="fa-solid fa-chevron-left"></i></div>
         </div>
-        <div class="absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
+        <div class="image-nav image-nav-next absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center cursor-pointer group"
             onclick="playNext()">
             <div
                 class="w-10 h-10 rounded-full bg-black/20 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
