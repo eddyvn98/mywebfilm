@@ -74,6 +74,11 @@ def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
         'verify_registration',
         lambda *args, **kwargs: {'device_id': 'device-1', 'device_name': 'Phone'},
     )
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'has_device',
+        lambda _user_id, device_id: device_id == 'device-1',
+    )
 
     resp = client.post(
         '/api/auth/register/verify',
@@ -455,3 +460,35 @@ def test_registration_challenge_store_is_bounded(monkeypatch):
         manager._cleanup_challenges_unlocked()
         assert len(manager.challenges) <= security_service.MAX_ACTIVE_CHALLENGES
         manager.challenges.clear()
+
+
+def test_successful_reauth_revokes_previous_server_session(client, monkeypatch):
+    old_session_id = authenticate(client)
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'verify_authentication',
+        lambda *args, **kwargs: {'device_id': None, 'device_name': 'Test'},
+    )
+
+    resp = client.post(
+        '/api/auth/login/verify',
+        json={'credential': {}, 'challenge_id': 'c1', 'remember': True},
+    )
+    assert resp.status_code == 200
+
+    old_record = api_auth.runtime_db.get_security_session(old_session_id)
+    assert old_record['revoked_at'] is not None
+
+
+def test_tunnel_sync_requires_first_local_passkey(client, monkeypatch):
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'has_credentials',
+        lambda _user_id: False,
+    )
+    resp = client.post(
+        '/api/auth/tunnel/sync',
+        json={'url': 'https://example.trycloudflare.com'},
+        environ_overrides={'REMOTE_ADDR': '127.0.0.1'},
+    )
+    assert resp.status_code == 409
