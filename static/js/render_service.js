@@ -234,7 +234,7 @@ export function renderFolders() {
 export function restoreScroll() {
     if (state.scrollPos) {
         setTimeout(() => {
-            window.scrollTo({ top: state.scrollPos, behavior: 'auto' });
+            document.getElementById('video-grid')?.scrollTo({ top: state.scrollPos, behavior: 'auto' });
         }, 100);
     }
 }
