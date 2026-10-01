@@ -492,3 +492,46 @@ def test_tunnel_sync_requires_first_local_passkey(client, monkeypatch):
         environ_overrides={'REMOTE_ADDR': '127.0.0.1'},
     )
     assert resp.status_code == 409
+
+
+def test_non_catalog_file_cannot_be_renamed_or_moved(client, tmp_path, monkeypatch):
+    import config_manager as cfg
+
+    media_root = tmp_path / "media"
+    target_dir = media_root / "target"
+    media_root.mkdir()
+    target_dir.mkdir()
+    private_file = media_root / "notes.txt"
+    private_file.write_text("private", encoding="utf-8")
+
+    config = {"video_dirs": [str(media_root)]}
+    monkeypatch.setattr(cfg, "load_config", lambda: config)
+    monkeypatch.setattr(cfg, "get_catalog_item", lambda _path: None)
+    monkeypatch.setattr(cfg, "load_cache", lambda: [])
+    authenticate(client)
+
+    rename = client.post(
+        "/api/fs/rename",
+        json={
+            "old_path": str(private_file),
+            "new_name": "renamed.txt",
+        },
+    )
+    assert rename.status_code == 403
+    assert private_file.exists()
+
+    move = client.post(
+        "/api/fs/move",
+        json={
+            "paths": [str(private_file)],
+            "target_dir": str(target_dir),
+        },
+    )
+    assert move.status_code == 200
+    assert move.get_json()["results"][0]["status"] == "access_denied"
+    assert private_file.exists()
+
+
+def test_actor_images_are_not_public(client):
+    resp = client.get("/static/img/actors/private.jpg")
+    assert resp.status_code == 401
