@@ -262,6 +262,12 @@ def check_auth():
             "msg": "Sync allowed only from direct localhost",
         }), 403
 
+    if full_path.startswith("/static/img/actors/"):
+        actor_record = get_session_state()
+        if not actor_record or actor_record.get("locked"):
+            return "Unauthorized", 401
+        return
+
     if full_path.startswith("/static/"):
         return
     if any(
@@ -430,6 +436,7 @@ def apply_security_headers(response):
         request.path.startswith("/api/")
         or request.path.startswith("/login")
         or request.path.startswith("/register_security")
+        or request.path.startswith("/static/img/actors/")
     ):
         response.headers["Cache-Control"] = (
             "no-store, max-age=0"
