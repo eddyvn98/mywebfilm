@@ -21,11 +21,14 @@ document.addEventListener('click', (e) => {
 });
 
 let scrollTimeout;
-window.addEventListener('scroll', () => {
+const gridScrollEl = document.getElementById('video-grid');
+gridScrollEl?.addEventListener('scroll', () => {
+    const scrollTop = gridScrollEl.scrollTop;
+
     // Show/Hide Back to Top button
     const btn = document.getElementById('back-to-top');
     if (btn) {
-        if (window.scrollY > 500) {
+        if (scrollTop > 500) {
             btn.classList.add('translate-y-0', 'opacity-100');
             btn.classList.remove('translate-y-24', 'opacity-0');
         } else {
@@ -36,7 +39,7 @@ window.addEventListener('scroll', () => {
 
     clearTimeout(scrollTimeout);
     scrollTimeout = setTimeout(() => {
-        state.scrollPos = window.scrollY;
+        state.scrollPos = gridScrollEl.scrollTop;
         saveState();
     }, 500);
 }, { passive: true });
