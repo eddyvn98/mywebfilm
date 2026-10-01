@@ -20,6 +20,36 @@ fs_bp = Blueprint("api_fs", __name__)
 logger = logging.getLogger(__name__)
 
 
+def _catalog_managed_source(path):
+    if not path:
+        return False
+    if cfg.get_catalog_item(path):
+        return True
+    if not os.path.isdir(path):
+        return False
+
+    try:
+        root = os.path.normcase(
+            os.path.realpath(os.path.abspath(path))
+        )
+    except Exception:
+        return False
+
+    for item in cfg.load_cache():
+        full_path = item.get("full_path")
+        if not full_path:
+            continue
+        try:
+            child = os.path.normcase(
+                os.path.realpath(os.path.abspath(full_path))
+            )
+            if os.path.commonpath([root, child]) == root:
+                return True
+        except (OSError, ValueError):
+            continue
+    return False
+
+
 def _operation_failure(op_id, exc, *, filesystem_changed=False):
     detail = str(exc)
     update_operation(op_id, "failed", detail)
@@ -99,7 +129,7 @@ def fs_rename():
     new_name = _basename(new_name)
     if not new_name or new_name in {".", ".."}:
         return jsonify({"status": "err", "msg": "Invalid name"}), 400
-    if not check_path_safe(old_path):
+    if not check_path_safe(old_path) or not _catalog_managed_source(old_path):
         return jsonify({"status": "err", "msg": "Access denied"}), 403
     if not os.path.exists(old_path):
         return jsonify({"status": "err", "msg": "File not found"}), 404
@@ -206,7 +236,7 @@ def fs_move():
     moved_paths = []
 
     for path in paths:
-        if not check_path_safe(path):
+        if not check_path_safe(path) or not _catalog_managed_source(path):
             results.append({"path": path, "status": "access_denied"})
             continue
         if not os.path.exists(path):
