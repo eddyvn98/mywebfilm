@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from config_manager import load_favorites, mutate_favorites
+from config_manager import get_catalog_item, load_favorites, mutate_favorites
 
 api_favorites_bp = Blueprint('api_favorites', __name__)
 
@@ -12,6 +12,8 @@ def toggle_favorite():
     
     if not video_path:
         return jsonify({"error": "Missing path"}), 400
+    if not get_catalog_item(video_path):
+        return jsonify({"error": "Unknown media"}), 403
         
     result = {"is_favorite": False}
 
