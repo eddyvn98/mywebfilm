@@ -38,3 +38,7 @@ favorites_cache.json
 
 # Local tool binaries
 cloudflared.exe
+
+# Generated personal exports
+Download_Helper.html
+F_drive_recovered_list.txt
