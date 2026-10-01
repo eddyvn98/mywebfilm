@@ -133,3 +133,12 @@ def test_movie_cards_avoid_per_item_backdrop_blur():
     source = read("static/js/render_service.js")
     assert "bg-black/40 backdrop-blur-md" not in source
     assert "font-bold backdrop-blur-sm" not in source
+
+
+def test_preview_generation_is_low_contention_and_faststart():
+    source = read("ffmpeg_service.py")
+    preview_start = source.index("def generate_preview")
+    preview_end = source.index("def check_ffmpeg_presence")
+    preview_block = source[preview_start:preview_end]
+    assert "'-threads', '1'" in preview_block
+    assert "'-movflags', '+faststart'" in preview_block
