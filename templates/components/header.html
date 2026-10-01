@@ -2,17 +2,17 @@
     <div class="flex items-center justify-between gap-3 w-full">
         <div class="flex items-center gap-2 flex-1">
             <button onclick="toggleSidebar()"
-                class="md:hidden w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white active:bg-white/5 rounded-md">
+                class="mobile-menu-btn md:hidden w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white active:bg-white/5 rounded-md">
                 <i class="fa-solid fa-bars text-lg"></i>
             </button>
             
             <!-- macOS Finder Style Search Bar -->
-            <div class="relative w-full max-w-[260px] group/search">
+            <div class="mobile-search relative w-full max-w-[260px] group/search">
                 <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
                 <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm kiếm phim..."
                     class="w-full bg-white/5 rounded-md py-1.5 pl-7 pr-8 text-xs outline-none border border-white/10 focus:border-blue-500/50 transition text-white placeholder-slate-500 focus:bg-white/10">
                 <button onclick="runAiSearch()" title="AI Semantic Search"
-                    class="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
+                    class="mobile-ai-search absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
                     <i class="fa-solid fa-robot text-[9px]"></i>
                 </button>
             </div>
@@ -51,7 +51,7 @@
         <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap md:flex-wrap flex-1">
             
             <!-- View Segmented Control (Quản lý / Khám phá) -->
-            <div class="flex items-center bg-white/5 p-0.5 rounded-md border border-white/5 shrink-0">
+            <div class="header-primary-actions flex items-center bg-white/5 p-0.5 rounded-md border border-white/5 shrink-0">
                 <button onclick="toggleManageMode()" id="btn-manage-mode"
                     class="h-6 px-3 rounded-md text-[10px] font-bold text-slate-400 hover:text-slate-200 transition uppercase">
                     Quản lý
@@ -70,7 +70,7 @@
             <div class="w-px h-3 bg-white/10 mx-0.5 shrink-0"></div>
 
             <!-- Filters Group -->
-            <div class="flex items-center gap-1.5 shrink-0">
+            <div class="header-filter-actions flex items-center gap-1.5 shrink-0">
                 <!-- Type Dropdown -->
                 <div class="custom-dropdown" id="dropdown-type">
                     <div class="dropdown-trigger" onclick="openActionSheet('sheet-type'); event.stopPropagation()">
