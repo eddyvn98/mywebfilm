@@ -3,12 +3,12 @@ import { state } from './state.js';
 import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 import { historyService } from './history_service.js';
 import { favoritesService } from './favorites_service.js';
-import { checkPinStatus } from './auth.js';
 import { renderGrid, renderFolders, applyFilters, restoreScroll } from './grid.js';
 import { initGestures } from './gestures.js';
 import { startQueuePolling } from './manage_service.js';
 import { fetchConfig, fetchVideos, apiAddFolder, apiRemoveFolder } from './api.js';
 import { playOnServer } from './api.js';
+import { initSecurityClient } from './security_client.js';
 
 function syncUIFromState() {
     const typeMap = { 'all': 'TẤT CẢ', 'video': 'VIDEO', 'image': 'ẢNH' };
@@ -69,9 +69,8 @@ async function init() {
         const config = await fetchConfig();
         console.log("Config loaded:", config);
 
-        if (config.pin) state.correctPin = config.pin;
-        checkPinStatus();
         syncUIFromState();
+        initSecurityClient();
 
         const sourceList = document.getElementById('source-list');
         if (!sourceList) {
@@ -100,15 +99,11 @@ async function init() {
 
         console.log("Source list rendered.");
 
-        // If already authenticated, load immediately
-        if (sessionStorage.getItem('cinema_authenticated') === 'true') {
-            console.log("Already authenticated, loading library...");
-            loadLibrary();
-            // Auto-sort Incoming folders silently on page open
-            autoSortIncoming({ silent: true });
-            // Check incoming count for badge
-            fetch('/api/sort/incoming_count').then(r => r.json()).then(d => _updateSortBadge(d.count || 0)).catch(() => {});
-        }
+        // The server only renders this page for an authenticated, unlocked session.
+        console.log("Authenticated session, loading library...");
+        await loadLibrary();
+        autoSortIncoming({ silent: true });
+        fetch('/api/sort/incoming_count').then(r => r.json()).then(d => _updateSortBadge(d.count || 0)).catch(() => {});
     } catch (e) {
         console.error("Init failed with error:", e);
     }
