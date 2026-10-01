@@ -66,6 +66,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
                         <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" 
                              class="w-full h-full object-cover transition duration-500 ${v.is_offline ? '' : 'group-hover:scale-110'}" 
                              loading="lazy"
+                             decoding="async"
                              onerror="this.style.display='none'">
                         
                         <div class="absolute top-2 right-2 flex flex-col gap-1 items-end z-10 pointer-events-none">
