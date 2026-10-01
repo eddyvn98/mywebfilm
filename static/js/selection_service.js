@@ -1,7 +1,6 @@
 // static/js/selection_service.js
 import { state } from './state.js';
 import { deleteFile, apiMkdir, apiMove } from './api.js';
-import { renderGrid } from './render_service.js';
 import { applyFilters } from './filter_service.js';
 import { processHighlight, processConvert } from './queue_service.js';
 
