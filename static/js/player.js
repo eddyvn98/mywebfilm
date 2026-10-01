@@ -96,7 +96,7 @@ function renderPlaylist() {
     renderPlaylistWindow();
 }
 
-function renderPlaylistWindow() {
+function renderPlaylistWindow(anchorIndex = state.currentIndex) {
     const container = document.getElementById('playlist-content');
     if (!container) return;
 
@@ -106,11 +106,19 @@ function renderPlaylistWindow() {
         return;
     }
 
-    const start = Math.max(0, state.currentIndex - PLAYLIST_WINDOW_RADIUS);
-    const end = Math.min(count, state.currentIndex + PLAYLIST_WINDOW_RADIUS + 1);
+    const safeAnchor = Math.max(0, Math.min(anchorIndex, count - 1));
+    const start = Math.max(0, safeAnchor - PLAYLIST_WINDOW_RADIUS);
+    const end = Math.min(count, safeAnchor + PLAYLIST_WINDOW_RADIUS + 1);
     const items = state.currentGridVideos.slice(start, end);
 
-    container.innerHTML = items.map((v, offset) => {
+    const previousButton = start > 0
+        ? `<button onclick="pagePlaylist(-1, ${start})" class="w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-blue-400 hover:bg-white/5 rounded-lg">↑ Nạp phim trước</button>`
+        : '';
+    const nextButton = end < count
+        ? `<button onclick="pagePlaylist(1, ${end})" class="w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-blue-400 hover:bg-white/5 rounded-lg">Nạp phim tiếp ↓</button>`
+        : '';
+
+    container.innerHTML = previousButton + items.map((v, offset) => {
         const i = start + offset;
         return `
         <div class="playlist-item rounded-lg" id="plist-item-${i}" onclick="playVideoFromIndex(${i})">
@@ -127,7 +135,7 @@ function renderPlaylistWindow() {
             </div>
             ${i === state.currentIndex ? '<i class="fa-solid fa-chart-simple text-blue-500 text-xs animate-pulse"></i>' : ''}
         </div>`;
-    }).join('');
+    }).join('') + nextButton;
 
     const activeItem = document.getElementById(`plist-item-${state.currentIndex}`);
     if (activeItem) {
@@ -142,6 +150,16 @@ function renderPlaylistWindow() {
 function updatePlaylistActiveItem() {
     renderPlaylistWindow();
 }
+
+window.pagePlaylist = (direction, boundaryIndex) => {
+    const count = state.currentGridVideos.length;
+    if (!count) return;
+    const jump = PLAYLIST_WINDOW_RADIUS * 2;
+    const anchor = direction < 0
+        ? Math.max(0, boundaryIndex - jump)
+        : Math.min(count - 1, boundaryIndex + PLAYLIST_WINDOW_RADIUS);
+    renderPlaylistWindow(anchor);
+};
 
 // --- Logic ---
 
