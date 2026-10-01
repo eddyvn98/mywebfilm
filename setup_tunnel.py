@@ -1,8 +1,6 @@
 import subprocess
 import os
-import sys
 import requests
-import json
 
 def start_tunnel():
     print("-" * 40)
@@ -49,18 +47,18 @@ def start_tunnel():
                 for p in parts:
                     if "https://" in p and "trycloudflare.com" in p:
                         tunnel_url = p
-                        token = os.urandom(16).hex()
-                        full_url = f"{tunnel_url}?token={token}"
-                        
                         print(f"\n🚀 LINK TRUY CẬP TỪ XA CỦA BẠN: {tunnel_url}\n")
-                        print(f"🔑 TOKEN BẢO MẬT: {token}")
-                        print("Đang tự động đồng bộ lên giao diện Web...")
+                        print("Đang đồng bộ Public URL vào Cinema...")
                         try:
-                            requests.post("http://localhost:5000/api/auth/tunnel/sync", 
-                                          json={"url": tunnel_url, "token": token}, timeout=2)
+                            response = requests.post(
+                                "http://localhost:5000/api/auth/tunnel/sync",
+                                json={"url": tunnel_url},
+                                timeout=2,
+                            )
+                            response.raise_for_status()
                             print("✅ Đã đồng bộ thành công!")
-                        except:
-                            print("❌ Lỗi: Không thể gửi link tới Web App (Đảm bảo webfilm.py đang chạy)")
+                        except Exception as exc:
+                            print(f"❌ Không thể đồng bộ với Cinema: {exc}")
                         break
     except KeyboardInterrupt:
         print("\nĐã dừng Tunnel.")
