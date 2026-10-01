@@ -198,6 +198,17 @@ def is_authenticated_unlocked():
     return bool(record and not record.get("locked"))
 
 
+def is_recently_authenticated(max_age=300):
+    record = get_session_state()
+    if not record or record.get("locked"):
+        return False
+    return (
+        time.time()
+        - float(record.get("created_at") or 0)
+        <= max_age
+    )
+
+
 def _mark_session_authenticated(device=None, remember=True):
     now = time.time()
     ttl = (
@@ -351,6 +362,12 @@ def create_bootstrap():
             "status": "err",
             "msg": "Unauthorized",
         }), 401
+    if not is_recently_authenticated():
+        return jsonify({
+            "status": "err",
+            "code": "REAUTH_REQUIRED",
+            "msg": "Hãy xác thực lại Passkey trước khi thêm thiết bị",
+        }), 428
 
     from .api_config import TUNNEL_URL
 
@@ -649,6 +666,12 @@ def revoke_device(device_id):
             "status": "err",
             "msg": "Không thể thu hồi thiết bị đang dùng",
         }), 409
+    if not is_recently_authenticated():
+        return jsonify({
+            "status": "err",
+            "code": "REAUTH_REQUIRED",
+            "msg": "Hãy xác thực lại Passkey trước khi thu hồi thiết bị",
+        }), 428
 
     try:
         security_manager.revoke_device(
