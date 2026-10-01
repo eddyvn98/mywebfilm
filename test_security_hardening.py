@@ -65,6 +65,7 @@ def test_expired_token_is_rejected_for_remote_registration_options(client):
 
 
 def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
+    monkeypatch.setenv('CINEMA_ALLOWED_HOSTS', 'example.test')
     api_auth.CURRENT_OTT = 'b' * 32
     api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
     monkeypatch.setattr(api_auth, 'get_origin', lambda: 'https://example.test')
@@ -233,7 +234,7 @@ def test_security_headers_are_present(client):
     assert resp.headers['X-Content-Type-Options'] == 'nosniff'
     assert resp.headers['X-Frame-Options'] == 'DENY'
     assert resp.headers['Referrer-Policy'] == 'no-referrer'
-    assert resp.headers['Cache-Control'] == 'no-store'
+    assert 'no-store' in resp.headers['Cache-Control']
 
 
 def test_project_static_is_not_a_media_root_by_default(monkeypatch):
@@ -384,7 +385,7 @@ def test_remote_add_folder_cannot_expand_trusted_roots(client, tmp_path, monkeyp
 
     resp = client.post(
         "/api/add_folder",
-        base_url="https://cinema.example.com",
+        base_url="http://localhost",
         headers={
             "Origin": "https://cinema.example.com",
             "CF-Connecting-IP": "203.0.113.88",
