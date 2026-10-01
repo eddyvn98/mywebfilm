@@ -1840,3 +1840,34 @@ button, input, select {
   #video-modal .plyr__controls{touch-action:manipulation!important}
   #playlist-sidebar{width:100%!important;max-width:100%!important}
 }
+
+
+/* --- Mobile player visual viewport fix v8 --- */
+@media (max-width:767px){
+  #video-modal{
+    top:var(--player-vvtop,0px)!important;
+    bottom:auto!important;
+    height:var(--player-vvh,100dvh)!important;
+    min-height:0!important;
+    max-height:var(--player-vvh,100dvh)!important;
+  }
+  #video-modal .player-stage,
+  #video-modal .plyr,
+  #video-modal .plyr__video-wrapper{
+    height:100%!important;
+    max-height:100%!important;
+  }
+  #video-modal .plyr video,
+  #video-modal video.player-media{
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    object-fit:contain!important;
+    object-position:50% 50%!important;
+  }
+  #video-modal .plyr__controls{
+    bottom:0!important;
+    padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+  }
+}
