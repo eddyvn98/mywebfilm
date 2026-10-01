@@ -16,10 +16,10 @@ export function toggleManageMode() {
         else selectAllBtn.classList.add('hidden');
     }
 
-    if (!state.manageMode) cancelSelection();
+    const grid = document.getElementById('video-grid');
+    grid?.classList.toggle('manage-mode-active', state.manageMode);
 
-    // Use resetPage = false to stay on current scroll position
-    renderGrid(state.currentGridVideos, false, false);
+    if (!state.manageMode) cancelSelection();
 }
 
 let isDragSelecting = false;
