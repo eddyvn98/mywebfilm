@@ -876,3 +876,8 @@ button, input, select {
         height: 44px !important;
     }
 }
+
+/* Performance: management mode should not require rebuilding the media grid. */
+#video-grid.manage-mode-active .card-actions {
+    opacity: 1 !important;
+}
