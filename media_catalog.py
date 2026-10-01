@@ -8,6 +8,8 @@ _item_index_lock = threading.RLock()
 _item_index = {}
 _item_index_complete = False
 _item_index_db_path = None
+_migration_lock = threading.RLock()
+_migration_checked_db_path = None
 
 
 def _path_key(path):
@@ -42,9 +44,14 @@ def _cached_item(path):
 
 
 def _remember_item(item):
+    global _item_index, _item_index_complete, _item_index_db_path
     if not isinstance(item, dict) or not item.get("full_path"):
         return
     with _item_index_lock:
+        if _item_index_db_path != runtime_db.DB_PATH:
+            _item_index = {}
+            _item_index_complete = False
+            _item_index_db_path = runtime_db.DB_PATH
         _item_index[_path_key(item["full_path"])] = item
 
 
@@ -100,33 +107,42 @@ def _insert_rows(conn, items):
 
 
 def migrate_legacy_catalog(path):
+    global _migration_checked_db_path
     runtime_db.ensure_schema()
-    with runtime_db.db_session() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        marker = conn.execute(
-            "SELECT value FROM runtime_meta WHERE key = 'media_catalog_migrated'"
-        ).fetchone()
-        if marker:
+
+    with _migration_lock:
+        if _migration_checked_db_path == runtime_db.DB_PATH:
             return 0
 
-        count = conn.execute(
-            "SELECT COUNT(*) FROM media_catalog"
-        ).fetchone()[0]
-        items = []
-        if not count and path and os.path.exists(path):
-            items = _legacy_items(path)
-            _insert_rows(conn, items)
+        with runtime_db.db_session() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            marker = conn.execute(
+                "SELECT value FROM runtime_meta WHERE key = 'media_catalog_migrated'"
+            ).fetchone()
+            if marker:
+                _migration_checked_db_path = runtime_db.DB_PATH
+                return 0
 
-        conn.execute(
-            """
-            INSERT INTO runtime_meta(key, value, updated_at)
-            VALUES ('media_catalog_migrated', '1', ?)
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value,
-                updated_at = excluded.updated_at
-            """,
-            (runtime_db.utc_now(),),
-        )
+            count = conn.execute(
+                "SELECT COUNT(*) FROM media_catalog"
+            ).fetchone()[0]
+            items = []
+            if not count and path and os.path.exists(path):
+                items = _legacy_items(path)
+                _insert_rows(conn, items)
+
+            conn.execute(
+                """
+                INSERT INTO runtime_meta(key, value, updated_at)
+                VALUES ('media_catalog_migrated', '1', ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = excluded.updated_at
+                """,
+                (runtime_db.utc_now(),),
+            )
+
+        _migration_checked_db_path = runtime_db.DB_PATH
         return len(items)
 
 
