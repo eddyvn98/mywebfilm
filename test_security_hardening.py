@@ -260,3 +260,24 @@ def test_public_config_is_allowlisted_not_blacklisted(client):
     assert payload['preferred_codec'] == 'h264'
     assert 'future_secret' not in payload
     assert 'pin' not in payload
+
+
+def test_idle_session_auto_locks(client):
+    authenticate(client)
+    with client.session_transaction() as sess:
+        sess['last_activity'] = time.time() - api_auth.IDLE_LOCK_SECONDS - 1
+
+    resp = client.get('/api/videos')
+    assert resp.status_code == 423
+    assert resp.get_json()['code'] == 'LOCKED'
+
+
+def test_activity_refreshes_idle_timer(client):
+    authenticate(client)
+    with client.session_transaction() as sess:
+        sess['last_activity'] = time.time() - 10
+
+    resp = client.post('/api/auth/activity')
+    assert resp.status_code == 200
+    with client.session_transaction() as sess:
+        assert time.time() - sess['last_activity'] < 5
