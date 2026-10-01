@@ -19,7 +19,7 @@
 
     <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
         <!-- Sidebar Navigation Buttons (macOS Style) -->
-        <button onclick="filterByFolder('all')" id="btn-show-all"
+        <button onclick="filterByFolder('all'); closeSidebarOnMobile()" id="btn-show-all"
             class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1">
             <span class="flex items-center gap-3">
                 <i class="fa-solid fa-house text-[10px] opacity-75"></i>
@@ -28,7 +28,7 @@
             <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
-        <button onclick="filterByFavorites()" id="btn-show-favorites"
+        <button onclick="filterByFavorites(); closeSidebarOnMobile()" id="btn-show-favorites"
             class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1">
             <span class="flex items-center gap-3">
                 <i class="fa-solid fa-heart text-[10px] text-red-400/90"></i>
@@ -37,7 +37,7 @@
             <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
-        <button onclick="filterByHistory()" id="btn-show-history"
+        <button onclick="filterByHistory(); closeSidebarOnMobile()" id="btn-show-history"
             class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1.5">
             <span class="flex items-center gap-3">
                 <i class="fa-solid fa-clock-rotate-left text-[10px] opacity-75"></i>
