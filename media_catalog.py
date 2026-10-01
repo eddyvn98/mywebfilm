@@ -1,11 +1,51 @@
 import json
 import os
+import threading
 
 import runtime_db
+
+_item_index_lock = threading.RLock()
+_item_index = {}
+_item_index_complete = False
+_item_index_db_path = None
 
 
 def _path_key(path):
     return os.path.normcase(os.path.normpath(str(path or "")))
+
+
+def _reset_item_index(items=None, complete=False):
+    global _item_index, _item_index_complete, _item_index_db_path
+    with _item_index_lock:
+        _item_index = {
+            _path_key(item.get("full_path")): item
+            for item in (items or [])
+            if isinstance(item, dict) and item.get("full_path")
+        }
+        _item_index_complete = bool(complete)
+        _item_index_db_path = runtime_db.DB_PATH
+
+
+def _cached_item(path):
+    global _item_index, _item_index_complete, _item_index_db_path
+    key = _path_key(path)
+    with _item_index_lock:
+        if _item_index_db_path != runtime_db.DB_PATH:
+            _item_index = {}
+            _item_index_complete = False
+            _item_index_db_path = runtime_db.DB_PATH
+        if key in _item_index:
+            return _item_index[key]
+        if _item_index_complete:
+            return False
+    return None
+
+
+def _remember_item(item):
+    if not isinstance(item, dict) or not item.get("full_path"):
+        return
+    with _item_index_lock:
+        _item_index[_path_key(item["full_path"])] = item
 
 
 def _clean_items(items):
@@ -112,6 +152,7 @@ def load_catalog(legacy_json_path=None):
             continue
         if isinstance(item, dict) and item.get("full_path"):
             items.append(item)
+    _reset_item_index(items, complete=True)
     return items
 
 
@@ -143,6 +184,7 @@ def save_catalog(items, *, legacy_json_path=None, preserve_views=False):
 
         conn.execute("DELETE FROM media_catalog")
         _insert_rows(conn, cleaned)
+    _reset_item_index(cleaned, complete=True)
     return cleaned
 
 
@@ -177,7 +219,8 @@ def mutate_catalog(mutator, legacy_json_path=None):
         updated = _clean_items(updated)
         conn.execute("DELETE FROM media_catalog")
         _insert_rows(conn, updated)
-        return updated
+    _reset_item_index(updated, complete=True)
+    return updated
 
 
 def increment_views(path, legacy_json_path=None):
@@ -209,13 +252,20 @@ def increment_views(path, legacy_json_path=None):
                 key,
             ),
         )
-        return True
+    _remember_item(item)
+    return True
 
 
 def get_item(path, legacy_json_path=None):
     runtime_db.ensure_schema()
     if legacy_json_path:
         migrate_legacy_catalog(legacy_json_path)
+
+    cached = _cached_item(path)
+    if cached is False:
+        return None
+    if cached is not None:
+        return cached
 
     with runtime_db.db_session() as conn:
         row = conn.execute(
@@ -228,7 +278,10 @@ def get_item(path, legacy_json_path=None):
         item = json.loads(row["payload"])
     except Exception:
         return None
-    return item if isinstance(item, dict) else None
+    if isinstance(item, dict):
+        _remember_item(item)
+        return item
+    return None
 
 
 def clear_catalog(legacy_json_path=None):
@@ -236,5 +289,6 @@ def clear_catalog(legacy_json_path=None):
     with runtime_db.db_session() as conn:
         conn.execute("BEGIN IMMEDIATE")
         conn.execute("DELETE FROM media_catalog")
+    _reset_item_index([], complete=True)
     if legacy_json_path and os.path.exists(legacy_json_path):
         os.remove(legacy_json_path)
