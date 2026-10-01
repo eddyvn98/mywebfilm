@@ -59,3 +59,36 @@ def test_movie_cards_enable_offscreen_render_skipping():
     source = read("static/css/style.css")
     assert "content-visibility: auto;" in source
     assert "contain-intrinsic-size:" in source
+
+
+def test_empty_search_skips_expensive_text_normalization():
+    source = read("static/js/filter_service.js")
+    assert "if (search) {" in source
+    assert "let matchesSearch = true;" in source
+
+
+def test_dynamic_categories_are_memoized_for_same_library():
+    source = read("static/js/filter_service.js")
+    assert "let categorySource = null;" in source
+    assert "categorySource === state.allVideos" in source
+
+
+def test_favorites_use_set_membership():
+    source = read("static/js/favorites_service.js")
+    assert "favoritePaths: new Set()" in source
+    assert "this.favoritePaths.has(path)" in source
+
+
+def test_hover_preview_is_delayed_and_single_active():
+    source = read("static/js/manage_service.js")
+    assert "const previewTimers = new WeakMap();" in source
+    assert "let activePreviewCard = null;" in source
+    assert "}, 450);" in source
+    assert "window.matchMedia('(hover: hover)')" in source
+
+
+def test_thumbnails_decode_asynchronously():
+    grid = read("static/js/render_service.js")
+    player = read("static/js/player.js")
+    assert 'decoding="async"' in grid
+    assert 'decoding="async"' in player
