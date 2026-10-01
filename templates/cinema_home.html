@@ -6,7 +6,7 @@
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/css/style.css?v=v5_mobileheader" rel="stylesheet">
+    <link href="/static/css/style.css?v=v6_playerfix" rel="stylesheet">
     <link href="/static/css/qa_inspector.css?v=1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
     <style>
@@ -18,15 +18,10 @@
             width: 100%;
             height: 100%;
             max-height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
         }
 
         .plyr__video-wrapper {
             background: black;
-            height: 100% !important;
-            max-height: 100%;
         }
 
         .plyr video {
@@ -39,11 +34,6 @@
         }
 
         @media (max-width: 768px) {
-            .plyr__video-wrapper {
-                height: 100% !important;
-                min-height: 0 !important;
-            }
-
             .plyr--fullscreen-fallback {
                 height: 100% !important;
             }
@@ -147,14 +137,14 @@
     {% include 'components/rename_modal.html' %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
-    <script type="module" src="/static/js/player.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/render_service.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/filter_service.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/manage_service.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/discovery_service.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/ai_search_service.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/grid.js?v=v5_mobileheader"></script>
-    <script type="module" src="/static/js/main.js?v=v5_mobileheader"></script>
+    <script type="module" src="/static/js/player.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/render_service.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/filter_service.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/manage_service.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/discovery_service.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/ai_search_service.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/grid.js?v=v6_playerfix"></script>
+    <script type="module" src="/static/js/main.js?v=v6_playerfix"></script>
     <script src="/static/js/qa_inspector.js?v=1"></script>
 </body>
 </html>
