@@ -37,12 +37,53 @@ export async function confirmRename() {
 // Misc UI helpers
 export function filterByFolder(folder) { state.currentFolder = folder; window.renderFolders(); applyFilters(); }
 
+const previewTimers = new WeakMap();
+let activePreviewCard = null;
+
+function clearPreview(el) {
+    const timer = previewTimers.get(el);
+    if (timer) {
+        clearTimeout(timer);
+        previewTimers.delete(el);
+    }
+    const container = el?.querySelector('.preview-container');
+    if (container) container.replaceChildren();
+    if (activePreviewCard === el) activePreviewCard = null;
+}
+
 export function handlePreview(el, active) {
     const url = el.getAttribute('data-preview-url');
     if (!url) return;
-    const container = el.querySelector('.preview-container');
-    if (active) container.innerHTML = `<video class="preview-video w-full h-full object-cover" muted loop playsinline autoplay><source src="${escapeAttr(url)}" type="video/mp4"></video>`;
-    else container.innerHTML = '';
+
+    if (!active) {
+        clearPreview(el);
+        return;
+    }
+
+    if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) return;
+
+    clearPreview(el);
+    const timer = setTimeout(() => {
+        if (!el.isConnected) return;
+
+        if (activePreviewCard && activePreviewCard !== el) {
+            clearPreview(activePreviewCard);
+        }
+
+        let container = el.querySelector('.preview-container');
+        if (!container) {
+            const poster = el.querySelector('.poster-content');
+            if (!poster) return;
+            container = document.createElement('div');
+            container.className = 'preview-container absolute inset-0 z-[5] pointer-events-none';
+            poster.appendChild(container);
+        }
+
+        container.innerHTML = `<video class="preview-video w-full h-full object-cover" muted loop playsinline autoplay preload="metadata"><source src="${escapeAttr(url)}" type="video/mp4"></video>`;
+        activePreviewCard = el;
+        previewTimers.delete(el);
+    }, 450);
+    previewTimers.set(el, timer);
 }
 
 export function showInfo(e, index) {
