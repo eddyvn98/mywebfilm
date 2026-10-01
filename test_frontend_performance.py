@@ -31,6 +31,9 @@ def test_playlist_is_windowed_instead_of_rendering_entire_library():
     source = read("static/js/player.js")
     assert "const PLAYLIST_WINDOW_RADIUS = 40;" in source
     assert "state.currentGridVideos.slice(start, end)" in source
+    assert "window.pagePlaylist" in source
+    assert "Nạp phim trước" in source
+    assert "Nạp phim tiếp" in source
     assert "state.currentGridVideos.map((v, i)" not in source
 
 
