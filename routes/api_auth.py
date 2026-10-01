@@ -143,8 +143,6 @@ def register_verify():
             data.get("device_name") or request.headers.get("User-Agent", "Thiết bị mới"),
         )
         _mark_session_authenticated(result, remember=True)
-        if remote_bootstrap:
-            _consume_token()
         return jsonify({"status": "ok", "device": result})
     except Exception as e:
         return jsonify({"status": "err", "msg": str(e)}), 400
@@ -154,9 +152,6 @@ def register_verify():
 def login_options():
     try:
         origin = get_origin()
-        token_req = _bootstrap_token()
-        if not _is_local_request() and not is_token_valid(token_req) and not _session_can_authenticate_remote():
-            return jsonify({"status": "err", "msg": "Link xác thực không hợp lệ hoặc đã hết hạn"}), 403
         return jsonify(security_manager.get_authentication_options(ADMIN_USER_ID, origin))
     except Exception as e:
         return jsonify({"status": "err", "msg": str(e)}), 400
@@ -166,12 +161,6 @@ def login_options():
 def login_verify():
     try:
         origin = get_origin()
-        token_req = _bootstrap_token()
-        is_local = _is_local_request()
-        remote_bootstrap = not is_local and is_token_valid(token_req)
-        if not is_local and not remote_bootstrap and not _session_can_authenticate_remote():
-            return jsonify({"status": "err", "msg": "Link xác thực không hợp lệ hoặc đã hết hạn"}), 403
-
         data = request.get_json(silent=True) or {}
         credential = data.get("credential", data)
         result = security_manager.verify_authentication(
