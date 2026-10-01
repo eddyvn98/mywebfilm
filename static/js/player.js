@@ -20,10 +20,9 @@ export function openVideoModal(idx) {
     const v = state.currentGridVideos[idx];
     if (!v) return;
 
-    // Inject UI if missing
-    if (!document.getElementById('playlist-sidebar')) {
-        injectPlaylistUI();
-    }
+    // Playlist is a singleton and opening a movie must never open it.
+    ensureSinglePlaylistUI();
+    window.togglePlaylist?.(false);
 
     const modal = document.getElementById('video-modal');
     const isOpeningModal = modal.classList.contains('hidden');
@@ -60,8 +59,24 @@ function scheduleHistoryRecord(video) {
     }, HISTORY_RECORD_DELAY_MS);
 }
 
+function ensureSinglePlaylistUI() {
+    const modal = document.getElementById('video-modal');
+    if (!modal) return;
+
+    const sidebars = [...document.querySelectorAll('#playlist-sidebar')];
+    const overlays = [...document.querySelectorAll('#playlist-overlay')];
+    sidebars.slice(1).forEach(el => el.remove());
+    overlays.slice(1).forEach(el => el.remove());
+    if (sidebars[0] && overlays[0]) return;
+
+    sidebars.forEach(el => el.remove());
+    overlays.forEach(el => el.remove());
+    injectPlaylistUI();
+}
+
 function injectPlaylistUI() {
     const modal = document.getElementById('video-modal');
+    if (!modal) return;
 
     // Sidebar HTML
     const sidebar = document.createElement('div');
@@ -186,12 +201,16 @@ window.togglePlaylist = (force) => {
 
     if (shouldShow) {
         sb.classList.add('show');
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        sb.setAttribute('aria-hidden', 'false');
+        overlay?.classList.remove('hidden');
+        setTimeout(() => overlay?.classList.remove('opacity-0'), 10);
     } else {
         sb.classList.remove('show');
-        overlay.classList.add('opacity-0');
-        setTimeout(() => overlay.classList.add('hidden'), 300);
+        sb.setAttribute('aria-hidden', 'true');
+        overlay?.classList.add('opacity-0');
+        setTimeout(() => {
+            if (!sb.classList.contains('show')) overlay?.classList.add('hidden');
+        }, 300);
     }
 };
 
