@@ -101,6 +101,7 @@ def generate_preview(media_path, output_path):
                 '-t', PREVIEW_DURATION, 
                 '-vf', f'scale={PREVIEW_SIZE}:force_original_aspect_ratio=increase,crop={PREVIEW_SIZE}', 
                 '-an', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                '-threads', '1', '-movflags', '+faststart',
                 output_path
             ]
             res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -114,6 +115,7 @@ def generate_preview(media_path, output_path):
                     '-t', PREVIEW_DURATION, 
                     '-vf', f'scale={PREVIEW_SIZE}:force_original_aspect_ratio=increase,crop={PREVIEW_SIZE}', 
                     '-an', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                    '-threads', '1', '-movflags', '+faststart',
                     output_path
                 ]
                 res2 = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding='utf-8', errors='replace')
