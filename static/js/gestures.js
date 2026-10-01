@@ -126,13 +126,13 @@ export function initGestures() {
         const diffX = startX - clientX;
         const diffY = startY - clientY;
         const wasSeeking = isSeeking;
+        const seekTarget = pendingSeekTime;
         resetGesture();
 
         if (wasSeeking) {
-            if (state.player && Number.isFinite(pendingSeekTime)) {
-                state.player.currentTime = pendingSeekTime;
+            if (state.player && Number.isFinite(seekTarget)) {
+                state.player.currentTime = seekTarget;
             }
-            pendingSeekTime = null;
             state.player?.play().catch(() => { });
             return;
         }
