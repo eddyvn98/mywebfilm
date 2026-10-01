@@ -52,10 +52,14 @@
                         Copy Link
                     </button>
                     <button onclick="saveTunnelUrl()"
-                        class="w-12 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition flex items-center justify-center">
+                        class="w-12 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition flex items-center justify-center" title="Cập nhật Public URL">
                         <i class="fa-solid fa-save"></i>
                     </button>
                 </div>
+                <button onclick="closeRemoteModal(); openSecurityModal(); setTimeout(createDeviceInvite, 100)"
+                    class="w-full h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-bold text-xs hover:bg-emerald-500/20 transition">
+                    <i class="fa-solid fa-mobile-screen-button mr-2"></i>Thêm thiết bị mới bằng QR một lần
+                </button>
             </div>
         </div>
 
@@ -63,7 +67,7 @@
         <div class="px-6 py-4 bg-slate-800/30 border-t border-white/5 text-center">
             <p class="text-[10px] text-slate-500 font-medium">
                 <i class="fa-solid fa-shield-halved mr-1"></i>
-                Chỉ cho phép truy cập qua Cloudflare Zero Trust
+                Public URL chỉ là cổng vào; Cinema vẫn yêu cầu Passkey
             </p>
         </div>
     </div>
@@ -82,10 +86,7 @@
             const resp = await fetch('/api/auth/tunnel/info');
             const data = await resp.json();
             if (data.url) {
-                url = data.url;
-                if (data.token) {
-                    url += `?token=${data.token}`;
-                }
+                url = data.url.replace(/\/$/, '') + '/login';
             }
         } catch (e) { console.error('Tunnel API Error', e); }
 
@@ -128,13 +129,24 @@
         alert('Đã copy link truy cập!');
     }
 
-    function saveTunnelUrl() {
-        const currentUrl = document.getElementById('tunnel-url-display').value;
-        const newUrl = prompt("Nhập Tunnel URL của bạn:", currentUrl);
-        if (newUrl) {
-            localStorage.setItem('tunnel_url', newUrl);
-            document.getElementById('tunnel-url-display').value = newUrl;
-            generateQr(newUrl);
+    async function saveTunnelUrl() {
+        const currentUrl = document.getElementById('tunnel-url-display').value.replace(/\/login$/, '');
+        const newUrl = prompt("Nhập Public URL HTTPS của Cinema:", currentUrl);
+        if (!newUrl) return;
+
+        const resp = await fetch('/api/config/tunnel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: newUrl })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert(data.msg || 'URL không hợp lệ');
+            return;
         }
+
+        const loginUrl = data.url ? data.url.replace(/\/$/, '') + '/login' : 'Chưa cấu hình';
+        document.getElementById('tunnel-url-display').value = loginUrl;
+        if (data.url) generateQr(loginUrl);
     }
 </script>
