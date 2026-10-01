@@ -123,7 +123,7 @@ function renderPlaylistWindow(anchorIndex = state.currentIndex) {
         return `
         <div class="playlist-item rounded-lg" id="plist-item-${i}" onclick="playVideoFromIndex(${i})">
             <div class="relative w-16 aspect-video rounded overflow-hidden bg-slate-800 shrink-0">
-                <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy">
+                <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 ${v.ext && (v.ext.toLowerCase() === '.ts' || v.ext.toLowerCase() === '.m2ts') ? '<div class="absolute bottom-0 right-0 px-1 bg-red-600 text-[6px] font-bold text-white">TS</div>' : ''}
             </div>
             <div class="playlist-info overflow-hidden">
