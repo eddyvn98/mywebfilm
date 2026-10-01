@@ -38,9 +38,9 @@ def delete_file():
     path = data.get("path")
     if not path:
         return jsonify({"status": "err", "msg": "File not found"}), 404
-    if not check_path_safe(path):
+    if not check_path_safe(path) or not cfg.get_catalog_item(path):
         return jsonify({"status": "err", "msg": "Access denied"}), 403
-    if not os.path.exists(path):
+    if not os.path.isfile(path):
         return jsonify({"status": "err", "msg": "File not found"}), 404
 
     op_id = begin_operation("delete", src_path=path)
@@ -66,6 +66,13 @@ def delete_file():
 
 @fs_bp.route("/api/explorer", methods=["POST"])
 def open_explorer():
+    from .api_auth import is_direct_local_request
+    if not is_direct_local_request():
+        return jsonify({
+            "status": "err",
+            "msg": "Explorer chỉ được mở từ direct localhost",
+        }), 403
+
     data = request.get_json(silent=True) or {}
     path = data.get("path")
     if not path:
