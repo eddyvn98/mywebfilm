@@ -171,6 +171,8 @@ def register_verify():
             data.get("device_name") or request.headers.get("User-Agent", "Thiết bị mới"),
         )
         _mark_session_authenticated(result, remember=True)
+        if remote_bootstrap:
+            _consume_token()
         return jsonify({"status": "ok", "device": result})
     except Exception as e:
         return jsonify({"status": "err", "msg": str(e)}), 400
