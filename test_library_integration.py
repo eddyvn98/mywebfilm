@@ -3,6 +3,7 @@ from unittest.mock import patch
 import config_manager as cfg
 import runtime_db
 from webfilm import app
+from test_helpers import authenticate_client
 
 
 def test_library_filesystem_flow_survives_restart(tmp_path, monkeypatch):
@@ -33,8 +34,7 @@ def test_library_filesystem_flow_survives_restart(tmp_path, monkeypatch):
 
     app.config["TESTING"] = True
     with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["authenticated"] = True
+        authenticate_client(client)
 
         listed = client.get("/api/videos").get_json()
         assert listed[0]["full_path"] == str(source)
