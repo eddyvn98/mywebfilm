@@ -85,10 +85,10 @@ ALLOWED_PATH_BASES = [
     "/api/auth/logout",
     "/static/",
     "/login",
+    "/register_security",
 ]
 
 SENSITIVE_PATH_BASES = [
-    "/register",
     "/api/auth/register/options",
     "/api/auth/register/verify",
 ]
