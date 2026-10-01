@@ -2,11 +2,21 @@ import subprocess
 import os
 import requests
 
+from security_service import security_manager
+
+ADMIN_USER_ID = "admin-123"
+
+
 def start_tunnel():
     print("-" * 40)
     print("CLOUD CINEMA - REMOTE ACCESS SETUP")
     print("-" * 40)
     
+    if not security_manager.has_credentials(ADMIN_USER_ID):
+        print("TỪ CHỐI: Hãy mở http://localhost:5000 và đăng ký Passkey đầu tiên trước.")
+        print("Tunnel sẽ không được mở khi Cinema chưa có Passkey.")
+        return
+
     # Check for local binary first, then system-wide
     cf_cmd = "cloudflared"
     if os.path.exists("cloudflared.exe"):
@@ -59,6 +69,8 @@ def start_tunnel():
                             print("✅ Đã đồng bộ thành công!")
                         except Exception as exc:
                             print(f"❌ Không thể đồng bộ với Cinema: {exc}")
+                            process.terminate()
+                            return
                         break
     except KeyboardInterrupt:
         print("\nĐã dừng Tunnel.")
