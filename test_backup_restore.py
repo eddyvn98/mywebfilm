@@ -7,6 +7,7 @@ import pytest
 import backup_service
 import runtime_db
 from webfilm import app
+from test_helpers import authenticate_client
 
 
 @pytest.fixture
@@ -133,8 +134,7 @@ def test_restore_api_requires_explicit_confirmation(backup_env):
     app.config["TESTING"] = True
 
     with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["authenticated"] = True
+        authenticate_client(client)
 
         resp = client.post(
             "/api/backup/restore",
