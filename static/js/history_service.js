@@ -12,7 +12,6 @@ export const historyService = {
                     type: video.type
                 })
             });
-            this.loadHistory(); // Refresh UI if on home
         } catch (e) {
             console.error("Failed to add to history:", e);
         }

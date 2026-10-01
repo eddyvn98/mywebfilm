@@ -21,11 +21,14 @@ document.addEventListener('click', (e) => {
 });
 
 let scrollTimeout;
-window.addEventListener('scroll', () => {
+const gridScrollEl = document.getElementById('video-grid');
+gridScrollEl?.addEventListener('scroll', () => {
+    const scrollTop = gridScrollEl.scrollTop;
+
     // Show/Hide Back to Top button
     const btn = document.getElementById('back-to-top');
     if (btn) {
-        if (window.scrollY > 500) {
+        if (scrollTop > 500) {
             btn.classList.add('translate-y-0', 'opacity-100');
             btn.classList.remove('translate-y-24', 'opacity-0');
         } else {
@@ -36,13 +39,20 @@ window.addEventListener('scroll', () => {
 
     clearTimeout(scrollTimeout);
     scrollTimeout = setTimeout(() => {
-        state.scrollPos = window.scrollY;
+        state.scrollPos = gridScrollEl.scrollTop;
         saveState();
     }, 500);
 }, { passive: true });
 
 // Attach to window for HTML accessibility
-window.applyFilters = applyFilters;
+let searchFilterTimeout = null;
+window.applyFilters = (...args) => {
+    clearTimeout(searchFilterTimeout);
+    searchFilterTimeout = setTimeout(() => {
+        searchFilterTimeout = null;
+        applyFilters(...args);
+    }, 180);
+};
 window.renderFolders = renderFolders;
 window.toggleManageMode = toggleManageMode;
 window.handleCardClick = handleCardClick;
@@ -64,13 +74,15 @@ window.handleFavoriteToggle = async (e, idx) => {
     const video = state.currentGridVideos[idx];
     if (!video) return;
 
-    // Toggle
     const { favoritesService } = await import('./favorites_service.js');
-    await favoritesService.toggleFavorite(video);
+    const isFavorite = await favoritesService.toggleFavorite(video);
+    if (typeof isFavorite !== 'boolean') return;
 
-    // Re-render only this card or grid? 
-    // Grid re-render is safer for crosshair/state consistency
-    renderGrid(state.currentGridVideos, false, false);
+    const button = e.currentTarget || e.target.closest('button');
+    const icon = button?.querySelector('i');
+    if (icon) {
+        icon.className = `fa-${isFavorite ? 'solid' : 'regular'} fa-heart ${isFavorite ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition`;
+    }
 };
 window.toggleDropdown = (id) => {
     const menu = document.getElementById(id)?.querySelector('.dropdown-menu');

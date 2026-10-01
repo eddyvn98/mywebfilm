@@ -2,6 +2,7 @@
 let lastActivityPing = 0;
 let statusTimer = null;
 let currentInviteUrl = "";
+let securityClientInitialized = false;
 
 function loginUrl(locked = false) {
     const next = window.location.pathname + window.location.search;
@@ -113,9 +114,17 @@ function escapeText(value) {
 }
 
 export function initSecurityClient() {
-    ["pointerdown", "keydown", "touchstart", "scroll"].forEach(eventName => {
+    if (securityClientInitialized) return;
+    securityClientInitialized = true;
+
+    ["pointerdown", "keydown", "touchstart"].forEach(eventName => {
         window.addEventListener(eventName, () => pingActivity(false), { passive: true });
     });
+    document.getElementById("video-grid")?.addEventListener(
+        "scroll",
+        () => pingActivity(false),
+        { passive: true },
+    );
 
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) checkAuthStatus();

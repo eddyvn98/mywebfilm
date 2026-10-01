@@ -6,6 +6,8 @@ from functools import wraps
 import logging
 import os
 import secrets
+import threading
+import time
 from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, redirect, request, url_for
@@ -29,6 +31,37 @@ DATA_DIR = os.environ.get(
     os.path.join(BASE_DIR, "data"),
 )
 configure_logging(DATA_DIR)
+
+STREAM_ACTIVITY_TOUCH_INTERVAL_SECONDS = max(
+    15,
+    int(os.environ.get("CINEMA_STREAM_ACTIVITY_TOUCH_SECONDS", "60")),
+)
+_stream_activity_lock = threading.RLock()
+_stream_activity_last = {}
+
+
+def _touch_stream_activity(record):
+    session_id = record.get("session_id") if record else None
+    if not session_id:
+        return
+
+    now = time.time()
+    with _stream_activity_lock:
+        last = _stream_activity_last.get(session_id, 0)
+        if now - last < STREAM_ACTIVITY_TOUCH_INTERVAL_SECONDS:
+            return
+        _stream_activity_last[session_id] = now
+
+        if len(_stream_activity_last) > 512:
+            cutoff = now - 3600
+            stale = [
+                sid for sid, touched_at in _stream_activity_last.items()
+                if touched_at < cutoff
+            ]
+            for sid in stale[:256]:
+                _stream_activity_last.pop(sid, None)
+
+    runtime_db.touch_security_session(session_id, now)
 
 
 def _load_secret_key():
@@ -286,10 +319,7 @@ def check_auth():
         unlocked
         and full_path.startswith("/api/stream")
     ):
-        runtime_db.touch_security_session(
-            record["session_id"],
-            __import__("time").time(),
-        )
+        _touch_stream_activity(record)
 
     if any(
         full_path.startswith(path)
@@ -432,7 +462,16 @@ def apply_security_headers(response):
             "max-age=31536000; includeSubDomains",
         )
 
-    if (
+    cacheable_media_artifact = (
+        request.path in {"/api/thumbnail", "/api/preview"}
+        and response.status_code == 200
+    )
+    if cacheable_media_artifact:
+        response.headers["Cache-Control"] = (
+            "private, max-age=86400"
+        )
+        response.headers.pop("Pragma", None)
+    elif (
         request.path.startswith("/api/")
         or request.path.startswith("/login")
         or request.path.startswith("/register_security")

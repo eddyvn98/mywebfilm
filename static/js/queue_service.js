@@ -1,7 +1,6 @@
 // static/js/queue_service.js
 import { state } from './state.js';
 import { apiAddQueue, apiGetQueueStatus, apiClearQueue, apiProcessConvert } from './api.js';
-import { applyFilters } from './filter_service.js';
 import { cancelSelection } from './selection_service.js';
 import { escapeHtml } from './security.js';
 
@@ -99,9 +98,9 @@ export async function updateQueueUI() {
         const completedCount = status.items.filter(i => i.status === 'completed').length;
         const failedCount = status.items.filter(i => i.status === 'failed').length;
 
-        const oldQueued = JSON.stringify(state.queuedPaths);
-        state.queuedPaths = status.items.filter(i => i.status === 'pending' || i.status === 'processing').map(i => i.path);
-        if (oldQueued !== JSON.stringify(state.queuedPaths)) applyFilters();
+        state.queuedPaths = status.items
+            .filter(i => i.status === 'pending' || i.status === 'processing')
+            .map(i => i.path);
 
         if (status.items.length === 0 || (status.active_count === 0 && completedCount + failedCount === 0)) {
             overlay.classList.add('translate-x-80');

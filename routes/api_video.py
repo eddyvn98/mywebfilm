@@ -33,9 +33,52 @@ def _catalog_item(path):
     return cfg.get_catalog_item(path)
 
 
+def _compact_catalog_item(item):
+    result = {
+        key: item.get(key)
+        for key in (
+            "name",
+            "ext",
+            "type",
+            "full_path",
+            "folder",
+            "size",
+            "size_fmt",
+            "mtime",
+            "date_added",
+            "views",
+            "categories",
+            "duration",
+            "is_offline",
+        )
+    }
+    meta = item.get("jav_metadata")
+    if isinstance(meta, dict):
+        result["jav_metadata"] = {
+            key: meta.get(key)
+            for key in (
+                "title",
+                "code",
+                "studio",
+                "actors",
+                "genres",
+            )
+            if meta.get(key) not in (None, "", [], {})
+        }
+    else:
+        result["jav_metadata"] = None
+    return result
+
+
 @video_bp.route("/api/videos")
 def get_videos():
-    return jsonify(cfg.load_cache())
+    items = cfg.load_cache()
+    compact = request.args.get("compact", "").lower() in {
+        "1", "true", "yes", "on"
+    }
+    if compact:
+        items = [_compact_catalog_item(item) for item in items]
+    return jsonify(items)
 
 
 @video_bp.route("/api/thumbnail")
@@ -51,10 +94,10 @@ def get_thumb():
         return "File not found", 404
 
     paths = get_metadata_paths(path)
-    ensure_metadata_dirs(paths)
     out = paths["thumb_path"]
 
     if not os.path.exists(out):
+        ensure_metadata_dirs(paths)
         if not ff.generate_thumbnail(
             path,
             out,
@@ -79,10 +122,10 @@ def get_prev():
         return "File not found", 404
 
     paths = get_metadata_paths(path)
-    ensure_metadata_dirs(paths)
     out = paths["prev_path"]
 
     if not os.path.exists(out):
+        ensure_metadata_dirs(paths)
         if not ff.generate_preview(path, out):
             return "FFmpeg error", 500
 

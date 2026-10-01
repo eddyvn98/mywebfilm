@@ -1,5 +1,6 @@
 export const favoritesService = {
     favorites: [],
+    favoritePaths: new Set(),
 
     async toggleFavorite(video) {
         try {
@@ -30,14 +31,17 @@ export const favoritesService = {
         try {
             const res = await fetch('/api/favorites/list');
             this.favorites = await res.json();
+            this.favoritePaths = new Set(this.favorites.map(v => v.full_path));
             return this.favorites;
         } catch (e) {
             console.error("Failed to load favorites:", e);
+            this.favorites = [];
+            this.favoritePaths = new Set();
             return [];
         }
     },
 
     isFavorite(path) {
-        return this.favorites.some(v => v.full_path === path);
+        return this.favoritePaths.has(path);
     }
 };

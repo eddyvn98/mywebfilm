@@ -64,6 +64,7 @@ export function initGestures() {
     let startY = 0;
     let startX = 0;
     let originalTime = 0;
+    let pendingSeekTime = null;
     let trackingTouch = false;
     let trackingMouse = false;
     let isSeeking = false;
@@ -73,6 +74,7 @@ export function initGestures() {
         trackingTouch = false;
         trackingMouse = false;
         isSeeking = false;
+        pendingSeekTime = null;
     };
 
     const startAction = (clientX, clientY, target, isMouse) => {
@@ -91,6 +93,7 @@ export function initGestures() {
         startX = clientX;
         startY = clientY;
         originalTime = state.player?.currentTime || 0;
+        pendingSeekTime = null;
         isSeeking = false;
 
         if (isMouse) trackingMouse = true;
@@ -114,7 +117,7 @@ export function initGestures() {
         if (!state.player || !Number.isFinite(state.player.duration)) return;
 
         const nextTime = originalTime + (diffX * seekSensitivity);
-        state.player.currentTime = Math.max(0, Math.min(nextTime, state.player.duration));
+        pendingSeekTime = Math.max(0, Math.min(nextTime, state.player.duration));
     };
 
     const endAction = (clientX, clientY) => {
@@ -123,9 +126,13 @@ export function initGestures() {
         const diffX = startX - clientX;
         const diffY = startY - clientY;
         const wasSeeking = isSeeking;
+        const seekTarget = pendingSeekTime;
         resetGesture();
 
         if (wasSeeking) {
+            if (state.player && Number.isFinite(seekTarget)) {
+                state.player.currentTime = seekTarget;
+            }
             state.player?.play().catch(() => { });
             return;
         }

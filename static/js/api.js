@@ -13,7 +13,7 @@ export async function apiUpdateConfig(updates) {
 }
 
 export async function fetchVideos() {
-    const res = await fetch('/api/videos');
+    const res = await fetch('/api/videos?compact=1');
     return await res.json();
 }
 

@@ -66,6 +66,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
                         <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" 
                              class="w-full h-full object-cover transition duration-500 ${v.is_offline ? '' : 'group-hover:scale-110'}" 
                              loading="lazy"
+                             decoding="async"
                              onerror="this.style.display='none'">
                         
                         <div class="absolute top-2 right-2 flex flex-col gap-1 items-end z-10 pointer-events-none">
@@ -86,11 +87,11 @@ export function renderGrid(videos, append = false, resetPage = true) {
                         </div>
     
                         ${v.duration > 0 ? `
-                        <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold backdrop-blur-sm z-10 pointer-events-none border border-white/10">
+                        <div class="absolute bottom-2 right-2 bg-black/75 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold z-10 pointer-events-none border border-white/10">
                             ${formatDuration(v.duration)}
                         </div>` : ''}
 
-                        <div class="absolute top-2 left-2 flex gap-1 z-50 ${state.manageMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition duration-300">
+                        <div class="card-actions absolute top-2 left-2 flex gap-1 z-50 opacity-0 group-hover:opacity-100 transition duration-300">
                             <button onclick="openRenameModal(event, ${globalIndex})" 
                                     class="w-7 h-7 rounded-lg bg-blue-600/90 text-white flex items-center justify-center hover:bg-blue-500 border border-white/10 shadow-lg ${v.is_offline ? 'hidden' : ''}">
                                 <i class="fa-solid fa-pen text-[9px]"></i>
@@ -109,7 +110,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
 
                         <!-- Favorite Heart -->
                         <button onclick="handleFavoriteToggle(event, ${globalIndex})" 
-                                class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart">
+                                class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/65 flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart">
                             <i class="fa-${favoritesService.isFavorite(v.full_path) ? 'solid' : 'regular'} fa-heart ${favoritesService.isFavorite(v.full_path) ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition"></i>
                         </button>
                     </div>
@@ -141,7 +142,9 @@ export function renderGrid(videos, append = false, resetPage = true) {
         grid.innerHTML = html;
     }
 
-    renderTimeline(videos);
+    if (!append) {
+        renderTimeline(videos);
+    }
     setupInfiniteScroll();
 }
 
@@ -231,7 +234,7 @@ export function renderFolders() {
 export function restoreScroll() {
     if (state.scrollPos) {
         setTimeout(() => {
-            window.scrollTo({ top: state.scrollPos, behavior: 'auto' });
+            document.getElementById('video-grid')?.scrollTo({ top: state.scrollPos, behavior: 'auto' });
         }, 100);
     }
 }

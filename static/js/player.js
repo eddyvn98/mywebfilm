@@ -9,7 +9,11 @@ let isAutoNext = false;
 let isShuffle = false;
 let currentRotation = 0;
 let lastProgressSaveAt = 0;
+let historyRecordTimer = null;
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
+const HISTORY_RECORD_DELAY_MS = 1500;
+const PLAYLIST_WINDOW_RADIUS = 40;
+let playlistRenderedForLength = -1;
 
 export function openVideoModal(idx) {
     state.currentIndex = idx;
@@ -22,8 +26,11 @@ export function openVideoModal(idx) {
     }
 
     const modal = document.getElementById('video-modal');
+    const isOpeningModal = modal.classList.contains('hidden');
     modal.classList.remove('hidden');
-    void modal.offsetWidth;
+    if (isOpeningModal) {
+        void modal.offsetWidth;
+    }
     modal.classList.add('translate-y-0');
     modal.classList.remove('translate-y-full');
 
@@ -32,12 +39,24 @@ export function openVideoModal(idx) {
     if (titleEl) titleEl.textContent = v.name;
     updatePlayerFavoriteUI(v.full_path);
 
-    // Track History
-    historyService.addToHistory(v);
+    scheduleHistoryRecord(v);
 
     loadVideoSource(v);
-    renderPlaylist();
-    updatePlaylistActiveItem();
+
+    const playlist = document.getElementById('playlist-content');
+    if (playlist && (playlist.children.length === 0 || playlistRenderedForLength !== state.currentGridVideos.length)) {
+        renderPlaylist();
+    } else {
+        renderPlaylistWindow();
+    }
+}
+
+function scheduleHistoryRecord(video) {
+    clearTimeout(historyRecordTimer);
+    historyRecordTimer = setTimeout(() => {
+        historyService.addToHistory(video);
+        historyRecordTimer = null;
+    }, HISTORY_RECORD_DELAY_MS);
 }
 
 function injectPlaylistUI() {
@@ -85,13 +104,38 @@ function injectPlaylistUI() {
 }
 
 function renderPlaylist() {
+    playlistRenderedForLength = state.currentGridVideos.length;
+    renderPlaylistWindow();
+}
+
+function renderPlaylistWindow(anchorIndex = state.currentIndex) {
     const container = document.getElementById('playlist-content');
     if (!container) return;
 
-    container.innerHTML = state.currentGridVideos.map((v, i) => `
+    const count = state.currentGridVideos.length;
+    if (!count) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const safeAnchor = Math.max(0, Math.min(anchorIndex, count - 1));
+    const start = Math.max(0, safeAnchor - PLAYLIST_WINDOW_RADIUS);
+    const end = Math.min(count, safeAnchor + PLAYLIST_WINDOW_RADIUS + 1);
+    const items = state.currentGridVideos.slice(start, end);
+
+    const previousButton = start > 0
+        ? `<button onclick="pagePlaylist(-1, ${start})" class="w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-blue-400 hover:bg-white/5 rounded-lg">↑ Nạp phim trước</button>`
+        : '';
+    const nextButton = end < count
+        ? `<button onclick="pagePlaylist(1, ${end})" class="w-full py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-blue-400 hover:bg-white/5 rounded-lg">Nạp phim tiếp ↓</button>`
+        : '';
+
+    container.innerHTML = previousButton + items.map((v, offset) => {
+        const i = start + offset;
+        return `
         <div class="playlist-item rounded-lg" id="plist-item-${i}" onclick="playVideoFromIndex(${i})">
             <div class="relative w-16 aspect-video rounded overflow-hidden bg-slate-800 shrink-0">
-                <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy">
+                <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 ${v.ext && (v.ext.toLowerCase() === '.ts' || v.ext.toLowerCase() === '.m2ts') ? '<div class="absolute bottom-0 right-0 px-1 bg-red-600 text-[6px] font-bold text-white">TS</div>' : ''}
             </div>
             <div class="playlist-info overflow-hidden">
@@ -102,27 +146,32 @@ function renderPlaylist() {
                 </div>
             </div>
             ${i === state.currentIndex ? '<i class="fa-solid fa-chart-simple text-blue-500 text-xs animate-pulse"></i>' : ''}
-        </div>
-    `).join('');
-}
-
-function updatePlaylistActiveItem() {
-    document.querySelectorAll('.playlist-item').forEach(el => {
-        el.classList.remove('active', 'bg-blue-600/10', 'border-blue-500/30');
-        el.querySelector('.playlist-title').classList.remove('text-blue-400');
-    });
+        </div>`;
+    }).join('') + nextButton;
 
     const activeItem = document.getElementById(`plist-item-${state.currentIndex}`);
     if (activeItem) {
         activeItem.classList.add('active', 'bg-blue-600/10', 'border-blue-500/30');
-        activeItem.querySelector('.playlist-title').classList.add('text-blue-400');
-
-        // Scroll to active
-        setTimeout(() => {
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
+        activeItem.querySelector('.playlist-title')?.classList.add('text-blue-400');
+        requestAnimationFrame(() => {
+            activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
+        });
     }
 }
+
+function updatePlaylistActiveItem() {
+    renderPlaylistWindow();
+}
+
+window.pagePlaylist = (direction, boundaryIndex) => {
+    const count = state.currentGridVideos.length;
+    if (!count) return;
+    const jump = PLAYLIST_WINDOW_RADIUS * 2;
+    const anchor = direction < 0
+        ? Math.max(0, boundaryIndex - PLAYLIST_WINDOW_RADIUS - 1)
+        : Math.min(count - 1, boundaryIndex + PLAYLIST_WINDOW_RADIUS);
+    renderPlaylistWindow(anchor);
+};
 
 // --- Logic ---
 
@@ -169,6 +218,8 @@ function updateShuffleBtn() {
 // --- Main Player Logic ---
 
 export function closeVideoModal() {
+    clearTimeout(historyRecordTimer);
+    historyRecordTimer = null;
     if (state.player) state.player.pause();
     window.togglePlaylist?.(false);
 
@@ -565,12 +616,15 @@ window.togglePlayerFavorite = async () => {
     const video = state.currentGridVideos[state.currentIndex];
     if (!video) return;
 
-    await favoritesService.toggleFavorite(video);
+    const isFavorite = await favoritesService.toggleFavorite(video);
+    if (typeof isFavorite !== 'boolean') return;
     updatePlayerFavoriteUI(video.full_path);
 
-    // Also refresh grid if visible behind
-    const { renderGrid } = await import('./render_service.js');
-    renderGrid(state.currentGridVideos, false, false);
+    const card = document.querySelector(`.movie-card[data-path="${CSS.escape(video.full_path)}"]`);
+    const icon = card?.querySelector('button[onclick^="handleFavoriteToggle"] i');
+    if (icon) {
+        icon.className = `fa-${isFavorite ? 'solid' : 'regular'} fa-heart ${isFavorite ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition`;
+    }
 };
 
 function updatePlayerFavoriteUI(path) {

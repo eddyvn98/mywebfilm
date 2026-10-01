@@ -3,25 +3,29 @@ import { renderGrid } from './render_service.js';
 import { favoritesService } from './favorites_service.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
+let categorySource = null;
 
 function closeDropdowns() {
     document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
 }
 
 export function applyFilters(preserveScroll = false) {
-    const currentScroll = preserveScroll ? window.scrollY : 0;
+    const grid = document.getElementById('video-grid');
+    const currentScroll = preserveScroll ? (grid?.scrollTop || 0) : 0;
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const type = state.filterType || 'all';
     const sort = state.sortOrder || 'added_newest';
 
     let filtered = state.allVideos.filter(v => {
-        const meta = v.jav_metadata || {};
-        const matchesName = v.name.toLowerCase().includes(search);
-        const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
-        const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
-        const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
-
-        const matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+        let matchesSearch = true;
+        if (search) {
+            const meta = v.jav_metadata || {};
+            const matchesName = v.name.toLowerCase().includes(search);
+            const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
+            const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
+            const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
+            matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+        }
 
         // Favorites / History override
         if (state.currentFolder === 'favorites') {
@@ -71,7 +75,7 @@ export function applyFilters(preserveScroll = false) {
 
     if (preserveScroll) {
         // Small delay to ensure render is complete
-        setTimeout(() => window.scrollTo({ top: currentScroll, behavior: 'instant' }), 0);
+        setTimeout(() => grid?.scrollTo({ top: currentScroll, behavior: 'auto' }), 0);
     }
 }
 
@@ -79,6 +83,7 @@ export function applyFilters(preserveScroll = false) {
 export function renderDynamicCategories() {
     const list = document.getElementById('dynamic-studios-list-sheet');
     if (!list) return;
+    if (categorySource === state.allVideos && list.childElementCount > 0) return;
 
     list.innerHTML = '';
     const sections = {
@@ -86,14 +91,19 @@ export function renderDynamicCategories() {
         'Diễn viên': new Set(),
         'Chủ đề': new Set()
     };
+    const categoryCounts = new Map();
 
     const predefined = [
         'Học sinh / Teen', 'Show hàng / Live', 'Thủ dâm / Solo',
         'Gái múp / Vú to', 'Gạ gẫm / Call sex', 'Người quen / MILF'
     ];
 
+    // Build category sets and counts in one pass. The previous implementation
+    // rescanned the full library once per category, which becomes expensive
+    // with thousands of movies and large actor/studio lists.
     state.allVideos.forEach(v => {
         (v.categories || []).forEach(c => {
+            categoryCounts.set(c, (categoryCounts.get(c) || 0) + 1);
             if (c.startsWith('Studio:')) sections['Studio'].add(c.replace('Studio: ', ''));
             else if (c.startsWith('Diễn viên:')) sections['Diễn viên'].add(c.replace('Diễn viên: ', ''));
             else if (predefined.includes(c)) sections['Chủ đề'].add(c);
@@ -105,7 +115,7 @@ export function renderDynamicCategories() {
         const sorted = Array.from(items).sort();
         const sectionHtml = sorted.map(s => {
             const val = title === 'Chủ đề' ? s : `${title}: ${s}`;
-            const count = state.allVideos.filter(v => v.categories?.includes(val)).length;
+            const count = categoryCounts.get(val) || 0;
             if (count === 0) return '';
             return `
                 <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${escapeInlineJsSingleQuoted(val)}', '${escapeInlineJsSingleQuoted(s.toUpperCase())}'); event.stopPropagation(); event.preventDefault()">
@@ -121,6 +131,7 @@ export function renderDynamicCategories() {
         }
     }
     list.innerHTML = html || '<div class="px-3 py-4 text-center text-slate-700 italic text-[10px]">Trống</div>';
+    categorySource = state.allVideos;
 }
 
 export function selectType(val, label) {
