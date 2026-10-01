@@ -3,6 +3,7 @@ import { renderGrid } from './render_service.js';
 import { favoritesService } from './favorites_service.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
+let categorySource = null;
 
 function closeDropdowns() {
     document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
@@ -15,13 +16,15 @@ export function applyFilters(preserveScroll = false) {
     const sort = state.sortOrder || 'added_newest';
 
     let filtered = state.allVideos.filter(v => {
-        const meta = v.jav_metadata || {};
-        const matchesName = v.name.toLowerCase().includes(search);
-        const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
-        const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
-        const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
-
-        const matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+        let matchesSearch = true;
+        if (search) {
+            const meta = v.jav_metadata || {};
+            const matchesName = v.name.toLowerCase().includes(search);
+            const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
+            const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
+            const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
+            matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+        }
 
         // Favorites / History override
         if (state.currentFolder === 'favorites') {
@@ -79,6 +82,7 @@ export function applyFilters(preserveScroll = false) {
 export function renderDynamicCategories() {
     const list = document.getElementById('dynamic-studios-list-sheet');
     if (!list) return;
+    if (categorySource === state.allVideos && list.childElementCount > 0) return;
 
     list.innerHTML = '';
     const sections = {
@@ -126,6 +130,7 @@ export function renderDynamicCategories() {
         }
     }
     list.innerHTML = html || '<div class="px-3 py-4 text-center text-slate-700 italic text-[10px]">Trống</div>';
+    categorySource = state.allVideos;
 }
 
 export function selectType(val, label) {
