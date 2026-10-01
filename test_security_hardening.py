@@ -5,6 +5,7 @@ import pytest
 
 from webfilm import app
 import routes.api_auth as api_auth
+from test_helpers import authenticate_client, set_session_last_activity
 
 
 @pytest.fixture
@@ -15,8 +16,7 @@ def client():
 
 
 def authenticate(client):
-    with client.session_transaction() as sess:
-        sess['authenticated'] = True
+    return authenticate_client(client)
 
 
 def test_config_api_never_returns_server_secrets(client):
@@ -76,7 +76,11 @@ def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
 
     resp = client.post(
         '/api/auth/register/verify',
-        headers={'X-Cinema-Bootstrap': 'b' * 32},
+        base_url='https://example.test',
+        headers={
+            'X-Cinema-Bootstrap': 'b' * 32,
+            'Origin': 'https://example.test',
+        },
         json={'credential': {}, 'challenge_id': 'challenge-1'},
         environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
     )
@@ -85,7 +89,7 @@ def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
     assert api_auth.CURRENT_OTT_EXPIRES_AT == 0.0
     with client.session_transaction() as sess:
         assert sess['authenticated'] is True
-        assert sess['locked'] is False
+        assert sess.get('security_session_id')
 
 
 def test_cross_origin_state_change_is_blocked(client):
@@ -263,9 +267,11 @@ def test_public_config_is_allowlisted_not_blacklisted(client):
 
 
 def test_idle_session_auto_locks(client):
-    authenticate(client)
-    with client.session_transaction() as sess:
-        sess['last_activity'] = time.time() - api_auth.IDLE_LOCK_SECONDS - 1
+    session_id = authenticate(client)
+    set_session_last_activity(
+        session_id,
+        time.time() - api_auth.IDLE_LOCK_SECONDS - 1,
+    )
 
     resp = client.get('/api/videos')
     assert resp.status_code == 423
@@ -273,11 +279,67 @@ def test_idle_session_auto_locks(client):
 
 
 def test_activity_refreshes_idle_timer(client):
-    authenticate(client)
-    with client.session_transaction() as sess:
-        sess['last_activity'] = time.time() - 10
+    session_id = authenticate(client)
+    set_session_last_activity(session_id, time.time() - 10)
 
     resp = client.post('/api/auth/activity')
     assert resp.status_code == 200
-    with client.session_transaction() as sess:
-        assert time.time() - sess['last_activity'] < 5
+    record = api_auth.runtime_db.get_security_session(session_id)
+    assert time.time() - record['last_activity'] < 5
+
+
+def test_cloudflare_loopback_is_not_direct_local_registration(client, monkeypatch):
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'has_credentials',
+        lambda _user_id: False,
+    )
+    resp = client.get(
+        '/api/auth/register/options',
+        base_url='https://cinema.example.com',
+        headers={
+            'CF-Connecting-IP': '203.0.113.77',
+            'X-Forwarded-Proto': 'https',
+            'X-Forwarded-Host': 'cinema.example.com',
+        },
+        environ_overrides={'REMOTE_ADDR': '127.0.0.1'},
+    )
+    assert resp.status_code in {401, 403}
+
+
+def test_cloudflare_loopback_cannot_sync_tunnel(client):
+    resp = client.post(
+        '/api/auth/tunnel/sync',
+        base_url='https://cinema.example.com',
+        headers={
+            'Origin': 'https://cinema.example.com',
+            'CF-Connecting-IP': '203.0.113.77',
+            'X-Forwarded-Proto': 'https',
+            'X-Forwarded-Host': 'cinema.example.com',
+        },
+        json={
+            'url': 'https://evil.trycloudflare.com',
+            'token': 'a' * 48,
+        },
+        environ_overrides={'REMOTE_ADDR': '127.0.0.1'},
+    )
+    assert resp.status_code == 403
+
+
+def test_revoked_server_session_is_rejected(client):
+    session_id = authenticate(client)
+    api_auth.runtime_db.revoke_security_session(session_id, time.time())
+
+    resp = client.get('/api/videos')
+    assert resp.status_code == 401
+
+
+def test_old_session_cannot_create_device_bootstrap(client, monkeypatch):
+    authenticate_client(client, age_seconds=301)
+    monkeypatch.setattr(
+        'routes.api_config.TUNNEL_URL',
+        'https://cinema.example.com',
+    )
+    resp = client.post('/api/auth/bootstrap')
+    assert resp.status_code == 428
+    assert resp.get_json()['code'] == 'REAUTH_REQUIRED'
