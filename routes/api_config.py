@@ -78,10 +78,12 @@ def add_folder():
 
     c = cfg.load_config()
     if not check_media_root_allowed(p, c):
-        return jsonify({
-            "status": "err",
-            "msg": "Folder nằm ngoài CINEMA_MEDIA_ROOTS/trusted roots"
-        }), 403
+        from .api_auth import is_direct_local_request
+        if not is_direct_local_request():
+            return jsonify({
+                "status": "err",
+                "msg": "Chỉ direct-local mới được thêm media root mới"
+            }), 403
 
     normalized = os.path.normpath(p)
     existing = {
@@ -106,6 +108,12 @@ def remove_folder():
 def handle_tunnel():
     global TUNNEL_URL
     if request.method == 'POST':
+        from .api_auth import is_direct_local_request
+        if not is_direct_local_request():
+            return jsonify({
+                "status": "err",
+                "msg": "Public URL chỉ được thay đổi từ direct localhost"
+            }), 403
         value = str((request.get_json(silent=True) or {}).get('url') or '').strip().rstrip('/')
         if value and not value.startswith('https://'):
             return jsonify({"status": "err", "msg": "Public URL phải dùng HTTPS"}), 400
