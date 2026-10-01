@@ -94,10 +94,10 @@ def get_thumb():
         return "File not found", 404
 
     paths = get_metadata_paths(path)
-    ensure_metadata_dirs(paths)
     out = paths["thumb_path"]
 
     if not os.path.exists(out):
+        ensure_metadata_dirs(paths)
         if not ff.generate_thumbnail(
             path,
             out,
@@ -122,10 +122,10 @@ def get_prev():
         return "File not found", 404
 
     paths = get_metadata_paths(path)
-    ensure_metadata_dirs(paths)
     out = paths["prev_path"]
 
     if not os.path.exists(out):
+        ensure_metadata_dirs(paths)
         if not ff.generate_preview(path, out):
             return "FFmpeg error", 500
 
