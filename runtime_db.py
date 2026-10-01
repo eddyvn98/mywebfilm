@@ -311,3 +311,16 @@ def cleanup_security_sessions(now):
             """,
             (now - 86400, now - 7 * 86400),
         )
+
+
+def revoke_all_security_sessions(when):
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            UPDATE security_sessions
+            SET revoked_at = COALESCE(revoked_at, ?)
+            WHERE revoked_at IS NULL
+            """,
+            (when,),
+        )
