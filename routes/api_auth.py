@@ -293,7 +293,6 @@ def get_origin():
 
 @auth_bp.route("/api/auth/tunnel/sync", methods=["POST"])
 def sync_tunnel():
-    global CURRENT_OTT, CURRENT_OTT_EXPIRES_AT
     import routes.api_config as cfg_module
 
     if not is_direct_local_request():
@@ -303,28 +302,15 @@ def sync_tunnel():
         }), 403
 
     data = request.get_json(silent=True) or {}
-    token = str(data.get("token") or "")
     tunnel_url = str(data.get("url") or "").rstrip("/")
-    if (
-        len(token) < 32
-        or not tunnel_url.startswith("https://")
-    ):
+    if not tunnel_url.startswith("https://"):
         return jsonify({
             "status": "err",
-            "msg": "Invalid tunnel credentials",
+            "msg": "Tunnel URL must use HTTPS",
         }), 400
 
-    ttl = int(
-        os.environ.get(
-            "CINEMA_OTT_TTL_SECONDS",
-            DEFAULT_OTT_TTL_SECONDS,
-        )
-    )
-    ttl = max(60, min(ttl, 300))
     cfg_module.TUNNEL_URL = tunnel_url
-    CURRENT_OTT = token
-    CURRENT_OTT_EXPIRES_AT = time.time() + ttl
-    return jsonify({"status": "ok", "expires_in": ttl})
+    return jsonify({"status": "ok"})
 
 
 @auth_bp.route("/api/auth/tunnel/info")
