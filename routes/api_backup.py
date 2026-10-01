@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 
 import backup_service
+import runtime_db
+import time
 
 backup_bp = Blueprint("api_backup", __name__)
 
@@ -72,6 +74,12 @@ def restore_backup():
 
     try:
         result = backup_service.restore_backup(backup_id)
+        runtime_db.revoke_all_security_sessions(time.time())
+
+        # Reload restored Passkeys immediately so stale in-memory credentials
+        # cannot continue authenticating before the required restart.
+        from security_service import security_manager
+        security_manager.credentials = security_manager._load_credentials()
     except FileNotFoundError as exc:
         return jsonify({"status": "err", "msg": str(exc)}), 404
     except Exception as exc:
