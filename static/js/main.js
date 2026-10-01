@@ -127,6 +127,15 @@ window.toggleSidebar = () => {
     overlay.classList.toggle('hidden');
 };
 
+window.closeSidebarOnMobile = () => {
+    if (window.innerWidth >= 768) return;
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+};
+
 window.toggleSection = (id, btn) => {
     const el = document.getElementById(id);
     const icon = btn.querySelector('i');
