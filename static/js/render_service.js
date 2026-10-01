@@ -91,7 +91,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
                             ${formatDuration(v.duration)}
                         </div>` : ''}
 
-                        <div class="absolute top-2 left-2 flex gap-1 z-50 ${state.manageMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition duration-300">
+                        <div class="card-actions absolute top-2 left-2 flex gap-1 z-50 opacity-0 group-hover:opacity-100 transition duration-300">
                             <button onclick="openRenameModal(event, ${globalIndex})" 
                                     class="w-7 h-7 rounded-lg bg-blue-600/90 text-white flex items-center justify-center hover:bg-blue-500 border border-white/10 shadow-lg ${v.is_offline ? 'hidden' : ''}">
                                 <i class="fa-solid fa-pen text-[9px]"></i>
