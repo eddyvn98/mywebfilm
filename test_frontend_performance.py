@@ -142,3 +142,26 @@ def test_preview_generation_is_low_contention_and_faststart():
     preview_block = source[preview_start:preview_end]
     assert "'-threads', '1'" in preview_block
     assert "'-movflags', '+faststart'" in preview_block
+
+
+def test_cinema_ui_requests_compact_catalog():
+    source = read("static/js/api.js")
+    assert "fetch('/api/videos?compact=1')" in source
+
+
+def test_scroll_state_uses_grid_container_not_window():
+    grid = read("static/js/grid.js")
+    state = read("static/js/state.js")
+    renderer = read("static/js/render_service.js")
+    back_to_top = read("templates/components/back_to_top.html")
+
+    assert "gridScrollEl?.addEventListener('scroll'" in grid
+    assert "window.addEventListener('scroll'" not in grid
+    assert "scrollPos: state.scrollPos || 0" in state
+    assert "getElementById('video-grid')?.scrollTo" in renderer
+    assert "getElementById('video-grid')?.scrollTo" in back_to_top
+
+
+def test_history_service_does_not_refetch_after_each_record():
+    source = read("static/js/history_service.js")
+    assert "this.loadHistory()" not in source
