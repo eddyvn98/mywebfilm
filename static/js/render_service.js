@@ -141,7 +141,9 @@ export function renderGrid(videos, append = false, resetPage = true) {
         grid.innerHTML = html;
     }
 
-    renderTimeline(videos);
+    if (!append) {
+        renderTimeline(videos);
+    }
     setupInfiniteScroll();
 }
 
