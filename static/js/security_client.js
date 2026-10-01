@@ -122,10 +122,32 @@ window.lockCinema = async () => {
     }
 };
 
+async function clearLocalCinemaData() {
+    try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key === "mycinema_ui_state" || key.startsWith("resume_"))) {
+                keys.push(key);
+            }
+        }
+        keys.forEach(key => localStorage.removeItem(key));
+        sessionStorage.clear();
+
+        if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map(name => caches.delete(name)));
+        }
+    } catch {
+        // Clear-Site-Data on the server is the primary wipe mechanism.
+    }
+}
+
 window.logoutCinema = async () => {
     try {
         await fetch("/api/auth/logout", { method: "POST" });
     } finally {
+        await clearLocalCinemaData();
         window.location.replace("/login");
     }
 };
