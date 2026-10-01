@@ -42,7 +42,14 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 // Attach to window for HTML accessibility
-window.applyFilters = applyFilters;
+let searchFilterTimeout = null;
+window.applyFilters = (...args) => {
+    clearTimeout(searchFilterTimeout);
+    searchFilterTimeout = setTimeout(() => {
+        searchFilterTimeout = null;
+        applyFilters(...args);
+    }, 180);
+};
 window.renderFolders = renderFolders;
 window.toggleManageMode = toggleManageMode;
 window.handleCardClick = handleCardClick;
