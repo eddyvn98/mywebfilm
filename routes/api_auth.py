@@ -202,8 +202,6 @@ def login_verify():
         if not isinstance(result, dict):
             result = {}
         _mark_session_authenticated(result, remember=data.get("remember", True))
-        if remote_bootstrap:
-            _consume_token()
         return jsonify({"status": "ok", "device": result})
     except Exception as e:
         return jsonify({"status": "err", "msg": str(e)}), 400
