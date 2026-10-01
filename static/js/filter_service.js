@@ -86,14 +86,19 @@ export function renderDynamicCategories() {
         'Diễn viên': new Set(),
         'Chủ đề': new Set()
     };
+    const categoryCounts = new Map();
 
     const predefined = [
         'Học sinh / Teen', 'Show hàng / Live', 'Thủ dâm / Solo',
         'Gái múp / Vú to', 'Gạ gẫm / Call sex', 'Người quen / MILF'
     ];
 
+    // Build category sets and counts in one pass. The previous implementation
+    // rescanned the full library once per category, which becomes expensive
+    // with thousands of movies and large actor/studio lists.
     state.allVideos.forEach(v => {
         (v.categories || []).forEach(c => {
+            categoryCounts.set(c, (categoryCounts.get(c) || 0) + 1);
             if (c.startsWith('Studio:')) sections['Studio'].add(c.replace('Studio: ', ''));
             else if (c.startsWith('Diễn viên:')) sections['Diễn viên'].add(c.replace('Diễn viên: ', ''));
             else if (predefined.includes(c)) sections['Chủ đề'].add(c);
@@ -105,7 +110,7 @@ export function renderDynamicCategories() {
         const sorted = Array.from(items).sort();
         const sectionHtml = sorted.map(s => {
             const val = title === 'Chủ đề' ? s : `${title}: ${s}`;
-            const count = state.allVideos.filter(v => v.categories?.includes(val)).length;
+            const count = categoryCounts.get(val) || 0;
             if (count === 0) return '';
             return `
                 <div class="dropdown-item flex justify-between items-center group/cat" onclick="selectCategory('${escapeInlineJsSingleQuoted(val)}', '${escapeInlineJsSingleQuoted(s.toUpperCase())}'); event.stopPropagation(); event.preventDefault()">
