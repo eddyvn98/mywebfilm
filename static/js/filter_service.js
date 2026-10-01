@@ -10,7 +10,8 @@ function closeDropdowns() {
 }
 
 export function applyFilters(preserveScroll = false) {
-    const currentScroll = preserveScroll ? window.scrollY : 0;
+    const grid = document.getElementById('video-grid');
+    const currentScroll = preserveScroll ? (grid?.scrollTop || 0) : 0;
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const type = state.filterType || 'all';
     const sort = state.sortOrder || 'added_newest';
@@ -74,7 +75,7 @@ export function applyFilters(preserveScroll = false) {
 
     if (preserveScroll) {
         // Small delay to ensure render is complete
-        setTimeout(() => window.scrollTo({ top: currentScroll, behavior: 'instant' }), 0);
+        setTimeout(() => grid?.scrollTo({ top: currentScroll, behavior: 'auto' }), 0);
     }
 }
 
