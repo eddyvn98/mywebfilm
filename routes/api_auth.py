@@ -211,6 +211,13 @@ def is_recently_authenticated(max_age=300):
 
 def _mark_session_authenticated(device=None, remember=True):
     now = time.time()
+    previous_session_id = session.get("security_session_id")
+    if previous_session_id:
+        runtime_db.revoke_security_session(
+            previous_session_id,
+            now,
+        )
+
     ttl = (
         REMEMBER_SESSION_SECONDS
         if remember
@@ -300,6 +307,11 @@ def sync_tunnel():
             "status": "err",
             "msg": "Sync allowed only from direct localhost",
         }), 403
+    if not security_manager.has_credentials(ADMIN_USER_ID):
+        return jsonify({
+            "status": "err",
+            "msg": "Hãy đăng ký Passkey đầu tiên trên localhost trước khi bật Tunnel",
+        }), 409
 
     data = request.get_json(silent=True) or {}
     tunnel_url = str(data.get("url") or "").rstrip("/")
