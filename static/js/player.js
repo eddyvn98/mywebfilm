@@ -602,12 +602,14 @@ window.togglePlayerFavorite = async () => {
     const video = state.currentGridVideos[state.currentIndex];
     if (!video) return;
 
-    await favoritesService.toggleFavorite(video);
+    const isFavorite = await favoritesService.toggleFavorite(video);
     updatePlayerFavoriteUI(video.full_path);
 
-    // Also refresh grid if visible behind
-    const { renderGrid } = await import('./render_service.js');
-    renderGrid(state.currentGridVideos, false, false);
+    const card = document.querySelector(`.movie-card[data-path="${CSS.escape(video.full_path)}"]`);
+    const icon = card?.querySelector('button[onclick^="handleFavoriteToggle"] i');
+    if (icon) {
+        icon.className = `fa-${isFavorite ? 'solid' : 'regular'} fa-heart ${isFavorite ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition`;
+    }
 };
 
 function updatePlayerFavoriteUI(path) {
