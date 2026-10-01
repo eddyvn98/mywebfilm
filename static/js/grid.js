@@ -71,13 +71,14 @@ window.handleFavoriteToggle = async (e, idx) => {
     const video = state.currentGridVideos[idx];
     if (!video) return;
 
-    // Toggle
     const { favoritesService } = await import('./favorites_service.js');
-    await favoritesService.toggleFavorite(video);
+    const isFavorite = await favoritesService.toggleFavorite(video);
 
-    // Re-render only this card or grid? 
-    // Grid re-render is safer for crosshair/state consistency
-    renderGrid(state.currentGridVideos, false, false);
+    const button = e.currentTarget || e.target.closest('button');
+    const icon = button?.querySelector('i');
+    if (icon) {
+        icon.className = `fa-${isFavorite ? 'solid' : 'regular'} fa-heart ${isFavorite ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition`;
+    }
 };
 window.toggleDropdown = (id) => {
     const menu = document.getElementById(id)?.querySelector('.dropdown-menu');
