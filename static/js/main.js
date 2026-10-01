@@ -48,13 +48,12 @@ function uniquePaths(paths) {
 async function loadLibrary() {
     try {
         console.log("loadLibrary() started...");
-        const videos = await fetchVideos();
+        const [videos] = await Promise.all([
+            fetchVideos(),
+            favoritesService.loadFavorites(),
+        ]);
         console.log("fetchVideos() returned:", videos ? videos.length : 'NULL', "items");
         state.allVideos = videos;
-
-        // Favorites must be ready before the first grid render so cards do not
-        // render twice just to correct their heart state.
-        await favoritesService.loadFavorites();
 
         renderFolders();
         applyFilters();
@@ -105,8 +104,14 @@ async function init() {
         // The server only renders this page for an authenticated, unlocked session.
         console.log("Authenticated session, loading library...");
         await loadLibrary();
-        autoSortIncoming({ silent: true });
         fetch('/api/sort/incoming_count').then(r => r.json()).then(d => _updateSortBadge(d.count || 0)).catch(() => {});
+
+        const scheduleBackgroundSort = () => autoSortIncoming({ silent: true });
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(scheduleBackgroundSort, { timeout: 5000 });
+        } else {
+            setTimeout(scheduleBackgroundSort, 3000);
+        }
     } catch (e) {
         console.error("Init failed with error:", e);
     }
