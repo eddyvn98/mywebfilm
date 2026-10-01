@@ -87,7 +87,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
                         </div>
     
                         ${v.duration > 0 ? `
-                        <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold backdrop-blur-sm z-10 pointer-events-none border border-white/10">
+                        <div class="absolute bottom-2 right-2 bg-black/75 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold z-10 pointer-events-none border border-white/10">
                             ${formatDuration(v.duration)}
                         </div>` : ''}
 
@@ -110,7 +110,7 @@ export function renderGrid(videos, append = false, resetPage = true) {
 
                         <!-- Favorite Heart -->
                         <button onclick="handleFavoriteToggle(event, ${globalIndex})" 
-                                class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart">
+                                class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/65 flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart">
                             <i class="fa-${favoritesService.isFavorite(v.full_path) ? 'solid' : 'regular'} fa-heart ${favoritesService.isFavorite(v.full_path) ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition"></i>
                         </button>
                     </div>
