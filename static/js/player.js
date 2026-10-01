@@ -168,7 +168,7 @@ window.pagePlaylist = (direction, boundaryIndex) => {
     if (!count) return;
     const jump = PLAYLIST_WINDOW_RADIUS * 2;
     const anchor = direction < 0
-        ? Math.max(0, boundaryIndex - jump)
+        ? Math.max(0, boundaryIndex - PLAYLIST_WINDOW_RADIUS - 1)
         : Math.min(count - 1, boundaryIndex + PLAYLIST_WINDOW_RADIUS);
     renderPlaylistWindow(anchor);
 };
