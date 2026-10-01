@@ -12,6 +12,7 @@ import config_manager as cfg
 import ffmpeg_service as ff
 import runtime_db
 from webfilm import app
+from test_helpers import authenticate_client
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "win32",
@@ -33,8 +34,7 @@ def windows_client(tmp_path, monkeypatch):
     )
     app.config["TESTING"] = True
     with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["authenticated"] = True
+        authenticate_client(client)
         yield client, media_root
 
 
