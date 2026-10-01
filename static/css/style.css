@@ -881,3 +881,160 @@ button, input, select {
 #video-grid.manage-mode-active .card-actions {
     opacity: 1 !important;
 }
+
+
+/* --- Mobile UX: compact header + stable player controls --- */
+@media (max-width: 640px) {
+    #cinema-header {
+        padding: 8px 10px !important;
+        gap: 8px !important;
+        position: relative;
+    }
+
+    #cinema-header > div:first-child {
+        gap: 8px !important;
+    }
+
+    #cinema-header .header-utilities {
+        flex: 0 0 auto;
+        background: transparent !important;
+        border: 0 !important;
+        padding: 0 !important;
+    }
+
+    #cinema-header .header-utilities [data-mobile-secondary] {
+        display: none !important;
+    }
+
+    #cinema-header .header-extra-tools,
+    #cinema-header .w-px.h-3 {
+        display: none !important;
+    }
+
+    #cinema-header #search {
+        height: 36px;
+        font-size: 13px !important;
+    }
+
+    #cinema-header > div:nth-child(2) > div:first-child {
+        gap: 6px !important;
+        padding-bottom: 2px;
+        scroll-snap-type: x proximity;
+    }
+
+    #cinema-header > div:nth-child(2) > div:first-child > * {
+        scroll-snap-align: start;
+    }
+
+    #video-modal {
+        min-height: 100dvh;
+    }
+
+    #video-modal #drag-handle {
+        height: 36px !important;
+    }
+
+    #video-modal .player-topbar {
+        top: max(8px, env(safe-area-inset-top)) !important;
+        left: 10px !important;
+        gap: 8px !important;
+        max-width: calc(100% - 62px) !important;
+    }
+
+    #video-modal .player-topbar #video-modal-title {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        opacity: .78 !important;
+    }
+
+    #video-modal .player-close {
+        top: max(8px, env(safe-area-inset-top)) !important;
+        right: 8px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    #video-modal .player-stage,
+    #video-modal .plyr {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+    }
+
+    #video-modal .plyr__video-wrapper {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #000 !important;
+    }
+
+    #video-modal .player-media,
+    #video-modal .plyr video {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    /* Timeline owns row 1; only useful touch controls remain on row 2. */
+    #video-modal .plyr__controls {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 2px !important;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+    }
+
+    #video-modal .plyr__progress__container {
+        order: 1 !important;
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        margin: 0 0 5px !important;
+        padding: 0 4px !important;
+    }
+
+    #video-modal .plyr__controls > .plyr__control,
+    #video-modal .plyr__controls > .plyr__time,
+    #video-modal .plyr__controls > .plyr__menu {
+        order: 2 !important;
+        margin: 0 !important;
+    }
+
+    #video-modal .plyr__control {
+        width: 38px !important;
+        height: 38px !important;
+        padding: 9px !important;
+    }
+
+    #video-modal .plyr__control svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    #video-modal .plyr__time {
+        font-size: 11px !important;
+        padding: 0 5px !important;
+        min-width: 0 !important;
+    }
+
+    #video-modal .plyr__time--duration,
+    #video-modal [data-plyr="restart"],
+    #video-modal [data-plyr="mute"],
+    #video-modal .plyr__volume,
+    #video-modal [data-plyr="pip"],
+    #video-modal [data-plyr="airplay"] {
+        display: none !important;
+    }
+
+    #video-modal [data-plyr="settings"] {
+        margin-left: auto !important;
+    }
+
+    #video-modal .plyr__progress input[type=range] {
+        height: 18px !important;
+    }
+}
