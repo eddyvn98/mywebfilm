@@ -4,6 +4,7 @@ import config_manager as cfg
 import scanner_service as scanner
 from startup_checks import run_startup_checks
 from tag_service import tag_manager
+from utils import check_media_root_allowed
 
 config_bp = Blueprint('api_config', __name__)
 TUNNEL_URL = os.environ.get('CINEMA_PUBLIC_URL') or None
@@ -70,14 +71,27 @@ def scan():
 
 @config_bp.route('/api/add_folder', methods=['POST'])
 def add_folder():
-    p = request.json.get('path')
-    if os.path.exists(p):
-        c = cfg.load_config()
-        if p not in c["video_dirs"]:
-            c["video_dirs"].append(p)
-            cfg.save_config(c)
-        return jsonify({"status":"ok"})
-    return jsonify({"status":"err"}), 400
+    data = request.get_json(silent=True) or {}
+    p = data.get('path')
+    if not p or not os.path.isdir(p):
+        return jsonify({"status": "err", "msg": "Folder not found"}), 400
+
+    c = cfg.load_config()
+    if not check_media_root_allowed(p, c):
+        return jsonify({
+            "status": "err",
+            "msg": "Folder nằm ngoài CINEMA_MEDIA_ROOTS/trusted roots"
+        }), 403
+
+    normalized = os.path.normpath(p)
+    existing = {
+        os.path.normcase(os.path.normpath(item))
+        for item in c.get("video_dirs", [])
+    }
+    if os.path.normcase(normalized) not in existing:
+        c.setdefault("video_dirs", []).append(normalized)
+        cfg.save_config(c)
+    return jsonify({"status": "ok"})
 
 @config_bp.route('/api/remove_folder', methods=['POST'])
 def remove_folder():
