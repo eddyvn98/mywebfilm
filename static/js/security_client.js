@@ -113,9 +113,14 @@ function escapeText(value) {
 }
 
 export function initSecurityClient() {
-    ["pointerdown", "keydown", "touchstart", "scroll"].forEach(eventName => {
+    ["pointerdown", "keydown", "touchstart"].forEach(eventName => {
         window.addEventListener(eventName, () => pingActivity(false), { passive: true });
     });
+    document.getElementById("video-grid")?.addEventListener(
+        "scroll",
+        () => pingActivity(false),
+        { passive: true },
+    );
 
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) checkAuthStatus();
