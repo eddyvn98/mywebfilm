@@ -110,6 +110,20 @@ def ensure_schema():
 
                 CREATE INDEX IF NOT EXISTS idx_operation_journal_status
                 ON operation_journal(status, updated_at);
+
+                CREATE TABLE IF NOT EXISTS security_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    device_id TEXT,
+                    created_at REAL NOT NULL,
+                    last_activity REAL NOT NULL,
+                    expires_at REAL NOT NULL,
+                    locked INTEGER NOT NULL DEFAULT 0,
+                    revoked_at REAL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_security_sessions_device
+                ON security_sessions(device_id, revoked_at, expires_at);
                 """
             )
         _schema_path = DB_PATH
@@ -196,4 +210,104 @@ def save_list_state(name, items):
                 updated_at = excluded.updated_at
             """,
             (name, payload, now),
+        )
+
+
+def create_security_session(session_id, user_id, device_id, created_at, expires_at):
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            INSERT INTO security_sessions(
+                session_id, user_id, device_id, created_at,
+                last_activity, expires_at, locked, revoked_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 0, NULL)
+            """,
+            (session_id, user_id, device_id, created_at, created_at, expires_at),
+        )
+
+
+def get_security_session(session_id):
+    if not session_id:
+        return None
+    ensure_schema()
+    with db_session() as conn:
+        row = conn.execute(
+            """
+            SELECT session_id, user_id, device_id, created_at,
+                   last_activity, expires_at, locked, revoked_at
+            FROM security_sessions
+            WHERE session_id = ?
+            """,
+            (session_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def touch_security_session(session_id, when):
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            UPDATE security_sessions
+            SET last_activity = ?
+            WHERE session_id = ? AND revoked_at IS NULL AND expires_at > ?
+            """,
+            (when, session_id, when),
+        )
+
+
+def set_security_session_locked(session_id, locked=True):
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            UPDATE security_sessions
+            SET locked = ?
+            WHERE session_id = ? AND revoked_at IS NULL
+            """,
+            (1 if locked else 0, session_id),
+        )
+
+
+def revoke_security_session(session_id, when):
+    if not session_id:
+        return
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            UPDATE security_sessions
+            SET revoked_at = COALESCE(revoked_at, ?)
+            WHERE session_id = ?
+            """,
+            (when, session_id),
+        )
+
+
+def revoke_device_sessions(device_id, when):
+    if not device_id:
+        return
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            UPDATE security_sessions
+            SET revoked_at = COALESCE(revoked_at, ?)
+            WHERE device_id = ? AND revoked_at IS NULL
+            """,
+            (when, device_id),
+        )
+
+
+def cleanup_security_sessions(now):
+    ensure_schema()
+    with db_session() as conn:
+        conn.execute(
+            """
+            DELETE FROM security_sessions
+            WHERE expires_at <= ?
+               OR (revoked_at IS NOT NULL AND revoked_at <= ?)
+            """,
+            (now - 86400, now - 7 * 86400),
         )
