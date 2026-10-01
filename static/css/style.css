@@ -1820,3 +1820,23 @@ button, input, select {
         height: 38px !important;
     }
 }
+
+
+/* --- Player interaction hotfix v7 --- */
+#playlist-sidebar{pointer-events:none!important;visibility:hidden}
+#playlist-sidebar.show{pointer-events:auto!important;visibility:visible}
+#playlist-overlay{pointer-events:none!important}
+#playlist-overlay:not(.hidden):not(.opacity-0){pointer-events:auto!important}
+#video-modal .player-stage,
+#video-modal .plyr,
+#video-modal .plyr__video-wrapper,
+#video-modal .plyr video,
+#video-modal .plyr__controls,
+#video-modal .plyr__control,
+#video-modal .plyr__progress,
+#video-modal .plyr__progress input{pointer-events:auto!important}
+@media(max-width:767px){
+  #video-modal .plyr__video-wrapper{touch-action:pan-x!important}
+  #video-modal .plyr__controls{touch-action:manipulation!important}
+  #playlist-sidebar{width:100%!important;max-width:100%!important}
+}
