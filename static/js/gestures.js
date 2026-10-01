@@ -126,6 +126,7 @@ export function initGestures() {
         const diffX = startX - clientX;
         const diffY = startY - clientY;
         const wasSeeking = isSeeking;
+        const wasMouseGesture = trackingMouse;
         const seekTarget = pendingSeekTime;
         resetGesture();
 
@@ -137,8 +138,9 @@ export function initGestures() {
             return;
         }
 
-        // Navigation is vertical only. Horizontal movement is reserved for seeking.
-        if (Math.abs(diffY) > 60 && Math.abs(diffY) > Math.abs(diffX)) {
+        // Touch vertical swipes must not hijack native player taps/scroll.
+        // Keep vertical navigation only for mouse gestures.
+        if (wasMouseGesture && Math.abs(diffY) > 60 && Math.abs(diffY) > Math.abs(diffX)) {
             if (diffY > 0) playNext();
             else playPrev();
         }
