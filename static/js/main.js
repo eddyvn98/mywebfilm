@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { escapeHtml, escapeAttr, escapeInlineJsSingleQuoted } from './security.js';
 import { historyService } from './history_service.js';
 import { favoritesService } from './favorites_service.js';
-import { renderGrid, renderFolders, applyFilters, restoreScroll } from './grid.js';
+import { renderFolders, applyFilters, restoreScroll } from './grid.js';
 import { initGestures } from './gestures.js';
 import { startQueuePolling } from './manage_service.js';
 import { fetchConfig, fetchVideos, apiAddFolder, apiRemoveFolder } from './api.js';
@@ -51,12 +51,15 @@ async function loadLibrary() {
         const videos = await fetchVideos();
         console.log("fetchVideos() returned:", videos ? videos.length : 'NULL', "items");
         state.allVideos = videos;
+
+        // Favorites must be ready before the first grid render so cards do not
+        // render twice just to correct their heart state.
+        await favoritesService.loadFavorites();
+
         renderFolders();
-        renderGrid(videos);
         applyFilters();
         restoreScroll();
         initGestures();
-        favoritesService.loadFavorites();
         startQueuePolling();
     } catch (e) {
         console.error("loadLibrary() FAILED:", e);
