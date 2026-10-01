@@ -138,9 +138,17 @@ export function initGestures() {
             return;
         }
 
-        // Touch vertical swipes must not hijack native player taps/scroll.
-        // Keep vertical navigation only for mouse gestures.
-        if (wasMouseGesture && Math.abs(diffY) > 60 && Math.abs(diffY) > Math.abs(diffX)) {
+        // Vertical navigation is a core player gesture:
+        // swipe up = next, swipe down = previous.
+        // Interactive controls/playlist are excluded in startAction(), and the
+        // gesture must be clearly vertical + long enough to avoid stealing taps.
+        const verticalDistance = Math.abs(diffY);
+        const horizontalDistance = Math.abs(diffX);
+        const isClearVerticalSwipe =
+            verticalDistance >= 80 &&
+            verticalDistance > horizontalDistance * 1.35;
+
+        if (isClearVerticalSwipe) {
             if (diffY > 0) playNext();
             else playPrev();
         }
