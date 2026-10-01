@@ -1,52 +1,51 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký Thiết bị - Cinema Manager</title>
+    <title>Đăng ký thiết bị - Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: #050505;
-            color: #fff;
-        }
-
-        .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-blur: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
+        body { font-family: 'Outfit', sans-serif; background: #050505; color: #fff; }
+        .glass { background: rgba(255,255,255,.035); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.06); }
     </style>
 </head>
-
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="glass w-full max-w-sm rounded-[40px] p-8 text-center shadow-2xl">
-        <div class="mb-8">
-            <div
-                class="w-20 h-20 bg-green-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-green-600/40 mb-4">
+    <div class="glass w-full max-w-sm rounded-[36px] p-8 text-center shadow-2xl">
+        <div class="mb-7">
+            <div class="w-20 h-20 bg-emerald-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-emerald-600/30 mb-4">
                 <i class="fa-solid fa-key text-white text-4xl"></i>
             </div>
-            <h1 class="text-2xl font-bold mb-2">Đăng ký Passkey</h1>
-            <p class="text-slate-400 text-sm">Thêm thiết bị này vào danh sách tin cậy</p>
+            <h1 class="text-2xl font-bold mb-2">Thêm thiết bị tin cậy</h1>
+            <p class="text-slate-400 text-sm">Passkey của thiết bị này sẽ được phép mở Cinema.</p>
+        </div>
+
+        <div class="text-left mb-4">
+            <label for="device-name" class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Tên thiết bị</label>
+            <input id="device-name" maxlength="80"
+                class="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 outline-none focus:border-emerald-500/60 text-sm"
+                placeholder="VD: MacBook cá nhân">
         </div>
 
         <button id="btn-register" onclick="startRegister()"
-            class="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg hover:bg-green-50 transition-all active:scale-95 flex items-center justify-center gap-3">
-            <span id="label-reg">Bắt đầu đăng ký</span>
+            class="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg hover:bg-emerald-50 transition active:scale-95 flex items-center justify-center gap-3 disabled:opacity-60">
+            <span id="label-reg">Tạo Passkey</span>
             <i class="fa-solid fa-plus text-sm"></i>
         </button>
 
-        <div id="error-msg" class="mt-4 text-red-500 text-xs hidden"></div>
-        <div id="success-msg" class="mt-4 text-green-500 text-xs hidden">Đăng ký thành công! Đang chuyển hướng...</div>
+        <div id="error-msg" class="mt-4 text-red-400 text-xs hidden"></div>
+        <div id="success-msg" class="mt-4 text-emerald-400 text-xs hidden">Đã đăng ký và mở khóa thiết bị.</div>
+
+        <p class="mt-8 text-[10px] text-slate-600">Link đăng ký từ xa chỉ dùng một lần và tự hết hạn.</p>
     </div>
 
     <script>
         function bufferDecode(value) {
-            return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+            const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+            return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
         }
 
         function bufferEncode(value) {
@@ -54,34 +53,44 @@
                 .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
         }
 
-        async function startRegister() {
-            const btn = document.getElementById('btn-register');
-            const label = document.getElementById('label-reg');
-            const errorDiv = document.getElementById('error-msg');
-            const successDiv = document.getElementById('success-msg');
+        function getBootstrapToken() {
+            const hash = new URLSearchParams(window.location.hash.slice(1));
+            const token = hash.get("t") || new URLSearchParams(window.location.search).get("token");
+            if (window.location.hash) history.replaceState(null, "", window.location.pathname + window.location.search);
+            return token;
+        }
 
-            errorDiv.classList.add('hidden');
-            label.innerText = "Đang xử lý...";
+        const bootstrapToken = getBootstrapToken();
+        const platform = navigator.userAgentData?.platform || navigator.platform || "Thiết bị mới";
+        document.getElementById("device-name").value = platform;
+
+        async function startRegister() {
+            const btn = document.getElementById("btn-register");
+            const label = document.getElementById("label-reg");
+            const errorDiv = document.getElementById("error-msg");
+            const successDiv = document.getElementById("success-msg");
+
+            errorDiv.classList.add("hidden");
+            successDiv.classList.add("hidden");
+            label.textContent = "Đang tạo Passkey...";
             btn.disabled = true;
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-
             try {
-                // 1. Get options
-                const resp = await fetch('/api/auth/register/options' + (token ? `?token=${token}` : ''));
-                const options = await resp.json();
+                if (!window.PublicKeyCredential || !navigator.credentials) {
+                    throw new Error("Trình duyệt này không hỗ trợ Passkey/WebAuthn.");
+                }
 
-                if (options.status === 'err') throw new Error(options.msg);
+                const headers = bootstrapToken ? { "X-Cinema-Bootstrap": bootstrapToken } : {};
+                const resp = await fetch("/api/auth/register/options", { headers });
+                const payload = await resp.json();
+                if (!resp.ok || payload.status === "err") throw new Error(payload.msg || "Không thể đăng ký thiết bị");
 
-                // 2. Decode
+                const options = payload.publicKey;
                 options.challenge = bufferDecode(options.challenge);
                 options.user.id = bufferDecode(options.user.id);
+                (options.excludeCredentials || []).forEach(cred => { cred.id = bufferDecode(cred.id); });
 
-                // 3. Create Credential
                 const credential = await navigator.credentials.create({ publicKey: options });
-
-                // 4. Encode
                 const credentialJson = {
                     id: credential.id,
                     rawId: bufferEncode(credential.rawId),
@@ -92,29 +101,27 @@
                     }
                 };
 
-                // 5. Verify con server
-                const verifyResp = await fetch('/api/auth/register/verify' + (token ? `?token=${token}` : ''), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(credentialJson)
+                const verifyResp = await fetch("/api/auth/register/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...headers },
+                    body: JSON.stringify({
+                        credential: credentialJson,
+                        challenge_id: payload.challenge_id,
+                        device_name: document.getElementById("device-name").value,
+                    })
                 });
-
                 const result = await verifyResp.json();
-                if (result.status === 'ok') {
-                    successDiv.classList.remove('hidden');
-                    setTimeout(() => window.location.href = '/login', 2000);
-                } else {
-                    throw new Error(result.msg || "Đăng ký thất bại");
-                }
+                if (!verifyResp.ok || result.status !== "ok") throw new Error(result.msg || "Đăng ký thất bại");
+
+                successDiv.classList.remove("hidden");
+                setTimeout(() => window.location.replace("/"), 500);
             } catch (err) {
-                console.error(err);
-                label.innerText = "Thử lại";
+                label.textContent = "Thử lại";
                 btn.disabled = false;
-                errorDiv.innerText = err.message;
-                errorDiv.classList.remove('hidden');
+                errorDiv.textContent = err.message || "Đăng ký thất bại";
+                errorDiv.classList.remove("hidden");
             }
         }
     </script>
 </body>
-
 </html>

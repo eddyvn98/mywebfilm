@@ -6,7 +6,7 @@ from startup_checks import run_startup_checks
 from tag_service import tag_manager
 
 config_bp = Blueprint('api_config', __name__)
-TUNNEL_URL = None
+TUNNEL_URL = os.environ.get('CINEMA_PUBLIC_URL') or None
 
 
 @config_bp.route('/api/health')
@@ -92,6 +92,9 @@ def remove_folder():
 def handle_tunnel():
     global TUNNEL_URL
     if request.method == 'POST':
-        TUNNEL_URL = request.json.get('url')
+        value = str((request.get_json(silent=True) or {}).get('url') or '').strip().rstrip('/')
+        if value and not value.startswith('https://'):
+            return jsonify({"status": "err", "msg": "Public URL phải dùng HTTPS"}), 400
+        TUNNEL_URL = value or None
         return jsonify({"status": "ok", "url": TUNNEL_URL})
     return jsonify({"url": TUNNEL_URL})
