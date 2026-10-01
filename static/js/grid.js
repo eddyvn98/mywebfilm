@@ -76,6 +76,7 @@ window.handleFavoriteToggle = async (e, idx) => {
 
     const { favoritesService } = await import('./favorites_service.js');
     const isFavorite = await favoritesService.toggleFavorite(video);
+    if (typeof isFavorite !== 'boolean') return;
 
     const button = e.currentTarget || e.target.closest('button');
     const icon = button?.querySelector('i');
