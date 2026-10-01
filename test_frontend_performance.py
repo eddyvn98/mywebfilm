@@ -9,7 +9,8 @@ def test_large_library_grid_is_not_rendered_twice_on_initial_load():
     source = read("static/js/main.js")
     load_library = source[source.index("async function loadLibrary()"):source.index("async function init()")]
     assert "renderGrid(videos);" not in load_library
-    assert "await favoritesService.loadFavorites();" in load_library
+    assert "Promise.all([" in load_library
+    assert "favoritesService.loadFavorites()," in load_library
     assert "applyFilters();" in load_library
 
 
@@ -106,3 +107,29 @@ def test_favorite_toggle_updates_card_without_grid_rerender():
     assert "renderGrid(state.currentGridVideos, false, false)" not in grid
     assert "import('./render_service.js')" not in player
     assert "CSS.escape(video.full_path)" in player
+
+
+def test_player_only_forces_layout_when_modal_is_initially_opened():
+    source = read("static/js/player.js")
+    assert "const isOpeningModal = modal.classList.contains('hidden');" in source
+    assert "if (isOpeningModal) {" in source
+    assert "void modal.offsetWidth;" in source
+
+
+def test_fast_swipes_delay_history_writes():
+    source = read("static/js/player.js")
+    assert "const HISTORY_RECORD_DELAY_MS = 1500;" in source
+    assert "scheduleHistoryRecord(v);" in source
+    assert "clearTimeout(historyRecordTimer);" in source
+
+
+def test_startup_defers_background_sort_work():
+    source = read("static/js/main.js")
+    assert "requestIdleCallback" in source
+    assert "scheduleBackgroundSort" in source
+
+
+def test_movie_cards_avoid_per_item_backdrop_blur():
+    source = read("static/js/render_service.js")
+    assert "bg-black/40 backdrop-blur-md" not in source
+    assert "font-bold backdrop-blur-sm" not in source
