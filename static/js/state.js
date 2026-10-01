@@ -47,7 +47,7 @@ export function saveState() {
             currentFolder: state.currentFolder,
             filterType: state.filterType,
             sortOrder: state.sortOrder,
-            scrollPos: window.scrollY || 0
+            scrollPos: state.scrollPos || 0
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {
