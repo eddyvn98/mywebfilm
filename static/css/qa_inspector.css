@@ -1,0 +1,12 @@
+/* QA inspector; active only when ?qa=1 loads qa.js */
+#qa-inspector{position:fixed;z-index:2147483647;right:8px;top:8px;width:190px;background:rgba(2,6,23,.94);color:#e2e8f0;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:8px;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;box-shadow:0 8px 30px #0008}
+#qa-inspector button{min-width:36px;min-height:32px;padding:4px 7px;border-radius:7px;background:#1e293b;color:#e2e8f0;border:1px solid #ffffff18}
+#qa-inspector .qa-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+#qa-inspector .qa-presets,#qa-inspector .qa-actions{display:flex;gap:4px;flex-wrap:wrap}
+#qa-inspector pre{margin:7px 0;white-space:pre-wrap;color:#93c5fd}
+#qa-inspector.qa-collapsed>*:not(.qa-head){display:none}
+.qa-overflow{outline:2px solid #ef4444!important;outline-offset:-2px}
+.qa-small-target{outline:2px solid #f59e0b!important;outline-offset:-2px}
+body.qa-emulate{width:var(--qa-width)!important;height:var(--qa-height)!important;max-width:var(--qa-width)!important;max-height:var(--qa-height)!important;margin:0!important;overflow:hidden!important}
+body.qa-emulate:after{content:attr(data-qa-size);position:fixed;inset:0;pointer-events:none;box-shadow:0 0 0 9999px #111;z-index:-1}
+@media(max-width:640px){#qa-inspector{top:auto;bottom:8px;right:8px;width:178px}}
