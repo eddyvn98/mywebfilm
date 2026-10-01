@@ -15,6 +15,17 @@ const HISTORY_RECORD_DELAY_MS = 1500;
 const PLAYLIST_WINDOW_RADIUS = 40;
 let playlistRenderedForLength = -1;
 
+
+function syncMobilePlayerViewport() {
+    const modal = document.getElementById('video-modal');
+    if (!modal || window.innerWidth >= 768) return;
+    const vv = window.visualViewport;
+    const height = Math.round(vv?.height || window.innerHeight);
+    const offsetTop = Math.round(vv?.offsetTop || 0);
+    document.documentElement.style.setProperty('--player-vvh', height + 'px');
+    document.documentElement.style.setProperty('--player-vvtop', offsetTop + 'px');
+}
+
 export function openVideoModal(idx) {
     state.currentIndex = idx;
     const v = state.currentGridVideos[idx];
@@ -33,6 +44,7 @@ export function openVideoModal(idx) {
     modal.classList.add('translate-y-0');
     modal.classList.remove('translate-y-full');
     document.documentElement.classList.add('media-modal-open');
+    syncMobilePlayerViewport();
 
     // Update Title & Favorite
     const titleEl = document.getElementById('video-modal-title');
@@ -251,6 +263,8 @@ export function closeVideoModal() {
     modal.classList.remove('translate-y-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
     document.documentElement.classList.remove('media-modal-open');
+    document.documentElement.style.removeProperty('--player-vvh');
+    document.documentElement.style.removeProperty('--player-vvtop');
 }
 
 function getCurrentMedia() {
@@ -656,3 +670,8 @@ function updatePlayerFavoriteUI(path) {
     const isFav = favoritesService.isFavorite(path);
     btn.innerHTML = `<i class="fa-${isFav ? 'solid' : 'regular'} fa-heart ${isFav ? 'text-red-500' : 'text-white/70'} text-xl"></i>`;
 }
+
+
+window.visualViewport?.addEventListener('resize', syncMobilePlayerViewport);
+window.visualViewport?.addEventListener('scroll', syncMobilePlayerViewport);
+window.addEventListener('orientationchange', () => setTimeout(syncMobilePlayerViewport, 80));
