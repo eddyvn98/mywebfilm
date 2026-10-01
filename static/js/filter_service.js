@@ -141,6 +141,7 @@ export function selectType(val, label) {
     // Micro-delay to prevent ghost clicks on elements behind the menu
     setTimeout(() => {
         closeDropdowns();
+        window.closeAllActionSheets?.();
         applyFilters();
     }, 50);
 }
@@ -151,6 +152,7 @@ export function selectExt(val, label) {
     document.getElementById('type-label').innerText = label;
     setTimeout(() => {
         closeDropdowns();
+        window.closeAllActionSheets?.();
         applyFilters();
     }, 50);
 }
@@ -161,6 +163,7 @@ export function selectCategory(val, label) {
     if (labelEl) labelEl.innerText = label;
     setTimeout(() => {
         closeDropdowns();
+        window.closeAllActionSheets?.();
         applyFilters();
         if (window.closeDiscovery) window.closeDiscovery();
     }, 50);
@@ -192,6 +195,7 @@ export function selectSort(val, label) {
     if (labelEl) labelEl.innerText = label;
     setTimeout(() => {
         closeDropdowns();
+        window.closeAllActionSheets?.();
         applyFilters();
     }, 50);
 }
@@ -200,7 +204,7 @@ export function filterByFavorites() {
     state.currentFolder = 'favorites';
     applyFilters();
     // Update active UI
-    const homeBtn = document.querySelector('[onclick="filterByFolder(\'all\')"]');
+    const homeBtn = document.getElementById('btn-show-all');
     const favBtn = document.getElementById('btn-show-favorites');
     if (homeBtn) homeBtn.classList.replace('bg-blue-600/10', 'bg-slate-800/0');
     if (favBtn) favBtn.classList.replace('bg-red-600/0', 'bg-red-600/10');
@@ -215,7 +219,7 @@ export async function filterByHistory() {
     // Update UI active state
     document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('bg-blue-600/10', 'bg-red-600/10')); // hypothetical
     // For now simple reset like filterByFavorites
-    const homeBtn = document.querySelector('[onclick="filterByFolder(\'all\')"]');
+    const homeBtn = document.getElementById('btn-show-all');
     const histBtn = document.getElementById('btn-show-history');
     if (homeBtn) {
         homeBtn.classList.remove('bg-blue-600/10');
