@@ -224,9 +224,9 @@ export function renderFolders() {
     }
 
     list.innerHTML = `
-        <button onclick="filterByFolder('all')" class="folder-chip ${state.currentFolder === 'all' ? 'active' : ''}">TẤT CẢ</button>
+        <button onclick="filterByFolder('all'); closeSidebarOnMobile()" class="folder-chip ${state.currentFolder === 'all' ? 'active' : ''}">TẤT CẢ</button>
         ${folders.map(f => `
-            <button onclick="filterByFolder('${escapeInlineJsSingleQuoted(f)}')" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${escapeHtml((f || 'GỐC').toUpperCase())}</button>
+            <button onclick="filterByFolder('${escapeInlineJsSingleQuoted(f)}'); closeSidebarOnMobile()" class="folder-chip ${state.currentFolder === f ? 'active' : ''}">${escapeHtml((f || 'GỐC').toUpperCase())}</button>
         `).join('')}
     `;
 }
