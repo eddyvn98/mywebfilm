@@ -88,9 +88,15 @@ def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
     assert resp.status_code == 200
     assert api_auth.CURRENT_OTT is None
     assert api_auth.CURRENT_OTT_EXPIRES_AT == 0.0
-    with client.session_transaction() as sess:
-        assert sess['authenticated'] is True
-        assert sess.get('security_session_id')
+
+    status = client.get(
+        '/api/auth/status',
+        base_url='https://example.test',
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert status.status_code == 200
+    assert status.get_json()['authenticated'] is True
+    assert status.get_json()['locked'] is False
 
 
 def test_cross_origin_state_change_is_blocked(client):
