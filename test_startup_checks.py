@@ -4,6 +4,7 @@ import pytest
 
 from webfilm import app
 import startup_checks
+from test_helpers import authenticate_client
 
 
 def test_startup_checks_ready_when_dependencies_available(tmp_path, monkeypatch):
@@ -50,8 +51,7 @@ def test_startup_checks_degraded_without_media_tools(tmp_path, monkeypatch):
 def client():
     app.config["TESTING"] = True
     with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["authenticated"] = True
+        authenticate_client(client)
         yield client
 
 

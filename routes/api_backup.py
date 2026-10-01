@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 
 import backup_service
+import runtime_db
+import time
 
 backup_bp = Blueprint("api_backup", __name__)
 
@@ -55,6 +57,13 @@ def verify_backup():
 
 @backup_bp.route("/api/backup/restore", methods=["POST"])
 def restore_backup():
+    from .api_auth import is_direct_local_request
+    if not is_direct_local_request():
+        return jsonify({
+            "status": "err",
+            "msg": "Restore backup chỉ được chạy từ direct localhost",
+        }), 403
+
     data = request.get_json(silent=True) or {}
     backup_id = data.get("backup_id")
     if data.get("confirm") != "RESTORE":
@@ -65,6 +74,12 @@ def restore_backup():
 
     try:
         result = backup_service.restore_backup(backup_id)
+        runtime_db.revoke_all_security_sessions(time.time())
+
+        # Reload restored Passkeys immediately so stale in-memory credentials
+        # cannot continue authenticating before the required restart.
+        from security_service import security_manager
+        security_manager.credentials = security_manager._load_credentials()
     except FileNotFoundError as exc:
         return jsonify({"status": "err", "msg": str(exc)}), 404
     except Exception as exc:

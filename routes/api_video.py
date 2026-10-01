@@ -1,104 +1,153 @@
-from flask import Blueprint, jsonify, request, send_file, Response
-import os
-import re
+from flask import Blueprint, jsonify, request, send_file
 import mimetypes
+import os
 import subprocess
+
 import config_manager as cfg
 import ffmpeg_service as ff
 from constants import MPC_PATH
-from utils import get_metadata_paths, ensure_metadata_dirs, check_path_safe
+from utils import (
+    check_path_safe,
+    ensure_metadata_dirs,
+    get_metadata_paths,
+)
 
-video_bp = Blueprint('api_video', __name__)
+video_bp = Blueprint("api_video", __name__)
 
 EXT_MAP = {
-    '.mkv': 'video/x-matroska', '.mp4': 'video/mp4', '.avi': 'video/x-msvideo',
-    '.mov': 'video/quicktime', '.wmv': 'video/x-ms-wmv', '.flv': 'video/x-flv',
-    '.webm': 'video/webm', '.ts': 'video/mp2t', '.m2ts': 'video/mp2t'
+    ".mkv": "video/x-matroska",
+    ".mp4": "video/mp4",
+    ".avi": "video/x-msvideo",
+    ".mov": "video/quicktime",
+    ".wmv": "video/x-ms-wmv",
+    ".flv": "video/x-flv",
+    ".webm": "video/webm",
+    ".ts": "video/mp2t",
+    ".m2ts": "video/mp2t",
 }
 
-@video_bp.route('/api/videos')
+
+def _catalog_item(path):
+    if not path or not check_path_safe(path):
+        return None
+    return cfg.get_catalog_item(path)
+
+
+@video_bp.route("/api/videos")
 def get_videos():
     return jsonify(cfg.load_cache())
 
-@video_bp.route('/api/thumbnail')
+
+@video_bp.route("/api/thumbnail")
 def get_thumb():
-    p = request.args.get('path')
-    t = request.args.get('type', 'video')
-    if not p: return "Path missing", 400
-    if not check_path_safe(p): return "Access denied", 403
-    
-    paths = get_metadata_paths(p)
+    path = request.args.get("path")
+    if not path:
+        return "Path missing", 400
+
+    item = _catalog_item(path)
+    if not item:
+        return "Access denied", 403
+    if not os.path.isfile(path):
+        return "File not found", 404
+
+    paths = get_metadata_paths(path)
     ensure_metadata_dirs(paths)
-    out = paths['thumb_path']
-    
+    out = paths["thumb_path"]
+
     if not os.path.exists(out):
-        if not ff.generate_thumbnail(p, out, is_image=(t == 'image')):
+        if not ff.generate_thumbnail(
+            path,
+            out,
+            is_image=(item.get("type") == "image"),
+        ):
             return "FFmpeg error", 500
-            
+
     if os.path.exists(out):
         return send_file(out)
     return "Failed", 500
 
-@video_bp.route('/api/preview')
+
+@video_bp.route("/api/preview")
 def get_prev():
-    p = request.args.get('path')
-    if not p: return "Path missing", 400
-    if not check_path_safe(p): return "Access denied", 403
-    
-    paths = get_metadata_paths(p)
+    path = request.args.get("path")
+    if not path:
+        return "Path missing", 400
+
+    if not _catalog_item(path):
+        return "Access denied", 403
+    if not os.path.isfile(path):
+        return "File not found", 404
+
+    paths = get_metadata_paths(path)
     ensure_metadata_dirs(paths)
-    out = paths['prev_path']
-    
+    out = paths["prev_path"]
+
     if not os.path.exists(out):
-        if not ff.generate_preview(p, out):
+        if not ff.generate_preview(path, out):
             return "FFmpeg error", 500
-            
+
     if os.path.exists(out):
         return send_file(out)
     return "Failed", 500
 
-@video_bp.route('/api/play', methods=['POST'])
+
+@video_bp.route("/api/play", methods=["POST"])
 def play():
-    p = request.json.get('path')
-    t = request.json.get('type', 'video')
-    
-    if not p:
-        return jsonify({"status":"err", "msg": "File not found"}), 404
-    if not check_path_safe(p):
-        return jsonify({"status":"err", "msg": "Access denied"}), 403
-    if not os.path.exists(p):
-        return jsonify({"status":"err", "msg": "File not found"}), 404
+    data = request.get_json(silent=True) or {}
+    path = data.get("path")
+    media_type = data.get("type", "video")
 
-    # SQLite updates one catalog row atomically; no background read-modify-write race.
-    cfg.increment_views(p)
-    
-    # Open file
-    if t == 'image':
-        os.startfile(p)
+    if not path:
+        return jsonify({
+            "status": "err",
+            "msg": "File not found",
+        }), 404
+
+    item = _catalog_item(path)
+    if not item:
+        return jsonify({
+            "status": "err",
+            "msg": "Access denied",
+        }), 403
+    if not os.path.isfile(path):
+        return jsonify({
+            "status": "err",
+            "msg": "File not found",
+        }), 404
+
+    cfg.increment_views(path)
+
+    if media_type == "image":
+        os.startfile(path)
+    elif os.path.exists(MPC_PATH):
+        subprocess.Popen([MPC_PATH, path])
     else:
-        if os.path.exists(MPC_PATH): 
-            subprocess.Popen([MPC_PATH, p])
-        else:
-            os.startfile(p)
-            
-    return jsonify({"status":"ok"})
+        os.startfile(path)
 
-@video_bp.route('/api/stream')
+    return jsonify({"status": "ok"})
+
+
+@video_bp.route("/api/stream")
 def stream_video():
-    path = request.args.get('path')
-    if not path: return "File not found", 404
-    if not check_path_safe(path): return "Access denied", 403
-    if not os.path.exists(path): return "File not found", 404
-    
-    # Determine Mime Type safely
+    path = request.args.get("path")
+    if not path:
+        return "File not found", 404
+
+    if not _catalog_item(path):
+        return "Access denied", 403
+    if not os.path.isfile(path):
+        return "File not found", 404
+
     ext = os.path.splitext(path)[1].lower()
-    mime = EXT_MAP.get(ext) or mimetypes.guess_type(path)[0] or 'video/mp4'
-    
-    # Native Flask streaming handles Range requests via conditional=True
-    # It uses optimized buffers and handles the 206 status automatically.
+    mime = (
+        EXT_MAP.get(ext)
+        or mimetypes.guess_type(path)[0]
+        or "application/octet-stream"
+    )
+
     return send_file(
-        path, 
-        mimetype=mime, 
-        conditional=True, 
-        as_attachment=False
+        path,
+        mimetype=mime,
+        conditional=True,
+        as_attachment=False,
     )

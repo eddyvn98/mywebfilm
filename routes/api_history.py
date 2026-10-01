@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from config_manager import load_history, mutate_history
+from config_manager import get_catalog_item, load_history, mutate_history
 import time
 
 api_history_bp = Blueprint('api_history', __name__)
@@ -13,6 +13,8 @@ def add_to_history():
     
     if not video_path:
         return jsonify({"error": "Missing path"}), 400
+    if not get_catalog_item(video_path):
+        return jsonify({"error": "Unknown media"}), 403
         
     new_entry = {
         "full_path": video_path,

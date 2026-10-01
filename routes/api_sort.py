@@ -71,6 +71,14 @@ def sort_run():
         dry_run = request.json.get("dry_run", False)
         mode = request.json.get("mode", "incoming")
 
+    if not dry_run:
+        from .api_auth import is_direct_local_request
+        if not is_direct_local_request():
+            return jsonify({
+                "ok": False,
+                "msg": "Bulk file sorting chỉ được chạy từ direct localhost"
+            }), 403
+
     # Reset state
     with _lock:
         _state.update({

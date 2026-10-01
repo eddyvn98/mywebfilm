@@ -44,6 +44,17 @@ async function pingActivity(force = false) {
     }
 }
 
+async function handleReauthRequired(response, data) {
+    if (response.status !== 428 && data?.code !== "REAUTH_REQUIRED") return false;
+    alert(data?.msg || "Hãy xác thực lại Passkey để tiếp tục.");
+    try {
+        await fetch("/api/auth/lock", { method: "POST" });
+    } finally {
+        window.location.replace(loginUrl(true));
+    }
+    return true;
+}
+
 function formatDate(value) {
     if (!value) return "Chưa có";
     const date = new Date(value);
@@ -122,10 +133,32 @@ window.lockCinema = async () => {
     }
 };
 
+async function clearLocalCinemaData() {
+    try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key === "mycinema_ui_state" || key.startsWith("resume_"))) {
+                keys.push(key);
+            }
+        }
+        keys.forEach(key => localStorage.removeItem(key));
+        sessionStorage.clear();
+
+        if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map(name => caches.delete(name)));
+        }
+    } catch {
+        // Clear-Site-Data on the server is the primary wipe mechanism.
+    }
+}
+
 window.logoutCinema = async () => {
     try {
         await fetch("/api/auth/logout", { method: "POST" });
     } finally {
+        await clearLocalCinemaData();
         window.location.replace("/login");
     }
 };
@@ -165,6 +198,7 @@ window.revokeTrustedDevice = async (deviceId, isCurrent) => {
     const res = await fetch(`/api/auth/devices/${encodeURIComponent(deviceId)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+        if (await handleReauthRequired(res, data)) return;
         alert(data.msg || "Không thu hồi được thiết bị.");
         return;
     }
@@ -180,6 +214,7 @@ window.createDeviceInvite = async () => {
     const res = await fetch("/api/auth/bootstrap", { method: "POST" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+        if (await handleReauthRequired(res, data)) return;
         alert(data.msg || "Không tạo được link đăng ký. Hãy bật Remote/Tunnel trước.");
         return;
     }

@@ -1,14 +1,22 @@
 import subprocess
 import os
-import sys
 import requests
-import json
+
+from security_service import security_manager
+
+ADMIN_USER_ID = "admin-123"
+
 
 def start_tunnel():
     print("-" * 40)
     print("CLOUD CINEMA - REMOTE ACCESS SETUP")
     print("-" * 40)
     
+    if not security_manager.has_credentials(ADMIN_USER_ID):
+        print("TỪ CHỐI: Hãy mở http://localhost:5000 và đăng ký Passkey đầu tiên trước.")
+        print("Tunnel sẽ không được mở khi Cinema chưa có Passkey.")
+        return
+
     # Check for local binary first, then system-wide
     cf_cmd = "cloudflared"
     if os.path.exists("cloudflared.exe"):
@@ -49,18 +57,20 @@ def start_tunnel():
                 for p in parts:
                     if "https://" in p and "trycloudflare.com" in p:
                         tunnel_url = p
-                        token = os.urandom(16).hex()
-                        full_url = f"{tunnel_url}?token={token}"
-                        
                         print(f"\n🚀 LINK TRUY CẬP TỪ XA CỦA BẠN: {tunnel_url}\n")
-                        print(f"🔑 TOKEN BẢO MẬT: {token}")
-                        print("Đang tự động đồng bộ lên giao diện Web...")
+                        print("Đang đồng bộ Public URL vào Cinema...")
                         try:
-                            requests.post("http://localhost:5000/api/auth/tunnel/sync", 
-                                          json={"url": tunnel_url, "token": token}, timeout=2)
+                            response = requests.post(
+                                "http://localhost:5000/api/auth/tunnel/sync",
+                                json={"url": tunnel_url},
+                                timeout=2,
+                            )
+                            response.raise_for_status()
                             print("✅ Đã đồng bộ thành công!")
-                        except:
-                            print("❌ Lỗi: Không thể gửi link tới Web App (Đảm bảo webfilm.py đang chạy)")
+                        except Exception as exc:
+                            print(f"❌ Không thể đồng bộ với Cinema: {exc}")
+                            process.terminate()
+                            return
                         break
     except KeyboardInterrupt:
         print("\nĐã dừng Tunnel.")

@@ -24,25 +24,44 @@ def upload_actor_image():
     from werkzeug.utils import secure_filename
     name = request.form.get('name')
     file = request.files.get('image')
-    if not name or not file: return "Missing data", 400
-    
-    # Sanitize name to prevent path traversal in filename
+    if not name or not file:
+        return "Missing data", 400
+
+    if file.mimetype not in {"image/jpeg", "image/jpg"}:
+        return jsonify({
+            "status": "error",
+            "msg": "Chỉ chấp nhận ảnh JPEG"
+        }), 415
+
+    header = file.stream.read(3)
+    file.stream.seek(0)
+    if len(header) < 3 or header[:3] not in {
+        b"\xff\xd8\xff",
+    }:
+        return jsonify({
+            "status": "error",
+            "msg": "Nội dung file không phải JPEG hợp lệ"
+        }), 415
+
     safe_name = secure_filename(name.strip().replace(' ', '_'))
-    if not safe_name: return "Invalid name", 400
-    
+    if not safe_name:
+        return "Invalid name", 400
+    safe_name = safe_name[:80]
+
     save_dir = os.path.join('static', 'img', 'actors')
-    if not os.path.exists(save_dir): os.makedirs(save_dir)
-    
+    os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, f"{safe_name}.jpg")
-    
-    # Path safety verification
+
     from utils import check_path_safe
     if not check_path_safe(save_path, allow_project_assets=True):
         return jsonify({"status": "error", "msg": "Access denied"}), 403
-        
+
     file.save(save_path)
-    
-    return jsonify({"status": "ok", "url": f"/static/img/actors/{safe_name}.jpg"})
+
+    return jsonify({
+        "status": "ok",
+        "url": f"/static/img/actors/{safe_name}.jpg"
+    })
 
 @ai_bp.route('/api/ai/analyze', methods=['POST'])
 def ai_analyze():

@@ -4,55 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảo mật - Cinema Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Outfit', sans-serif; background: #050505; color: #fff; }
-        .glass { background: rgba(255,255,255,.035); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.06); }
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: grid; place-items: center;
+            padding: 16px; overflow: hidden; color: #fff; background: #050505;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        body::before, body::after {
+            content: ""; position: fixed; width: 360px; height: 360px; border-radius: 999px;
+            filter: blur(110px); opacity: .22; pointer-events: none;
+        }
+        body::before { background: #2563eb; top: 12%; left: 12%; }
+        body::after { background: #7c3aed; bottom: 12%; right: 12%; }
+        .card {
+            width: min(100%, 390px); position: relative; z-index: 1; text-align: center;
+            padding: 32px; border-radius: 32px; border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.04); backdrop-filter: blur(20px);
+            box-shadow: 0 24px 70px rgba(0,0,0,.45);
+        }
+        .icon {
+            width: 78px; height: 78px; margin: 0 auto 18px; border-radius: 24px;
+            display: grid; place-items: center; font-size: 36px;
+            background: #2563eb; box-shadow: 0 18px 44px rgba(37,99,235,.28);
+        }
+        h1 { margin: 0 0 8px; font-size: 25px; }
+        .sub { margin: 0 0 24px; color: #94a3b8; font-size: 14px; line-height: 1.5; }
+        .primary {
+            width: 100%; border: 0; border-radius: 16px; padding: 15px 18px;
+            font: inherit; font-weight: 750; font-size: 16px; cursor: pointer;
+            color: #050505; background: #fff; transition: .15s ease;
+        }
+        .primary:hover { background: #dbeafe; }
+        .primary:active { transform: scale(.985); }
+        .primary:disabled { opacity: .55; cursor: wait; }
+        .remember {
+            margin-top: 16px; display: flex; gap: 8px; align-items: center;
+            justify-content: center; color: #94a3b8; font-size: 12px; cursor: pointer;
+        }
+        .hint { margin: 6px 0 0; color: #475569; font-size: 10px; }
+        .error { margin-top: 14px; color: #f87171; font-size: 12px; }
+        .hidden { display: none !important; }
+        .bridge {
+            margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.07);
+        }
+        .bridge p { margin: 0 0 8px; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+        .bridge a { color: #60a5fa; font-size: 13px; font-weight: 700; text-decoration: none; }
+        .footer {
+            margin-top: 28px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.06);
+            color: #475569; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4 overflow-hidden">
-    <div class="fixed inset-0 z-0">
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px]"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px]"></div>
-    </div>
+<body>
+    <main class="card">
+        <div class="icon" aria-hidden="true">🔐</div>
+        <h1 id="login-title">Mở khóa Cinema</h1>
+        <p id="login-subtitle" class="sub">Dùng Face ID, vân tay, Windows Hello hoặc PIN thiết bị.</p>
 
-    <div class="glass w-full max-w-sm rounded-[36px] p-8 relative z-10 text-center shadow-2xl">
-        <div class="mb-7">
-            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-600/30 mb-4">
-                <i class="fa-solid fa-fingerprint text-white text-4xl"></i>
-            </div>
-            <h1 id="login-title" class="text-2xl font-bold mb-2">Mở khóa Cinema</h1>
-            <p id="login-subtitle" class="text-slate-400 text-sm">Dùng Face ID, vân tay, Windows Hello hoặc PIN thiết bị.</p>
-        </div>
-
-        <button id="btn-login" onclick="startLogin()"
-            class="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg hover:bg-blue-50 transition active:scale-95 flex items-center justify-center gap-3 disabled:opacity-60">
+        <button id="btn-login" class="primary" type="button" onclick="startLogin()">
             <span id="label-login">Xác thực bằng Passkey</span>
-            <i class="fa-solid fa-arrow-right text-sm"></i>
         </button>
 
-        <label class="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-            <input id="remember-session" type="checkbox" checked class="accent-blue-500">
+        <label class="remember">
+            <input id="remember-session" type="checkbox" checked>
             Giữ phiên đăng nhập 7 ngày
         </label>
-        <p class="mt-1 text-[10px] text-slate-600">Cinema vẫn tự khóa sau 15 phút không hoạt động.</p>
+        <p class="hint">Cinema vẫn tự khóa sau 15 phút không hoạt động.</p>
 
-        <div id="error-msg" class="mt-4 text-red-400 text-xs hidden"></div>
+        <div id="error-msg" class="error hidden" role="alert"></div>
 
-        <div id="reg-bridge" class="mt-6 hidden">
-            <p class="text-slate-500 text-[10px] mb-2 uppercase tracking-widest">Thiết bị chưa có Passkey?</p>
-            <a id="link-register" href="/register_security"
-                class="text-blue-400 text-sm font-bold border-b border-blue-400/30 hover:text-blue-300 transition-colors">
-                Đăng ký thiết bị này
-            </a>
+        <div id="reg-bridge" class="bridge hidden">
+            <p>Thiết bị chưa có Passkey?</p>
+            <a id="link-register" href="/register_security">Đăng ký thiết bị này</a>
         </div>
 
-        <div class="mt-10 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[10px] text-slate-500 uppercase tracking-widest font-black">
-            <i class="fa-solid fa-shield-halved"></i> WebAuthn · Passkey
-        </div>
-    </div>
+        <div class="footer">WebAuthn · Passkey</div>
+    </main>
 
     <script>
         function bufferDecode(value) {
@@ -67,9 +96,12 @@
         }
 
         function getBootstrapToken() {
-            const hash = new URLSearchParams(window.location.hash.slice(1));
-            const token = hash.get("t") || new URLSearchParams(window.location.search).get("token");
-            if (window.location.hash) history.replaceState(null, "", window.location.pathname + window.location.search);
+            const url = new URL(window.location.href);
+            const hash = new URLSearchParams(url.hash.slice(1));
+            const token = hash.get("t") || url.searchParams.get("token");
+            url.hash = "";
+            url.searchParams.delete("token");
+            history.replaceState(null, "", url.pathname + url.search);
             return token;
         }
 
@@ -84,14 +116,17 @@
 
         if (isLocked) {
             document.getElementById("login-title").textContent = "Cinema đã khóa";
-            document.getElementById("login-subtitle").textContent = "Xác thực Passkey để tiếp tục phiên hiện tại.";
+            document.getElementById("login-subtitle").textContent =
+                "Xác thực Passkey để tiếp tục phiên hiện tại.";
         }
 
         if (bootstrapToken || isLocal) {
             const bridge = document.getElementById("reg-bridge");
             const link = document.getElementById("link-register");
             bridge.classList.remove("hidden");
-            link.href = bootstrapToken ? `/register_security#t=${encodeURIComponent(bootstrapToken)}` : "/register_security";
+            link.href = bootstrapToken
+                ? `/register_security#t=${encodeURIComponent(bootstrapToken)}`
+                : "/register_security";
         }
 
         async function startLogin() {
@@ -109,13 +144,20 @@
                 }
 
                 const headers = bootstrapToken ? { "X-Cinema-Bootstrap": bootstrapToken } : {};
-                const resp = await fetch("/api/auth/login/options", { headers });
+                const resp = await fetch("/api/auth/login/options", {
+                    headers,
+                    cache: "no-store",
+                });
                 const payload = await resp.json();
-                if (!resp.ok || payload.status === "err") throw new Error(payload.msg || "Không thể tạo yêu cầu xác thực");
+                if (!resp.ok || payload.status === "err") {
+                    throw new Error(payload.msg || "Không thể tạo yêu cầu xác thực");
+                }
 
                 const options = payload.publicKey;
                 options.challenge = bufferDecode(options.challenge);
-                (options.allowCredentials || []).forEach(cred => { cred.id = bufferDecode(cred.id); });
+                (options.allowCredentials || []).forEach(cred => {
+                    cred.id = bufferDecode(cred.id);
+                });
 
                 const credential = await navigator.credentials.get({ publicKey: options });
                 const credentialJson = {
@@ -126,7 +168,9 @@
                         authenticatorData: bufferEncode(credential.response.authenticatorData),
                         clientDataJSON: bufferEncode(credential.response.clientDataJSON),
                         signature: bufferEncode(credential.response.signature),
-                        userHandle: credential.response.userHandle ? bufferEncode(credential.response.userHandle) : null,
+                        userHandle: credential.response.userHandle
+                            ? bufferEncode(credential.response.userHandle)
+                            : null,
                     }
                 };
 
@@ -140,7 +184,9 @@
                     })
                 });
                 const result = await verifyResp.json();
-                if (!verifyResp.ok || result.status !== "ok") throw new Error(result.msg || "Xác thực thất bại");
+                if (!verifyResp.ok || result.status !== "ok") {
+                    throw new Error(result.msg || "Xác thực thất bại");
+                }
 
                 window.location.replace(safeNext());
             } catch (err) {

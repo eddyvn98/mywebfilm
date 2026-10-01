@@ -7,6 +7,7 @@ import config_manager as cfg
 import operation_journal
 import runtime_db
 from webfilm import app
+from test_helpers import authenticate_client
 
 
 @pytest.fixture
@@ -16,8 +17,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(cfg, "CACHE_FILE", str(tmp_path / "movies_cache.json"))
     app.config["TESTING"] = True
     with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["authenticated"] = True
+        authenticate_client(client)
         yield client
 
 

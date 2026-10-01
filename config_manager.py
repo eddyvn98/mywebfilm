@@ -8,6 +8,7 @@ from runtime_db import load_list_state, mutate_list_state, save_list_state
 from media_catalog import (
     clear_catalog,
     increment_views as catalog_increment_views,
+    get_item as catalog_get_item,
     load_catalog,
     mutate_catalog,
     save_catalog,
@@ -86,6 +87,10 @@ def save_config(config):
 
 def load_cache():
     return load_catalog(CACHE_FILE)
+
+
+def get_catalog_item(path):
+    return catalog_get_item(path, CACHE_FILE)
 
 
 def save_cache(data):

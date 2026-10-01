@@ -14,8 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           cache: pip
@@ -28,7 +28,7 @@ jobs:
       - name: Run tests
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}/cinema-data
-          CINEMA_SECRET_KEY: ci-only-test-secret
+          CINEMA_SECRET_KEY: ci-only-test-secret-32-bytes-minimum-2026
         run: python -m pytest -q --cov=config_manager --cov=storage_utils --cov=runtime_db --cov=media_catalog --cov=media_job_store --cov=operation_journal --cov=fs_catalog --cov=backup_service --cov=ffmpeg_conversion --cov=sort_engine --cov=ffmpeg_service --cov=routes --cov=security_service --cov-report=term-missing --cov-fail-under=25
       - name: Check JavaScript syntax
         run: |
@@ -41,8 +41,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           cache: pip
@@ -53,5 +53,5 @@ jobs:
       - name: Run Windows E2E and recovery tests
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}\cinema-data
-          CINEMA_SECRET_KEY: ci-only-test-secret
+          CINEMA_SECRET_KEY: ci-only-test-secret-32-bytes-minimum-2026
         run: python -m pytest -q test_windows_e2e.py test_backup_restore.py test_failure_injection.py test_media_safety.py test_library_integration.py
