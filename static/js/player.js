@@ -9,7 +9,9 @@ let isAutoNext = false;
 let isShuffle = false;
 let currentRotation = 0;
 let lastProgressSaveAt = 0;
+let historyRecordTimer = null;
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
+const HISTORY_RECORD_DELAY_MS = 1500;
 const PLAYLIST_WINDOW_RADIUS = 40;
 let playlistRenderedForLength = -1;
 
@@ -24,8 +26,11 @@ export function openVideoModal(idx) {
     }
 
     const modal = document.getElementById('video-modal');
+    const isOpeningModal = modal.classList.contains('hidden');
     modal.classList.remove('hidden');
-    void modal.offsetWidth;
+    if (isOpeningModal) {
+        void modal.offsetWidth;
+    }
     modal.classList.add('translate-y-0');
     modal.classList.remove('translate-y-full');
 
@@ -34,8 +39,7 @@ export function openVideoModal(idx) {
     if (titleEl) titleEl.textContent = v.name;
     updatePlayerFavoriteUI(v.full_path);
 
-    // Track History
-    historyService.addToHistory(v);
+    scheduleHistoryRecord(v);
 
     loadVideoSource(v);
 
@@ -45,6 +49,14 @@ export function openVideoModal(idx) {
     } else {
         renderPlaylistWindow();
     }
+}
+
+function scheduleHistoryRecord(video) {
+    clearTimeout(historyRecordTimer);
+    historyRecordTimer = setTimeout(() => {
+        historyService.addToHistory(video);
+        historyRecordTimer = null;
+    }, HISTORY_RECORD_DELAY_MS);
 }
 
 function injectPlaylistUI() {
@@ -206,6 +218,8 @@ function updateShuffleBtn() {
 // --- Main Player Logic ---
 
 export function closeVideoModal() {
+    clearTimeout(historyRecordTimer);
+    historyRecordTimer = null;
     if (state.player) state.player.pause();
     window.togglePlaylist?.(false);
 
