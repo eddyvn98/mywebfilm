@@ -53,30 +53,39 @@ def test_ai_inject_rejects_paths_outside_library(client):
     assert resp.status_code == 403
 
 
-def test_expired_token_is_rejected_for_remote_login_options(client):
+def test_expired_token_is_rejected_for_remote_registration_options(client):
     api_auth.CURRENT_OTT = 'a' * 32
     api_auth.CURRENT_OTT_EXPIRES_AT = time.time() - 1
     resp = client.get(
-        '/api/auth/login/options?token=' + ('a' * 32),
+        '/api/auth/register/options',
+        headers={'X-Cinema-Bootstrap': 'a' * 32},
         environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
-def test_valid_token_is_consumed_after_remote_login(client, monkeypatch):
+def test_valid_token_is_consumed_after_remote_registration(client, monkeypatch):
     api_auth.CURRENT_OTT = 'b' * 32
     api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
     monkeypatch.setattr(api_auth, 'get_origin', lambda: 'https://example.test')
-    monkeypatch.setattr(api_auth.security_manager, 'verify_authentication', lambda *args, **kwargs: True)
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'verify_registration',
+        lambda *args, **kwargs: {'device_id': 'device-1', 'device_name': 'Phone'},
+    )
 
     resp = client.post(
-        '/api/auth/login/verify?token=' + ('b' * 32),
-        json={},
+        '/api/auth/register/verify',
+        headers={'X-Cinema-Bootstrap': 'b' * 32},
+        json={'credential': {}, 'challenge_id': 'challenge-1'},
         environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
     )
     assert resp.status_code == 200
     assert api_auth.CURRENT_OTT is None
     assert api_auth.CURRENT_OTT_EXPIRES_AT == 0.0
+    with client.session_transaction() as sess:
+        assert sess['authenticated'] is True
+        assert sess['locked'] is False
 
 
 def test_cross_origin_state_change_is_blocked(client):
@@ -173,14 +182,54 @@ def test_valid_ott_does_not_bypass_media_api(client):
     assert resp.status_code == 401
 
 
-def test_valid_ott_can_bootstrap_remote_registration_page(client):
-    api_auth.CURRENT_OTT = 'e' * 32
-    api_auth.CURRENT_OTT_EXPIRES_AT = time.time() + 300
+def test_registration_page_is_public_but_registration_api_is_gated(client):
+    page = client.get(
+        '/register_security',
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert page.status_code == 200
+
+    options = client.get(
+        '/api/auth/register/options',
+        environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
+    )
+    assert options.status_code == 401
+
+
+def test_remote_passkey_login_options_do_not_require_bootstrap(client, monkeypatch):
+    monkeypatch.setattr(api_auth, 'get_origin', lambda: 'https://example.test')
+    monkeypatch.setattr(
+        api_auth.security_manager,
+        'get_authentication_options',
+        lambda *args, **kwargs: {'publicKey': {}, 'challenge_id': 'c1', 'expires_in': 120},
+    )
     resp = client.get(
-        '/register_security?token=' + ('e' * 32),
+        '/api/auth/login/options',
         environ_overrides={'REMOTE_ADDR': '203.0.113.10'},
     )
     assert resp.status_code == 200
+    assert resp.get_json()['challenge_id'] == 'c1'
+
+
+def test_lock_blocks_application_apis(client):
+    authenticate(client)
+    with client.session_transaction() as sess:
+        sess['last_activity'] = time.time()
+
+    locked = client.post('/api/auth/lock')
+    assert locked.status_code == 200
+
+    resp = client.get('/api/videos')
+    assert resp.status_code == 423
+    assert resp.get_json()['code'] == 'LOCKED'
+
+
+def test_security_headers_are_present(client):
+    resp = client.get('/login')
+    assert resp.headers['X-Content-Type-Options'] == 'nosniff'
+    assert resp.headers['X-Frame-Options'] == 'DENY'
+    assert resp.headers['Referrer-Policy'] == 'no-referrer'
+    assert resp.headers['Cache-Control'] == 'no-store'
 
 
 def test_project_static_is_not_a_media_root_by_default(monkeypatch):
