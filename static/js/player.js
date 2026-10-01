@@ -10,6 +10,8 @@ let isShuffle = false;
 let currentRotation = 0;
 let lastProgressSaveAt = 0;
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
+const PLAYLIST_WINDOW_RADIUS = 40;
+let playlistRenderedForLength = -1;
 
 export function openVideoModal(idx) {
     state.currentIndex = idx;
@@ -36,8 +38,13 @@ export function openVideoModal(idx) {
     historyService.addToHistory(v);
 
     loadVideoSource(v);
-    renderPlaylist();
-    updatePlaylistActiveItem();
+
+    const playlist = document.getElementById('playlist-content');
+    if (playlist && (playlist.children.length === 0 || playlistRenderedForLength !== state.currentGridVideos.length)) {
+        renderPlaylist();
+    } else {
+        renderPlaylistWindow();
+    }
 }
 
 function injectPlaylistUI() {
@@ -85,10 +92,27 @@ function injectPlaylistUI() {
 }
 
 function renderPlaylist() {
+    playlistRenderedForLength = state.currentGridVideos.length;
+    renderPlaylistWindow();
+}
+
+function renderPlaylistWindow() {
     const container = document.getElementById('playlist-content');
     if (!container) return;
 
-    container.innerHTML = state.currentGridVideos.map((v, i) => `
+    const count = state.currentGridVideos.length;
+    if (!count) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const start = Math.max(0, state.currentIndex - PLAYLIST_WINDOW_RADIUS);
+    const end = Math.min(count, state.currentIndex + PLAYLIST_WINDOW_RADIUS + 1);
+    const items = state.currentGridVideos.slice(start, end);
+
+    container.innerHTML = items.map((v, offset) => {
+        const i = start + offset;
+        return `
         <div class="playlist-item rounded-lg" id="plist-item-${i}" onclick="playVideoFromIndex(${i})">
             <div class="relative w-16 aspect-video rounded overflow-hidden bg-slate-800 shrink-0">
                 <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" class="w-full h-full object-cover" loading="lazy">
@@ -102,26 +126,21 @@ function renderPlaylist() {
                 </div>
             </div>
             ${i === state.currentIndex ? '<i class="fa-solid fa-chart-simple text-blue-500 text-xs animate-pulse"></i>' : ''}
-        </div>
-    `).join('');
-}
-
-function updatePlaylistActiveItem() {
-    document.querySelectorAll('.playlist-item').forEach(el => {
-        el.classList.remove('active', 'bg-blue-600/10', 'border-blue-500/30');
-        el.querySelector('.playlist-title').classList.remove('text-blue-400');
-    });
+        </div>`;
+    }).join('');
 
     const activeItem = document.getElementById(`plist-item-${state.currentIndex}`);
     if (activeItem) {
         activeItem.classList.add('active', 'bg-blue-600/10', 'border-blue-500/30');
-        activeItem.querySelector('.playlist-title').classList.add('text-blue-400');
-
-        // Scroll to active
-        setTimeout(() => {
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
+        activeItem.querySelector('.playlist-title')?.classList.add('text-blue-400');
+        requestAnimationFrame(() => {
+            activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
+        });
     }
+}
+
+function updatePlaylistActiveItem() {
+    renderPlaylistWindow();
 }
 
 // --- Logic ---
