@@ -165,3 +165,20 @@ def test_scroll_state_uses_grid_container_not_window():
 def test_history_service_does_not_refetch_after_each_record():
     source = read("static/js/history_service.js")
     assert "this.loadHistory()" not in source
+
+
+def test_playlist_previous_page_keeps_windows_contiguous():
+    source = read("static/js/player.js")
+    assert "boundaryIndex - PLAYLIST_WINDOW_RADIUS - 1" in source
+    assert "boundaryIndex - jump" not in source
+
+
+def test_security_client_initialization_is_idempotent():
+    source = read("static/js/security_client.js")
+    assert "let securityClientInitialized = false;" in source
+    assert "if (securityClientInitialized) return;" in source
+
+
+def test_selection_toolbar_is_rendered_once():
+    source = read("templates/cinema_home.html")
+    assert source.count("{% include 'components/selection_toolbar.html' %}") == 1
