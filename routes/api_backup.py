@@ -55,6 +55,13 @@ def verify_backup():
 
 @backup_bp.route("/api/backup/restore", methods=["POST"])
 def restore_backup():
+    from .api_auth import is_direct_local_request
+    if not is_direct_local_request():
+        return jsonify({
+            "status": "err",
+            "msg": "Restore backup chỉ được chạy từ direct localhost",
+        }), 403
+
     data = request.get_json(silent=True) or {}
     backup_id = data.get("backup_id")
     if data.get("confirm") != "RESTORE":
