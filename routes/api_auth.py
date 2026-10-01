@@ -35,6 +35,15 @@ def _consume_token():
     CURRENT_OTT_EXPIRES_AT = 0.0
 
 
+def _mint_token(ttl=None):
+    global CURRENT_OTT, CURRENT_OTT_EXPIRES_AT
+    ttl = ttl or int(os.environ.get("CINEMA_OTT_TTL_SECONDS", DEFAULT_OTT_TTL_SECONDS))
+    ttl = max(60, min(int(ttl), 300))
+    CURRENT_OTT = os.urandom(24).hex()
+    CURRENT_OTT_EXPIRES_AT = time.time() + ttl
+    return CURRENT_OTT, ttl
+
+
 def _session_can_authenticate_remote():
     return bool(session.get("authenticated"))
 
@@ -109,6 +118,25 @@ def get_tunnel_info():
         "expires_at": CURRENT_OTT_EXPIRES_AT if active else None,
         "login_url": f"{base}/login#t={CURRENT_OTT}" if base and active else None,
         "register_url": f"{base}/register_security#t={CURRENT_OTT}" if base and active else None,
+    })
+
+
+@auth_bp.route("/api/auth/bootstrap", methods=["POST"])
+def create_bootstrap():
+    if not session.get("authenticated") or session.get("locked"):
+        return jsonify({"status": "err", "msg": "Unauthorized"}), 401
+
+    from .api_config import TUNNEL_URL
+    base = (TUNNEL_URL or "").rstrip("/")
+    if not base:
+        return jsonify({"status": "err", "msg": "Tunnel chưa sẵn sàng"}), 409
+
+    token, ttl = _mint_token()
+    return jsonify({
+        "status": "ok",
+        "expires_in": ttl,
+        "register_url": f"{base}/register_security#t={token}",
+        "login_url": f"{base}/login",
     })
 
 
