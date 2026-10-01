@@ -1254,8 +1254,18 @@ button, input, select {
 @media (max-width: 640px) {
     html.media-modal-open,
     html.media-modal-open body {
+        overflow: hidden !important;
         overscroll-behavior: none;
-        touch-action: none;
+    }
+
+    html.media-modal-open #video-modal,
+    html.media-modal-open #image-modal,
+    html.media-modal-open #playlist-sidebar {
+        touch-action: manipulation;
+    }
+
+    html.media-modal-open #playlist-content {
+        touch-action: pan-y;
     }
 
     #cinema-header {
