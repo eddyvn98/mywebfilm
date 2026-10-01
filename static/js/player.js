@@ -617,6 +617,7 @@ window.togglePlayerFavorite = async () => {
     if (!video) return;
 
     const isFavorite = await favoritesService.toggleFavorite(video);
+    if (typeof isFavorite !== 'boolean') return;
     updatePlayerFavoriteUI(video.full_path);
 
     const card = document.querySelector(`.movie-card[data-path="${CSS.escape(video.full_path)}"]`);
