@@ -6,7 +6,7 @@
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/css/style.css?v=v8_viewportfix" rel="stylesheet">
+    <link href="/static/css/style.css?v=v9_cinema_grid" rel="stylesheet">
     <link href="/static/css/qa_inspector.css?v=1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
     <style>
@@ -95,6 +95,7 @@
     </main>
 
     {% include 'components/video_modal.html' %}
+    {% include 'components/movie_info_modal.html' %}
 
     <div id="image-modal"
         class="fixed inset-0 z-[150] bg-black/95 flex flex-col hidden opacity-0 transition-opacity duration-300">
@@ -137,14 +138,14 @@
     {% include 'components/rename_modal.html' %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
-    <script type="module" src="/static/js/player.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/render_service.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/filter_service.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/manage_service.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/discovery_service.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/ai_search_service.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/grid.js?v=v8_viewportfix"></script>
-    <script type="module" src="/static/js/main.js?v=v8_viewportfix"></script>
+    <script type="module" src="/static/js/player.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/render_service.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/filter_service.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/manage_service.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/discovery_service.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/ai_search_service.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/grid.js?v=v9_cinema_grid"></script>
+    <script type="module" src="/static/js/main.js?v=v9_cinema_grid"></script>
     <script src="/static/js/qa_inspector.js?v=1"></script>
 </body>
 </html>
