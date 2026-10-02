@@ -1,6 +1,6 @@
 // static/js/manage_service.js
 import { state } from './state.js';
-import { deleteFile, apiRename } from './api.js';
+import { deleteFile, apiRename, openExplorer } from './api.js';
 import { applyFilters } from './filter_service.js';
 import { escapeAttr } from './security.js';
 
@@ -87,9 +87,126 @@ export function handlePreview(el, active) {
 }
 
 export function showInfo(e, index) {
-    e.stopPropagation();
+    e?.stopPropagation();
     const v = state.currentGridVideos[index];
-    alert(`Tên: ${v.name}\nSize: ${v.size_fmt}\nView: ${v.views || 0}\nFolder: ${v.folder || 'Gốc'}`);
+    if (!v) return;
+
+    state.infoIndex = index;
+    const modal = document.getElementById('movie-info-modal');
+    if (!modal) return;
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value ?? '—';
+    };
+
+    const duration = Number(v.duration || 0);
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = Math.floor(duration % 60);
+    const durationText = duration > 0
+        ? (hours > 0
+            ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+            : `${minutes}:${String(seconds).padStart(2, '0')}`)
+        : '—';
+
+    const addedDate = v.date_added
+        ? new Date(v.date_added * 1000).toLocaleString('vi-VN')
+        : '—';
+
+    setText('movie-info-title', v.name);
+    setText('movie-info-path', v.full_path);
+    setText('movie-info-folder', v.folder || 'Gốc');
+    setText('movie-info-type', v.type === 'image' ? 'Ảnh' : 'Video');
+    setText('movie-info-ext', (v.ext || '—').replace('.', '').toUpperCase());
+    setText('movie-info-size', v.size_fmt || '—');
+    setText('movie-info-duration', durationText);
+    setText('movie-info-views', String(v.views || 0));
+    setText('movie-info-added', addedDate);
+
+    const categoryBox = document.getElementById('movie-info-categories');
+    if (categoryBox) {
+        categoryBox.replaceChildren();
+        const categories = v.categories || [];
+        if (!categories.length) {
+            const empty = document.createElement('span');
+            empty.className = 'text-slate-500 text-xs';
+            empty.textContent = 'Chưa có metadata phân loại';
+            categoryBox.appendChild(empty);
+        } else {
+            categories.forEach(category => {
+                const chip = document.createElement('span');
+                chip.className = 'movie-info-chip';
+                chip.textContent = category;
+                categoryBox.appendChild(chip);
+            });
+        }
+    }
+
+    const explorerBtn = document.getElementById('movie-info-explorer-btn');
+    if (explorerBtn) {
+        explorerBtn.disabled = Boolean(v.is_offline);
+        explorerBtn.classList.toggle('opacity-40', Boolean(v.is_offline));
+        explorerBtn.classList.toggle('cursor-not-allowed', Boolean(v.is_offline));
+    }
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => modal.classList.add('movie-info-open'));
+}
+
+export function closeMovieInfo() {
+    const modal = document.getElementById('movie-info-modal');
+    if (!modal) return;
+    modal.classList.remove('movie-info-open');
+    setTimeout(() => modal.classList.add('hidden'), 180);
+    state.infoIndex = null;
+}
+
+export async function copyMoviePath() {
+    const v = state.currentGridVideos[state.infoIndex];
+    if (!v?.full_path) return;
+
+    try {
+        await navigator.clipboard.writeText(v.full_path);
+    } catch (_) {
+        const area = document.createElement('textarea');
+        area.value = v.full_path;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+    }
+
+    const btn = document.getElementById('movie-info-copy-btn');
+    if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i><span>Đã copy</span>';
+        setTimeout(() => { btn.innerHTML = old; }, 1400);
+    }
+}
+
+export async function openMovieInExplorer() {
+    const v = state.currentGridVideos[state.infoIndex];
+    if (!v?.full_path || v.is_offline) return;
+
+    const btn = document.getElementById('movie-info-explorer-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+        const response = await openExplorer(v.full_path);
+        let data = {};
+        try { data = await response.json(); } catch (_) {}
+
+        if (!response.ok || data.status === 'err') {
+            alert(data.msg || 'Không thể mở Explorer. Tính năng này chỉ hoạt động khi truy cập trực tiếp localhost trên máy Windows chứa file.');
+        }
+    } catch (error) {
+        alert('Không thể mở Explorer: ' + error.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }
 
 export async function deleteItem(e, index) {
@@ -140,6 +257,9 @@ window.cancelSelection = selection.cancelSelection;
 window.toggleManageMode = selection.toggleManageMode;
 window.handleCardClick = selection.handleCardClick;
 window.showInfo = showInfo;
+window.closeMovieInfo = closeMovieInfo;
+window.copyMoviePath = copyMoviePath;
+window.openMovieInExplorer = openMovieInExplorer;
 window.deleteItem = deleteItem;
 window.selectAll = selection.selectAll;
 window.handleMouseEnter = selection.handleMouseEnter;
