@@ -51,9 +51,11 @@ def test_swipe_seek_commits_once_on_gesture_end():
     assert "state.player.currentTime = seekTarget;" in end_block
 
 
-def test_timeline_is_not_rebuilt_for_each_infinite_scroll_page():
+def test_cinema_grid_does_not_restore_date_timeline_grouping():
     source = read("static/js/render_service.js")
-    assert "if (!append) {\n        renderTimeline(videos);\n    }" in source
+    render_grid = source[source.index("export function renderGrid"):source.index("export function renderTimeline")]
+    assert "renderTimeline(videos);" not in render_grid
+    assert "cinema-grid-heading" in render_grid
 
 
 def test_movie_cards_enable_offscreen_render_skipping():
