@@ -1,20 +1,15 @@
 <aside id="sidebar"
     class="fixed inset-y-0 left-0 w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-50 shadow-2xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative select-none">
     
-    <!-- macOS Window Controls (Traffic Lights) & App Title -->
-    <div class="px-5 pt-6 pb-4 flex items-center justify-between gap-3 border-b border-white/5 bg-black/10 select-none">
-        <div class="flex items-center gap-2 group/lights">
-            <span class="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] relative flex items-center justify-center cursor-default">
-                <span class="text-[7px] text-red-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[2px]">×</span>
-            </span>
-            <span class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dfa023] relative flex items-center justify-center cursor-default">
-                <span class="text-[7px] text-yellow-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[1px]">−</span>
-            </span>
-            <span class="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] relative flex items-center justify-center cursor-default">
-                <span class="text-[5px] text-green-950 font-black opacity-0 group-hover/lights:opacity-100 transition duration-150 absolute leading-none top-[3px] left-[3px]">+</span>
-            </span>
+    <!-- Personal cinema identity -->
+    <div class="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/5 bg-black/10 select-none">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/25 to-violet-500/20 border border-white/10 flex items-center justify-center shadow-lg shadow-blue-950/20">
+            <i class="fa-solid fa-clapperboard text-blue-400 text-sm"></i>
         </div>
-        <h1 class="text-[10px] font-bold text-slate-400 tracking-widest uppercase cursor-default select-none pr-1">My Cinema</h1>
+        <div class="min-w-0">
+            <h1 class="text-[12px] font-black text-slate-100 tracking-[0.16em] uppercase leading-none">My Cinema</h1>
+            <p class="text-[8px] text-slate-500 tracking-[0.18em] uppercase mt-1.5">Private Library</p>
+        </div>
     </div>
 
     <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
@@ -23,7 +18,7 @@
             class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1">
             <span class="flex items-center gap-3">
                 <i class="fa-solid fa-house text-[10px] opacity-75"></i>
-                Tất cả tệp
+                Thư viện
             </span>
             <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
@@ -41,12 +36,14 @@
             class="w-full flex items-center justify-between px-3 py-2 text-slate-300 rounded-lg text-[12px] font-medium transition hover:bg-white/5 active:scale-[0.98] group mb-1.5">
             <span class="flex items-center gap-3">
                 <i class="fa-solid fa-clock-rotate-left text-[10px] opacity-75"></i>
-                Lịch sử
+                Xem gần đây
             </span>
             <i class="fa-solid fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition"></i>
         </button>
 
         <div class="h-px bg-white/5 my-3 mx-1"></div>
+
+        <div class="px-2 pt-1 pb-2 text-[8px] font-black text-slate-600 uppercase tracking-[0.18em]">Quản lý tệp</div>
 
         <!-- Collapsible Sources -->
         <div class="mb-3">
