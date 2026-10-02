@@ -24,127 +24,123 @@ export function renderGrid(videos, append = false, resetPage = true) {
 
     if (videos.length === 0 && !append) {
         grid.innerHTML = `
-            <div class="col-span-full py-40 text-center text-slate-700 font-bold italic text-sm flex flex-col items-center gap-4">
-                <span>KHÔNG CÓ PHIM</span>
-                <button onclick="window.resetFilters()" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition text-xs font-black uppercase tracking-widest">
+            <div class="col-span-full py-40 text-center text-slate-600 font-bold text-sm flex flex-col items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <i class="fa-solid fa-film text-2xl text-slate-500"></i>
+                </div>
+                <div>
+                    <p class="text-slate-300">Không có phim phù hợp</p>
+                    <p class="text-slate-600 text-xs mt-1 font-medium">Thử đổi bộ lọc hoặc thư mục đang xem.</p>
+                </div>
+                <button onclick="window.resetFilters()" class="px-4 py-2 bg-blue-600/15 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition text-xs font-black uppercase tracking-widest">
                     <i class="fa-solid fa-filter-circle-xmark mr-2"></i>Xóa bộ lọc
                 </button>
             </div>`;
         return;
     }
 
-    const start = append ? (state.currentPage - 1) * state.pageSize : 0;
-    const end = state.currentPage * state.pageSize;
-    const pagedVideos = videos.slice(start, end);
+    const startIndex = append ? (state.currentPage - 1) * state.pageSize : 0;
+    const endIndex = state.currentPage * state.pageSize;
+    const pagedVideos = videos.slice(startIndex, endIndex);
+    if (!pagedVideos.length) return;
 
-    if (pagedVideos.length === 0) return;
-
-    // Grouping by Date
-    const groups = {};
-    pagedVideos.forEach((v, index) => {
-        const date = new Date(v.date_added * 1000);
-        const dateKey = date.toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' });
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push({ v, globalIndex: start + index });
-    });
-
-    const html = Object.entries(groups).map(([date, items]) => {
-        const groupHtml = items.map(({ v, globalIndex }) => {
-            const isImage = v.type === 'image';
-            const isSelected = state.selectedPaths?.includes(v.full_path);
-            const previewAttr = isImage ? '' : `data-preview-url="${escapeAttr(getPreviewUrl(v.full_path))}"`;
-
-            return `
-            <div class="movie-card group cursor-pointer relative ${isSelected ? 'selected' : ''} ${v.is_offline ? 'opacity-60 saturate-0' : ''}" 
-                 data-path="${escapeAttr(v.full_path)}"
-                 onclick="handleCardClick(event, ${globalIndex})"
-                 onmouseenter="handlePreview(this, true); handleMouseEnter(event, ${globalIndex})"
-                 onmouseleave="handlePreview(this, false)"
-                 ${previewAttr}>
-                <div class="poster-container bg-slate-900 overflow-hidden rounded-2xl border border-white/5 shadow-2xl transition duration-500">
-                    <div class="poster-content h-full w-full relative">
-                        <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}" 
-                             class="w-full h-full object-cover transition duration-500 ${v.is_offline ? '' : 'group-hover:scale-110'}" 
-                             loading="lazy"
-                             decoding="async"
-                             onerror="this.style.display='none'">
-                        
-                        <div class="absolute top-2 right-2 flex flex-col gap-1 items-end z-10 pointer-events-none">
-                            ${v.is_offline ? '<span class="badge bg-red-600 text-white px-2 py-0.5 rounded shadow-lg font-bold flex items-center gap-1"><i class="fa-solid fa-plug-circle-exclamation"></i> OFFLINE</span>' : ''}
-                            ${isImage ? '<span class="badge bg-purple-600/90 text-white px-2 py-0.5 rounded shadow-lg">IMG</span>' : ''}
-                            <span class="badge ${isImage ? 'bg-purple-900/80 text-purple-200 border-purple-500/30' : 'bg-blue-900/80 text-blue-200 border-blue-500/30'} 
-                                 px-2 py-0.5 rounded border shadow-md">${escapeHtml(v.ext)}</span>
-                            ${(v.categories || []).map(c => {
-                let color = 'bg-blue-600/80';
-                let label = c;
-                if (c.startsWith('Studio:')) { color = 'bg-indigo-600/80'; label = c.replace('Studio: ', ''); }
-                else if (c.startsWith('Diễn viên:')) { color = 'bg-teal-600/80'; label = c.replace('Diễn viên: ', ''); }
-                return `<span class="badge ${color} text-white px-1.5 py-0.5 rounded text-[7px] uppercase tracking-tighter pointer-events-auto hover:brightness-125 transition" 
-                                               onclick="handleBadgeClick(event, '${escapeInlineJsSingleQuoted(c)}', '${escapeInlineJsSingleQuoted(label.toUpperCase())}')">
-                                            ${escapeHtml(label)}
-                                        </span>`;
-            }).join('')}
-                        </div>
-    
-                        ${v.duration > 0 ? `
-                        <div class="absolute bottom-2 right-2 bg-black/75 text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold z-10 pointer-events-none border border-white/10">
-                            ${formatDuration(v.duration)}
-                        </div>` : ''}
-
-                        <div class="card-actions absolute top-2 left-2 flex gap-1 z-50 opacity-0 group-hover:opacity-100 transition duration-300">
-                            <button onclick="openRenameModal(event, ${globalIndex})" 
-                                    class="w-7 h-7 rounded-lg bg-blue-600/90 text-white flex items-center justify-center hover:bg-blue-500 border border-white/10 shadow-lg ${v.is_offline ? 'hidden' : ''}">
-                                <i class="fa-solid fa-pen text-[9px]"></i>
-                            </button>
-                            ${v.ext && v.ext.toLowerCase() === '.ts' ? `
-                                <button onclick="processConvert(event, ${globalIndex})" 
-                                        class="w-7 h-7 rounded-lg bg-indigo-600/90 text-white flex items-center justify-center hover:bg-indigo-500 border border-white/10 shadow-lg"
-                                        title="Convert to MP4">
-                                    <i class="fa-solid fa-file-video text-[9px]"></i>
-                                </button>` : ''}
-                            <button onclick="deleteItem(event, ${globalIndex})" 
-                                    class="w-7 h-7 rounded-lg bg-red-900/80 text-white flex items-center justify-center hover:bg-red-600 border border-white/10 shadow-lg ${v.is_offline ? 'hidden' : ''}">
-                                <i class="fa-solid fa-trash-can text-[9px]"></i>
-                            </button>
-                        </div>
-
-                        <!-- Favorite Heart -->
-                        <button onclick="handleFavoriteToggle(event, ${globalIndex})" 
-                                class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/65 flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart">
-                            <i class="fa-${favoritesService.isFavorite(v.full_path) ? 'solid' : 'regular'} fa-heart ${favoritesService.isFavorite(v.full_path) ? 'text-red-500' : 'text-white/70 group-hover/heart:text-red-400'} transition"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="px-1 py-2">
-                    <p class="movie-title mb-1.5 line-clamp-2" title="${escapeAttr(v.name)}">${escapeHtml(v.name)}</p>
-                    <div class="flex items-center gap-1.5 opacity-40 text-[10px] font-bold tracking-tight">
-                        <span class="font-mono uppercase">${escapeHtml(v.size_fmt)}</span>
-                        <span class="opacity-50 text-[6px]">•</span>
-                        <span class="uppercase">${v.views || 0} VIEW</span>
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
+    const cards = pagedVideos.map((v, index) => {
+        const globalIndex = startIndex + index;
+        const isImage = v.type === 'image';
+        const isSelected = state.selectedPaths?.includes(v.full_path);
+        const previewAttr = isImage ? '' : `data-preview-url="${escapeAttr(getPreviewUrl(v.full_path))}"`;
+        const categories = v.categories || [];
+        const actress = categories.find(c => c.startsWith('Diễn viên:'))?.replace('Diễn viên:', '').trim() || '';
+        const studio = categories.find(c => c.startsWith('Studio:'))?.replace('Studio:', '').trim() || '';
+        const contentMeta = [actress, studio].filter(Boolean).join(' · ') || (v.folder || 'Thư viện cá nhân');
+        const folderLabel = v.folder || 'Gốc';
+        const extLabel = (v.ext || '').replace('.', '').toUpperCase();
 
         return `
-            <div class="col-span-full mt-8 mb-4 flex items-center gap-4 group/header" id="date-${date.replace(/\//g, '-')}">
-                <div class="h-px bg-white/10 flex-1"></div>
-                <div class="bg-blue-600/20 text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border border-blue-500/20 shadow-lg">${date}</div>
-                <div class="h-px bg-white/10 flex-1"></div>
+        <article class="movie-card group cursor-pointer relative ${isSelected ? 'selected' : ''} ${v.is_offline ? 'opacity-60 saturate-0' : ''}"
+             data-path="${escapeAttr(v.full_path)}"
+             onclick="handleCardClick(event, ${globalIndex})"
+             onmouseenter="handlePreview(this, true); handleMouseEnter(event, ${globalIndex})"
+             onmouseleave="handlePreview(this, false)"
+             ${previewAttr}>
+            <div class="poster-container cinema-poster-card">
+                <div class="poster-content h-full w-full relative">
+                    <img src="${escapeAttr(getThumbnailUrl(v.full_path, v.type))}"
+                         class="w-full h-full object-cover transition duration-500 ${v.is_offline ? '' : 'group-hover:scale-[1.04]'}"
+                         loading="lazy" decoding="async"
+                         onerror="this.style.display='none'">
+
+                    <div class="movie-card-overlay"></div>
+
+                    <div class="absolute top-2 right-2 flex flex-col gap-1 items-end z-20 pointer-events-none">
+                        ${v.is_offline ? '<span class="cinema-status-badge bg-red-600/90 text-white"><i class="fa-solid fa-plug-circle-exclamation"></i> Offline</span>' : ''}
+                        ${isImage ? '<span class="cinema-status-badge bg-purple-600/90 text-white">Ảnh</span>' : ''}
+                    </div>
+
+                    <div class="card-actions absolute top-2 left-2 flex gap-1.5 z-50 opacity-0 group-hover:opacity-100 transition duration-200">
+                        <button onclick="showInfo(event, ${globalIndex})" class="cinema-action-btn" title="Thông tin & vị trí file">
+                            <i class="fa-solid fa-circle-info text-[10px]"></i>
+                        </button>
+                        <button onclick="openRenameModal(event, ${globalIndex})" class="cinema-action-btn ${v.is_offline ? 'hidden' : ''}" title="Đổi tên">
+                            <i class="fa-solid fa-pen text-[9px]"></i>
+                        </button>
+                        ${v.ext && v.ext.toLowerCase() === '.ts' ? `
+                            <button onclick="processConvert(event, ${globalIndex})" class="cinema-action-btn" title="Convert to MP4">
+                                <i class="fa-solid fa-file-video text-[9px]"></i>
+                            </button>` : ''}
+                        <button onclick="deleteItem(event, ${globalIndex})" class="cinema-action-btn cinema-action-danger ${v.is_offline ? 'hidden' : ''}" title="Xóa">
+                            <i class="fa-solid fa-trash-can text-[9px]"></i>
+                        </button>
+                    </div>
+
+                    <button onclick="handleFavoriteToggle(event, ${globalIndex})"
+                            class="absolute bottom-2 left-2 z-[60] w-8 h-8 rounded-full bg-black/65 backdrop-blur-sm flex items-center justify-center transition hover:scale-110 active:scale-90 group/heart border border-white/10"
+                            title="Yêu thích">
+                        <i class="fa-${favoritesService.isFavorite(v.full_path) ? 'solid' : 'regular'} fa-heart ${favoritesService.isFavorite(v.full_path) ? 'text-red-500' : 'text-white/80 group-hover/heart:text-red-400'} transition"></i>
+                    </button>
+
+                    ${v.duration > 0 ? `
+                    <div class="absolute bottom-2 right-2 bg-black/75 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold z-20 pointer-events-none border border-white/10">
+                        ${formatDuration(v.duration)}
+                    </div>` : ''}
+                </div>
             </div>
-            ${groupHtml}
-        `;
+
+            <div class="movie-card-body">
+                <div class="flex items-start gap-2">
+                    <div class="min-w-0 flex-1">
+                        <p class="movie-title" title="${escapeAttr(v.name)}">${escapeHtml(v.name)}</p>
+                        <p class="movie-card-meta" title="${escapeAttr(contentMeta)}">${escapeHtml(contentMeta)}</p>
+                    </div>
+                    ${extLabel ? `<span class="movie-ext-chip">${escapeHtml(extLabel)}</span>` : ''}
+                </div>
+                <button class="movie-folder-line" onclick="showInfo(event, ${globalIndex})" title="Xem vị trí file">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <span>${escapeHtml(folderLabel)}</span>
+                </button>
+            </div>
+        </article>`;
     }).join('');
 
-    if (append) {
-        grid.insertAdjacentHTML('beforeend', html);
-    } else {
-        grid.innerHTML = html;
+    const heading = append ? '' : `
+        <div class="cinema-grid-heading col-span-full">
+            <div>
+                <p class="cinema-grid-kicker">THƯ VIỆN CÁ NHÂN</p>
+                <h2>Phim của bạn</h2>
+            </div>
+            <div class="cinema-grid-count">${videos.length.toLocaleString('vi-VN')} mục</div>
+        </div>`;
+
+    if (append) grid.insertAdjacentHTML('beforeend', cards);
+    else {
+        grid.innerHTML = heading + cards;
+        const timeline = document.getElementById('grid-timeline');
+        if (timeline) {
+            timeline.innerHTML = '';
+            timeline.classList.add('hidden');
+        }
     }
 
-    if (!append) {
-        renderTimeline(videos);
-    }
     setupInfiniteScroll();
 }
 
