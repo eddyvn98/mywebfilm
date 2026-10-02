@@ -279,19 +279,36 @@ def get_origin():
 
     proto = "https" if proto == "https" else "http"
     parsed = urlsplit(f"{proto}://{host}")
-    hostname = parsed.hostname
+    hostname = (parsed.hostname or "").lower()
     if not hostname:
         raise ValueError("Invalid request host")
 
-    if hostname == "127.0.0.1":
-        hostname = "localhost"
-        port = parsed.port
-        host = (
-            f"localhost:{port}"
-            if port
-            else "localhost"
-        )
+    # For the configured public hostname, use the canonical public URL.
+    # This keeps Origin/WebAuthn validation correct behind Cloudflare Tunnel
+    # even when the backend connection itself is plain HTTP and cloudflared
+    # does not forward X-Forwarded-Proto.
+    public_url = os.environ.get(
+        "CINEMA_PUBLIC_URL",
+        "",
+    ).strip().rstrip("/")
+    if public_url:
+        public = urlsplit(public_url)
+        public_hostname = (public.hostname or "").lower()
+        if public_hostname and hostname == public_hostname:
+            public_scheme = (
+                "https"
+                if public.scheme == "https"
+                else "http"
+            )
+            public_host = public.netloc
+            if public_host:
+                return (
+                    f"{public_scheme}://{public_host}"
+                ).rstrip("/")
 
+    # Preserve the exact direct-local host the browser used. Treating
+    # 127.0.0.1 as localhost here causes same-origin POSTs from 127.0.0.1
+    # to be rejected before authentication is reached.
     if hostname.endswith(".trycloudflare.com"):
         proto = "https"
 
