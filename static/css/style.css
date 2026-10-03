@@ -1251,12 +1251,14 @@ button, input, select {
 }
 
 
-/* --- Mobile UX pass 3: touch ergonomics and 360px stability --- */
-@media (max-width: 640px) {
+@media (max-width: 767px) {
     html.media-modal-open,
     html.media-modal-open body {
         overflow: hidden !important;
-        overscroll-behavior: none;
+        overflow-x: hidden !important;
+        overscroll-behavior: none !important;
+        width: 100% !important;
+        max-width: 100vw !important;
     }
 
     html.media-modal-open #video-modal,
@@ -1824,8 +1826,8 @@ button, input, select {
 
 
 /* --- Player interaction hotfix v7 --- */
-#playlist-sidebar{pointer-events:none!important;visibility:hidden}
-#playlist-sidebar.show{pointer-events:auto!important;visibility:visible}
+#playlist-sidebar{display:none!important;pointer-events:none!important;visibility:hidden}
+#playlist-sidebar.show{display:flex!important;pointer-events:auto!important;visibility:visible}
 #playlist-overlay{pointer-events:none!important}
 #playlist-overlay:not(.hidden):not(.opacity-0){pointer-events:auto!important}
 #video-modal .player-stage,
@@ -1846,17 +1848,26 @@ button, input, select {
 /* --- Mobile player visual viewport fix v8 --- */
 @media (max-width:767px){
   #video-modal{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:100vw!important;
     top:var(--player-vvtop,0px)!important;
     bottom:auto!important;
     height:var(--player-vvh,100dvh)!important;
     min-height:0!important;
     max-height:var(--player-vvh,100dvh)!important;
+    overflow:hidden!important;
+    overflow-x:hidden!important;
   }
   #video-modal .player-stage,
   #video-modal .plyr,
   #video-modal .plyr__video-wrapper{
+    width:100%!important;
+    max-width:100%!important;
     height:100%!important;
     max-height:100%!important;
+    overflow:hidden!important;
   }
   #video-modal .plyr video,
   #video-modal video.player-media{
@@ -1868,6 +1879,10 @@ button, input, select {
     object-position:50% 50%!important;
   }
   #video-modal .plyr__controls{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:100%!important;
     bottom:0!important;
     padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
   }
