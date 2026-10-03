@@ -1,6 +1,5 @@
 from flask import jsonify, request
 import time
-from security_service import security_manager
 from . import auth_common as core
 from .auth_common import (
     ADMIN_USER_ID, auth_bp, can_register_request, get_origin,
@@ -19,7 +18,7 @@ def sync_tunnel():
             "status": "err",
             "msg": "Sync allowed only from direct localhost",
         }), 403
-    if not security_manager.has_credentials(ADMIN_USER_ID):
+    if not core.security_manager.has_credentials(ADMIN_USER_ID):
         return jsonify({
             "status": "err",
             "msg": "Hãy đăng ký Passkey đầu tiên trên localhost trước khi bật Tunnel",
@@ -110,9 +109,9 @@ def register_options():
                 "status": "err",
                 "msg": "Unauthorized registration",
             }), 403
-        origin = get_origin()
+        origin = core.get_origin()
         return jsonify(
-            security_manager.get_registration_options(
+            core.security_manager.get_registration_options(
                 ADMIN_USER_ID,
                 ADMIN_USERNAME,
                 origin,
@@ -142,10 +141,10 @@ def register_verify():
                 "msg": "Unauthorized registration",
             }), 403
 
-        origin = get_origin()
+        origin = core.get_origin()
         data = request.get_json(silent=True) or {}
         credential = data.get("credential", data)
-        result = security_manager.verify_registration(
+        result = core.security_manager.verify_registration(
             ADMIN_USER_ID,
             origin,
             credential,
