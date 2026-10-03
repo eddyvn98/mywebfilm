@@ -19,7 +19,7 @@
 
 
 /* --- Mobile player visual viewport fix v8 --- */
-@media (max-width:767px){
+@media (max-width:767px), (orientation:landscape) and (hover:none) and (pointer:coarse){
   #video-modal{
     top:var(--player-vvtop,0px)!important;
     bottom:auto!important;
