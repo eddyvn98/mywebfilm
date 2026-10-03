@@ -101,7 +101,13 @@ select:focus-visible,
     }
 
     #ai-lab-overlay > .flex-1 > aside:last-child {
-        display: none !important;
+        display: block !important;
+        width: 100% !important;
+        max-height: 34dvh;
+        overflow-y: auto !important;
+        border-left: 0 !important;
+        border-top: 1px solid rgba(255, 255, 255, .06);
+        padding: 14px !important;
     }
 
     #mgmt-editor-content {
@@ -176,8 +182,8 @@ select:focus-visible,
     }
 
     #security-modal > div:last-child {
-        inset-left: 8px !important;
-        inset-right: 8px !important;
+        left: 8px !important;
+        right: 8px !important;
         max-height: calc(100dvh - 16px) !important;
     }
 
@@ -479,7 +485,13 @@ select:focus-visible,
     }
 
     #ai-lab-overlay > .flex-1 > aside:last-child {
-        display: none !important;
+        display: block !important;
+        width: 190px !important;
+        min-width: 190px !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        padding: 10px !important;
+        border-left: 1px solid rgba(255,255,255,.06) !important;
     }
 
     #mgmt-editor-content {
@@ -631,5 +643,16 @@ select:focus-visible,
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: .01ms !important;
+    }
+}
+
+/* Refresh/sort remains reachable on every phone profile. */
+.mobile-library-refresh {
+    display: none !important;
+}
+@media (max-width: 767px),
+       (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 560px) {
+    .mobile-library-refresh {
+        display: flex !important;
     }
 }
