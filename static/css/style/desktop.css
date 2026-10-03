@@ -56,8 +56,9 @@ header {
     font-weight: 600 !important;
 }
 
-/* macOS Squircle Buttons & Inputs */
-button, input, select {
+/* Form controls only. Buttons keep their component-specific radius.
+   A global button !important here broke Plyr's round play button and player close button. */
+input, select {
     border-radius: 6px !important;
 }
 
