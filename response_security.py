@@ -103,5 +103,10 @@ def apply_security_headers(response):
             "no-store, max-age=0"
         )
         response.headers["Pragma"] = "no-cache"
+    elif request.path.startswith(("/static/js/", "/static/css/")):
+        response.headers["Cache-Control"] = (
+            "no-cache, must-revalidate"
+        )
+        response.headers["Pragma"] = "no-cache"
 
     return response

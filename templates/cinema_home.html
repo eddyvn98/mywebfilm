@@ -6,9 +6,65 @@
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/css/style.css?v=v11_movie_grid_load" rel="stylesheet">
+    <link href="/static/css/style.css?v=v12_edge_compat" rel="stylesheet">
     <link href="/static/css/qa_inspector.css?v=1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
+    <script type="importmap">
+    {
+        "imports": {
+            "/static/js/player.js": "/static/js/player.js?v=v12_edge_compat",
+            "/static/js/player_runtime.js": "/static/js/player_runtime.js?v=v12_edge_compat",
+            "/static/js/player_playlist.js": "/static/js/player_playlist.js?v=v12_edge_compat",
+            "/static/js/player_video.js": "/static/js/player_video.js?v=v12_edge_compat",
+            "/static/js/player_image.js": "/static/js/player_image.js?v=v12_edge_compat",
+            "/static/js/player_navigation.js": "/static/js/player_navigation.js?v=v12_edge_compat",
+            "/static/js/gestures.js": "/static/js/gestures.js?v=v12_edge_compat",
+            "/static/js/render_service.js": "/static/js/render_service.js?v=v12_edge_compat",
+            "/static/js/filter_service.js": "/static/js/filter_service.js?v=v12_edge_compat",
+            "/static/js/manage_service.js": "/static/js/manage_service.js?v=v12_edge_compat",
+            "/static/js/discovery_service.js": "/static/js/discovery_service.js?v=v12_edge_compat",
+            "/static/js/ai_search_service.js": "/static/js/ai_search_service.js?v=v12_edge_compat",
+            "/static/js/ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v12_edge_compat",
+            "/static/js/mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v12_edge_compat",
+            "/static/js/grid.js": "/static/js/grid.js?v=v12_edge_compat",
+            "/static/js/main.js": "/static/js/main.js?v=v12_edge_compat",
+            "/static/js/state.js": "/static/js/state.js?v=v12_edge_compat",
+            "/static/js/api.js": "/static/js/api.js?v=v12_edge_compat",
+            "/static/js/security.js": "/static/js/security.js?v=v12_edge_compat",
+            "/static/js/history_service.js": "/static/js/history_service.js?v=v12_edge_compat",
+            "/static/js/favorites_service.js": "/static/js/favorites_service.js?v=v12_edge_compat",
+            "/static/js/security_client.js": "/static/js/security_client.js?v=v12_edge_compat",
+            "/static/js/scan_service.js": "/static/js/scan_service.js?v=v12_edge_compat",
+            "/static/js/selection_service.js": "/static/js/selection_service.js?v=v12_edge_compat",
+            "/static/js/queue_service.js": "/static/js/queue_service.js?v=v12_edge_compat",
+            "./player.js": "/static/js/player.js?v=v12_edge_compat",
+            "./player_runtime.js": "/static/js/player_runtime.js?v=v12_edge_compat",
+            "./player_playlist.js": "/static/js/player_playlist.js?v=v12_edge_compat",
+            "./player_video.js": "/static/js/player_video.js?v=v12_edge_compat",
+            "./player_image.js": "/static/js/player_image.js?v=v12_edge_compat",
+            "./player_navigation.js": "/static/js/player_navigation.js?v=v12_edge_compat",
+            "./gestures.js": "/static/js/gestures.js?v=v12_edge_compat",
+            "./render_service.js": "/static/js/render_service.js?v=v12_edge_compat",
+            "./filter_service.js": "/static/js/filter_service.js?v=v12_edge_compat",
+            "./manage_service.js": "/static/js/manage_service.js?v=v12_edge_compat",
+            "./discovery_service.js": "/static/js/discovery_service.js?v=v12_edge_compat",
+            "./ai_search_service.js": "/static/js/ai_search_service.js?v=v12_edge_compat",
+            "./ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v12_edge_compat",
+            "./mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v12_edge_compat",
+            "./grid.js": "/static/js/grid.js?v=v12_edge_compat",
+            "./main.js": "/static/js/main.js?v=v12_edge_compat",
+            "./state.js": "/static/js/state.js?v=v12_edge_compat",
+            "./api.js": "/static/js/api.js?v=v12_edge_compat",
+            "./security.js": "/static/js/security.js?v=v12_edge_compat",
+            "./history_service.js": "/static/js/history_service.js?v=v12_edge_compat",
+            "./favorites_service.js": "/static/js/favorites_service.js?v=v12_edge_compat",
+            "./security_client.js": "/static/js/security_client.js?v=v12_edge_compat",
+            "./scan_service.js": "/static/js/scan_service.js?v=v12_edge_compat",
+            "./selection_service.js": "/static/js/selection_service.js?v=v12_edge_compat",
+            "./queue_service.js": "/static/js/queue_service.js?v=v12_edge_compat"
+        }
+    }
+    </script>
     <style>
         .modal-open {
             transform: translateY(0) !important;
@@ -138,14 +194,14 @@
     {% include 'components/rename_modal.html' %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
-    <script type="module" src="/static/js/player.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/render_service.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/filter_service.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/manage_service.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/discovery_service.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/ai_search_service.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/grid.js?v=v11_movie_grid_load"></script>
-    <script type="module" src="/static/js/main.js?v=v11_movie_grid_load"></script>
+    <script type="module" src="/static/js/player.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/render_service.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/filter_service.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/manage_service.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/discovery_service.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/ai_search_service.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/grid.js?v=v12_edge_compat"></script>
+    <script type="module" src="/static/js/main.js?v=v12_edge_compat"></script>
     <script src="/static/js/qa_inspector.js?v=1"></script>
 </body>
 </html>
