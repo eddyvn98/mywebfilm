@@ -265,6 +265,7 @@ def mutate_catalog(mutator, legacy_json_path=None):
 
 
 def increment_views(path, legacy_json_path=None):
+    global _catalog_snapshot, _catalog_snapshot_db_path
     runtime_db.ensure_schema()
     if legacy_json_path:
         migrate_legacy_catalog(legacy_json_path)
