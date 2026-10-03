@@ -2,6 +2,7 @@ import os
 import json
 import subprocess
 from constants import FFMPEG_PATH, FFPROBE_PATH
+from ffmpeg_runtime import ffmpeg_subprocess_kwargs
 from .ffmpeg_core import ffmpeg_semaphore
 
 def validate_media_output(path):
@@ -13,7 +14,15 @@ def validate_media_output(path):
             '-show_entries', 'stream=codec_type:format=duration',
             '-of', 'json', path
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        res = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=30,
+            **ffmpeg_subprocess_kwargs(),
+        )
         if res.returncode != 0:
             return False
         payload = json.loads(res.stdout or '{}')
@@ -25,7 +34,14 @@ def validate_media_output(path):
 
 def get_best_gpu_encoder():
     try:
-        res = subprocess.run([FFMPEG_PATH, "-encoders"], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        res = subprocess.run(
+            [FFMPEG_PATH, "-encoders"],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            **ffmpeg_subprocess_kwargs(),
+        )
         encoders = res.stdout.lower()
         if "h264_nvenc" in encoders: return "h264_nvenc"
         if "h264_qsv" in encoders: return "h264_qsv"
@@ -64,7 +80,14 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
                 temp_output
             ]
             
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                **ffmpeg_subprocess_kwargs(),
+            )
             if res.returncode != 0 or not validate_media_output(temp_output):
                 if os.path.exists(temp_output):
                     os.remove(temp_output)
@@ -106,7 +129,14 @@ def convert_ts_to_mp4(input_path, delete_src=True):
                 
             cmd.extend(['-c:a', 'aac', '-b:a', '128k', temp_output])
             
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                **ffmpeg_subprocess_kwargs(),
+            )
             if res.returncode != 0 or not validate_media_output(temp_output):
                 if os.path.exists(temp_output):
                     os.remove(temp_output)

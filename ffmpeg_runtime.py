@@ -1,5 +1,23 @@
 import os
+import subprocess
+import sys
 import threading
+
+
+WINDOWS_CREATE_NO_WINDOW = (
+    subprocess.CREATE_NO_WINDOW
+    if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW")
+    else 0
+)
+
+
+def ffmpeg_subprocess_kwargs(**kwargs):
+    """Return kwargs for media subprocess calls, suppressing console popup windows on Windows."""
+    extra = {}
+    if WINDOWS_CREATE_NO_WINDOW:
+        extra["creationflags"] = WINDOWS_CREATE_NO_WINDOW
+    extra.update(kwargs)
+    return extra
 
 
 def _env_int(name, default, minimum, maximum):
