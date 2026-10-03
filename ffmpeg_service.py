@@ -23,7 +23,7 @@ def validate_media_output(path):
             '-show_entries', 'stream=codec_type:format=duration',
             '-of', 'json', path
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFPROBE_TIMEOUT)
         if res.returncode != 0:
             return False
         import json
@@ -64,7 +64,7 @@ def generate_thumbnail(media_path, output_path, is_image=False):
                 # Giai đoạn 2: Slow-seek (Bền bỉ hơn, sau -i, seek tại 1s)
                 # Giúp xử lý các video quá ngắn hoặc header 'Duration: N/A'
                 cmd_fallback = [
-                    FFMPEG_PATH, '-y',
+                    FFMPEG_PATH, '-loglevel', 'error', '-y',
                     '-analyzeduration', '10M', '-probesize', '10M',
                     '-i', media_path,
                     '-ss', '00:00:01', 
@@ -140,7 +140,7 @@ def check_ffmpeg_presence():
     try:
         subprocess.run([FFMPEG_PATH, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=FFMPEG_SHORT_TIMEOUT)
         return True
-    except FileNotFoundError:
+    except (FileNotFoundError, subprocess.SubprocessError):
         return False
 
 @lru_cache(maxsize=4)
