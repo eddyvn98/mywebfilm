@@ -154,10 +154,14 @@ def test_compact_catalog_omits_heavy_unused_metadata(monkeypatch):
     with app.test_client() as client:
         authenticate_client(client)
         monkeypatch.setattr(
-            "routes.api_video.cfg.load_cache",
+            "routes.api_video.cfg.load_cache_snapshot",
             lambda: [item],
         )
-        response = client.get("/api/videos?compact=1")
+        with patch(
+            "routes.api_video.cfg.load_cache",
+            side_effect=AssertionError("compact listing should use RAM snapshot"),
+        ):
+            response = client.get("/api/videos?compact=1")
 
     payload = response.get_json()[0]
     assert "nfo_metadata" not in payload
