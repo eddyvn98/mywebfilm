@@ -2,11 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/css/style.css?v=v13_player_controls" rel="stylesheet">
+    <link href="/static/css/style.css?v=v14_responsive_polish" rel="stylesheet">
     <link href="/static/css/qa_inspector.css?v=1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
     <script type="importmap">
@@ -163,7 +163,7 @@
     <div id="image-modal"
         class="fixed inset-0 z-[150] bg-black/95 flex flex-col hidden opacity-0 transition-opacity duration-300">
         <div class="image-modal-close absolute top-4 right-4 z-[160] flex gap-3">
-            <button onclick="closeImageModal()"
+            <button onclick="closeImageModal()" aria-label="Đóng ảnh"
                 class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
