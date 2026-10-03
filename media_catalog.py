@@ -1,7 +1,6 @@
 import json
 import os
 import threading
-import copy
 
 import runtime_db
 
@@ -191,10 +190,10 @@ def load_catalog_snapshot(legacy_json_path=None):
             _catalog_snapshot is not None
             and _catalog_snapshot_db_path == runtime_db.DB_PATH
         ):
-            return copy.deepcopy(list(_catalog_snapshot))
+            return list(_catalog_snapshot)
 
     # First read warms both the path index and ordered snapshot.
-    return copy.deepcopy(load_catalog(legacy_json_path))
+    return load_catalog(legacy_json_path)
 
 
 def save_catalog(items, *, legacy_json_path=None, preserve_views=False):
