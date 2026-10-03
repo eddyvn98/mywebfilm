@@ -1,6 +1,5 @@
 import subprocess
 import os
-from functools import lru_cache
 from constants import FFMPEG_PATH, FFPROBE_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
 import ffmpeg_conversion
 from ffmpeg_runtime import (
@@ -143,7 +142,6 @@ def check_ffmpeg_presence():
     except (FileNotFoundError, subprocess.SubprocessError):
         return False
 
-@lru_cache(maxsize=4)
 def get_best_gpu_encoder(codec="h264"):
     """Detect available hardware encoders for the specified codec (h264 or hevc)"""
     try:
