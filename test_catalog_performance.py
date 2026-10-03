@@ -101,3 +101,18 @@ def test_nfo_change_invalidates_incremental_reuse(tmp_path):
         stat,
         str(nfo),
     ) is False
+
+
+def test_media_iterator_streams_only_supported_files(monkeypatch):
+    def fake_walk(_root):
+        yield "root", [".mycinema", "child"], ["movie.mp4", "note.txt"]
+        yield "root/child", [], ["image.jpg"]
+
+    monkeypatch.setattr(scanner_service.os, "walk", fake_walk)
+
+    found = list(scanner_service._iter_media_files(["root"]))
+
+    assert found == [
+        ("root", "movie.mp4"),
+        ("root/child", "image.jpg"),
+    ]
