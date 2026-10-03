@@ -17,7 +17,10 @@ const HISTORY_RECORD_DELAY_MS = 1500;
 
 function syncMobilePlayerViewport() {
     const modal = document.getElementById('video-modal');
-    if (!modal || window.innerWidth >= 768) return;
+    const isTouchLandscape = window.matchMedia(
+        '(orientation: landscape) and (hover: none) and (pointer: coarse)'
+    ).matches;
+    if (!modal || (window.innerWidth >= 768 && !isTouchLandscape)) return;
     const vv = window.visualViewport;
     const height = Math.round(vv?.height || window.innerHeight);
     const offsetTop = Math.round(vv?.offsetTop || 0);
