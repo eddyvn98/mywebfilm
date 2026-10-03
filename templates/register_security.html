@@ -41,11 +41,11 @@
         }
         .primary:hover { background: #d1fae5; }
         .primary:disabled { opacity: .55; cursor: wait; }
-        .error, .success { margin-top: 14px; font-size: 12px; }
+        .error, .success { margin-top: 14px; font-size: 12px; line-height: 1.5; }
         .error { color: #f87171; }
         .success { color: #34d399; }
         .hidden { display: none !important; }
-        .hint { margin: 26px 0 0; color: #475569; font-size: 10px; line-height: 1.5; }
+        .hint { margin: 26px 0 0; color: #475569; font-size: 10px; line-height: 1.5; }\n        .secondary { display: inline-block; margin-top: 12px; color: #93c5fd; font-size: 12px; font-weight: 700; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -65,7 +65,7 @@
 
         <div id="error-msg" class="error hidden" role="alert"></div>
         <div id="success-msg" class="success hidden">Đã đăng ký và mở khóa thiết bị.</div>
-        <p class="hint">Link đăng ký từ xa chỉ dùng một lần và tự hết hạn.</p>
+        <p class="hint">Link đăng ký từ xa chỉ dùng một lần và tự hết hạn. Nếu thiết bị đã có Passkey Cinema được đồng bộ, hãy đăng nhập thay vì đăng ký lại.</p>
     </main>
 
     <script>
