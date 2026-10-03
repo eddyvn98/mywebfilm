@@ -1,16 +1,16 @@
 import os
 
 # --- PATHS ---
-CONFIG_FILE = "config.json"
-CACHE_FILE = "movies_cache.json"
-HISTORY_FILE = "history_cache.json"
-FAVORITES_FILE = "favorites_cache.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.abspath(os.environ.get("CINEMA_CONFIG_DIR", BASE_DIR))
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+CACHE_FILE = os.path.join(CONFIG_DIR, "movies_cache.json")
+HISTORY_FILE = os.path.join(CONFIG_DIR, "history_cache.json")
+FAVORITES_FILE = os.path.join(CONFIG_DIR, "favorites_cache.json")
 
 # Nơi lưu trữ metadata cục bộ trong mỗi thư mục chứa video
 METADATA_DIR_NAME = ".mycinema" 
 
-# --- EXECUTABLES ---
-# --- EXECUTABLES ---
 # --- EXECUTABLES ---
 FFMPEG_PATH = "ffmpeg"
 FFPROBE_PATH = "ffprobe"
