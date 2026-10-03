@@ -1,5 +1,5 @@
 /* --- Player reset v6: portrait + landscape mobile --- */
-@media (max-width: 767px) {
+@media (max-width: 767px), (orientation: landscape) and (hover: none) and (pointer: coarse) {
     #video-modal {
         left: 0 !important;
         right: 0 !important;
@@ -196,7 +196,7 @@
     }
 }
 
-@media (max-width: 767px) and (orientation: landscape) {
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
     #video-modal .player-topbar {
         top: max(4px, env(safe-area-inset-top)) !important;
     }
@@ -219,3 +219,24 @@
 }
 
 
+
+
+/* Player controls must remain above the media surface and preserve their icons. */
+#video-modal .player-close {
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    border-radius: 9999px !important;
+}
+
+#video-modal .plyr__control--overlaid {
+    border-radius: 50% !important;
+    z-index: 62 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+}
+
+#video-modal .plyr__control svg {
+    display: block !important;
+    fill: currentColor;
+    pointer-events: none;
+}
