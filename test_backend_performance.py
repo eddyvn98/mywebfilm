@@ -214,3 +214,61 @@ def test_existing_thumbnail_skips_directory_creation(monkeypatch):
 
     assert response.status_code == 200
     assert created == []
+
+
+def test_scan_save_skips_unchanged_catalog_rows(tmp_path, monkeypatch):
+    db_path = tmp_path / "cinema_state.db"
+    monkeypatch.setattr(runtime_db, "DB_PATH", str(db_path))
+    monkeypatch.setattr(runtime_db, "_schema_path", None)
+
+    item = {
+        "full_path": str(tmp_path / "movie.mp4"),
+        "name": "Movie",
+        "type": "video",
+        "views": 4,
+        "mtime": 10,
+        "size": 100,
+    }
+
+    monkeypatch.setattr(runtime_db, "utc_now", lambda: "first")
+    media_catalog.save_catalog([item])
+
+    monkeypatch.setattr(runtime_db, "utc_now", lambda: "second")
+    media_catalog.save_catalog([dict(item)], preserve_views=True)
+
+    with runtime_db.db_session() as conn:
+        row = conn.execute(
+            "SELECT payload, updated_at FROM media_catalog"
+        ).fetchone()
+
+    assert row["updated_at"] == "first"
+    assert row["payload"]
+
+
+def test_scan_save_preserves_latest_views_while_updating_changed_item(tmp_path, monkeypatch):
+    db_path = tmp_path / "cinema_state.db"
+    monkeypatch.setattr(runtime_db, "DB_PATH", str(db_path))
+    monkeypatch.setattr(runtime_db, "_schema_path", None)
+
+    path = str(tmp_path / "movie.mp4")
+    media_catalog.save_catalog([{
+        "full_path": path,
+        "name": "Old title",
+        "type": "video",
+        "views": 9,
+        "mtime": 10,
+        "size": 100,
+    }])
+
+    media_catalog.save_catalog([{
+        "full_path": path,
+        "name": "New title",
+        "type": "video",
+        "views": 1,
+        "mtime": 11,
+        "size": 100,
+    }], preserve_views=True)
+
+    item = media_catalog.get_item(path)
+    assert item["name"] == "New title"
+    assert item["views"] == 9
