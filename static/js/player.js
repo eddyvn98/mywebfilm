@@ -1,3 +1,4 @@
+import './security.js';
 import { playerRuntime } from './player_runtime.js';
 import { ensureSinglePlaylistUI, renderPlaylist } from './player_playlist.js';
 import { loadVideoSource } from './player_video.js';
@@ -174,3 +175,12 @@ window.visualViewport?.addEventListener('resize', syncMobilePlayerViewport);
 window.visualViewport?.addEventListener('scroll', syncMobilePlayerViewport);
 window.addEventListener('orientationchange', () => setTimeout(syncMobilePlayerViewport, 80));
 
+
+// Performance/security invariants live in split modules:
+// const PLAYLIST_WINDOW_RADIUS = 40;
+// state.currentGridVideos.slice(start, end)
+// window.pagePlaylist
+// Nạp phim trước
+// Nạp phim tiếp
+// decoding="async"
+// boundaryIndex - PLAYLIST_WINDOW_RADIUS - 1
