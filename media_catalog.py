@@ -194,7 +194,7 @@ def load_catalog_snapshot(legacy_json_path=None):
             return copy.deepcopy(list(_catalog_snapshot))
 
     # First read warms both the path index and ordered snapshot.
-    return load_catalog(legacy_json_path)
+    return copy.deepcopy(load_catalog(legacy_json_path))
 
 
 def save_catalog(items, *, legacy_json_path=None, preserve_views=False):
