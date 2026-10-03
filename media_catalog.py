@@ -111,6 +111,72 @@ def _insert_rows(conn, items):
         )
 
 
+def _sync_rows(conn, items, preserve_views=False):
+    rows = conn.execute(
+        "SELECT path_key, full_path, position, payload FROM media_catalog"
+    ).fetchall()
+    current = {}
+    for row in rows:
+        try:
+            payload = json.loads(row["payload"])
+        except Exception:
+            payload = None
+        current[row["path_key"]] = {
+            "full_path": row["full_path"],
+            "position": row["position"],
+            "item": payload,
+        }
+
+    now = runtime_db.utc_now()
+    seen = set()
+    changed = []
+    for position, item in enumerate(items):
+        key = _path_key(item["full_path"])
+        existing = current.get(key)
+        if preserve_views and existing and isinstance(existing["item"], dict):
+            item["views"] = existing["item"].get("views", 0)
+
+        seen.add(key)
+        unchanged = (
+            existing
+            and existing["full_path"] == item["full_path"]
+            and existing["position"] == position
+            and existing["item"] == item
+        )
+        if unchanged:
+            continue
+
+        changed.append((
+            key,
+            item["full_path"],
+            position,
+            json.dumps(item, ensure_ascii=False),
+            now,
+        ))
+
+    if changed:
+        conn.executemany(
+            """
+            INSERT INTO media_catalog(
+                path_key, full_path, position, payload, updated_at
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(path_key) DO UPDATE SET
+                full_path = excluded.full_path,
+                position = excluded.position,
+                payload = excluded.payload,
+                updated_at = excluded.updated_at
+            """,
+            changed,
+        )
+
+    stale = [(key,) for key in current if key not in seen]
+    if stale:
+        conn.executemany(
+            "DELETE FROM media_catalog WHERE path_key = ?",
+            stale,
+        )
+
+
 def migrate_legacy_catalog(path):
     global _migration_checked_db_path
     runtime_db.ensure_schema()
@@ -204,26 +270,7 @@ def save_catalog(items, *, legacy_json_path=None, preserve_views=False):
     cleaned = _clean_items(items)
     with runtime_db.db_session() as conn:
         conn.execute("BEGIN IMMEDIATE")
-
-        if preserve_views:
-            current_rows = conn.execute(
-                "SELECT path_key, payload FROM media_catalog"
-            ).fetchall()
-            latest_views = {}
-            for row in current_rows:
-                try:
-                    current = json.loads(row["payload"])
-                except Exception:
-                    continue
-                latest_views[row["path_key"]] = current.get("views", 0)
-
-            for item in cleaned:
-                key = _path_key(item["full_path"])
-                if key in latest_views:
-                    item["views"] = latest_views[key]
-
-        conn.execute("DELETE FROM media_catalog")
-        _insert_rows(conn, cleaned)
+        _sync_rows(conn, cleaned, preserve_views=preserve_views)
     _reset_item_index(cleaned, complete=True)
     return cleaned
 
