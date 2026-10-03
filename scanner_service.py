@@ -9,7 +9,6 @@ from config_manager import save_scanned_cache, load_cache, load_config
 from category_service import get_categories
 from queue_worker import media_queue
 from nfo_service import parse_nfo
-from nfo_service import parse_nfo
 # import ffmpeg_service (moved inside to be safer)
 
 VIDEO_EXTS = ('.mp4', '.ts', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm')
@@ -58,17 +57,52 @@ def _normalize_roots(video_dirs):
         normalized.append(root)
     return normalized
 
+
+def _same_timestamp(left, right):
+    try:
+        return abs(float(left) - float(right)) < 0.000001
+    except (TypeError, ValueError):
+        return False
+
+
+def _nfo_mtime(nfo_path):
+    try:
+        return os.path.getmtime(nfo_path) if os.path.exists(nfo_path) else None
+    except OSError:
+        return None
+
+
+def _can_reuse_cached_item(old_meta, stat_result, nfo_path):
+    if not old_meta:
+        return False
+    if old_meta.get("size") != stat_result.st_size:
+        return False
+    if not _same_timestamp(old_meta.get("mtime"), stat_result.st_mtime):
+        return False
+
+    current_nfo_mtime = _nfo_mtime(nfo_path)
+    old_nfo_mtime = old_meta.get("nfo_mtime")
+    if current_nfo_mtime is None:
+        return old_meta.get("nfo_metadata") in (None, {}) and old_nfo_mtime is None
+    return old_nfo_mtime is not None and _same_timestamp(old_nfo_mtime, current_nfo_mtime)
+
+
 def scan_videos(video_dirs):
     """Quét các thư mục để tìm file video và hình ảnh"""
     import ffmpeg_service
     old_cache = load_cache()
     # Map để lưu giữ views và date_added cũ
     meta_map = {v["full_path"]: {
-        "views": v.get("views", 0), 
+        "views": v.get("views", 0),
         "date_added": v.get("date_added", 0),
         "jav_metadata": v.get("jav_metadata"),
         "nfo_metadata": v.get("nfo_metadata"),
-        "categories": v.get("categories", [])
+        "categories": v.get("categories", []),
+        "duration": v.get("duration", 0.0),
+        "size": v.get("size"),
+        "mtime": v.get("mtime"),
+        "nfo_mtime": v.get("nfo_mtime"),
+        "cached_item": v,
     } for v in old_cache}
     
     # Backup map based on base name to handle extension changes (e.g. .ts -> .mp4)
@@ -92,8 +126,7 @@ def scan_videos(video_dirs):
         move_candidates[(fname, fsize)] = (v['full_path'], meta_map[v["full_path"]])
     
     items = []
-    current_time = time.time()
-    
+
     # Determine reachable vs unreachable roots
     reachable_roots = []
     unreachable_roots = []
@@ -104,9 +137,6 @@ def scan_videos(video_dirs):
         else:
             unreachable_roots.append(bdir)
 
-    items = []
-    current_time = time.time()
-    
     # Auto-convert & Scraper config
     cfg = load_config()
     auto_convert = False #cfg.get("auto_convert_ts", True) # Disable auto-convert by default
@@ -139,7 +169,17 @@ def scan_videos(video_dirs):
         is_video = lower_f.endswith(VIDEO_EXTS)
         try:
             st = os.stat(fp)
-            
+            nfo_path = os.path.splitext(fp)[0] + '.nfo'
+            direct_old_meta = meta_map.get(fp)
+            if _can_reuse_cached_item(direct_old_meta, st, nfo_path):
+                cached_item = dict(direct_old_meta["cached_item"])
+                cached_item["is_offline"] = False
+                cached_item["folder"] = os.path.basename(root)
+                items.append(cached_item)
+                if processed_count % 50 == 0 or processed_count == total_files:
+                    safe_print(f"Tiến độ: {processed_count}/{total_files} videos...")
+                continue
+
             # --- Logic trích xuất ngày từ tên tệp (Đa định dạng) ---
             file_date_ts = None
             # Pattern: YYYY-MM-DD, YYYY_MM_DD, YYYY MM DD, hoặc YYYYMMDD
@@ -230,9 +270,11 @@ def scan_videos(video_dirs):
                     }
 
             # Check for NFO file
-            nfo_path = os.path.splitext(fp)[0] + '.nfo'
-            if os.path.exists(nfo_path):
+            nfo_mtime = _nfo_mtime(nfo_path)
+            if nfo_mtime is not None:
                 nfo_meta = parse_nfo(nfo_path)
+            else:
+                nfo_meta = None
 
             # Ưu tiên: 1. Ngày từ tên file, 2. Ngày cũ trong cache, 3. Ngày mtime của file
             date_added = file_date_ts if file_date_ts else old_meta.get("date_added")
@@ -260,6 +302,7 @@ def scan_videos(video_dirs):
                 "size": st.st_size,
                 "size_fmt": format_size(st.st_size),
                 "mtime": st.st_mtime,
+                "nfo_mtime": nfo_mtime,
                 "date_added": date_added,
                 "views": current_views,
                 "categories": cats,

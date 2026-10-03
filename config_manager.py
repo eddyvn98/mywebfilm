@@ -10,6 +10,7 @@ from media_catalog import (
     increment_views as catalog_increment_views,
     get_item as catalog_get_item,
     load_catalog,
+    load_catalog_snapshot,
     mutate_catalog,
     save_catalog,
 )
@@ -87,6 +88,10 @@ def save_config(config):
 
 def load_cache():
     return load_catalog(CACHE_FILE)
+
+
+def load_cache_snapshot():
+    return load_catalog_snapshot(CACHE_FILE)
 
 
 def get_catalog_item(path):

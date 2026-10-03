@@ -8,6 +8,8 @@ _item_index_lock = threading.RLock()
 _item_index = {}
 _item_index_complete = False
 _item_index_db_path = None
+_catalog_snapshot = None
+_catalog_snapshot_db_path = None
 _migration_lock = threading.RLock()
 _migration_checked_db_path = None
 
@@ -18,6 +20,7 @@ def _path_key(path):
 
 def _reset_item_index(items=None, complete=False):
     global _item_index, _item_index_complete, _item_index_db_path
+    global _catalog_snapshot, _catalog_snapshot_db_path
     with _item_index_lock:
         _item_index = {
             _path_key(item.get("full_path")): item
@@ -26,6 +29,8 @@ def _reset_item_index(items=None, complete=False):
         }
         _item_index_complete = bool(complete)
         _item_index_db_path = runtime_db.DB_PATH
+        _catalog_snapshot = tuple(items or ()) if complete else None
+        _catalog_snapshot_db_path = runtime_db.DB_PATH if complete else None
 
 
 def _cached_item(path):
@@ -172,6 +177,25 @@ def load_catalog(legacy_json_path=None):
     return items
 
 
+
+def load_catalog_snapshot(legacy_json_path=None):
+    """Return a RAM-backed catalog copy for read-only request paths."""
+    global _catalog_snapshot, _catalog_snapshot_db_path
+    runtime_db.ensure_schema()
+    if legacy_json_path:
+        migrate_legacy_catalog(legacy_json_path)
+
+    with _item_index_lock:
+        if (
+            _catalog_snapshot is not None
+            and _catalog_snapshot_db_path == runtime_db.DB_PATH
+        ):
+            return list(_catalog_snapshot)
+
+    # First read warms both the path index and ordered snapshot.
+    return load_catalog(legacy_json_path)
+
+
 def save_catalog(items, *, legacy_json_path=None, preserve_views=False):
     runtime_db.ensure_schema()
     if legacy_json_path:
@@ -240,6 +264,7 @@ def mutate_catalog(mutator, legacy_json_path=None):
 
 
 def increment_views(path, legacy_json_path=None):
+    global _catalog_snapshot, _catalog_snapshot_db_path
     runtime_db.ensure_schema()
     if legacy_json_path:
         migrate_legacy_catalog(legacy_json_path)
@@ -269,6 +294,14 @@ def increment_views(path, legacy_json_path=None):
             ),
         )
     _remember_item(item)
+    with _item_index_lock:
+        if _catalog_snapshot is not None and _catalog_snapshot_db_path == runtime_db.DB_PATH:
+            for index, cached_item in enumerate(_catalog_snapshot):
+                if _path_key(cached_item.get("full_path")) == key:
+                    updated = list(_catalog_snapshot)
+                    updated[index] = item
+                    _catalog_snapshot = tuple(updated)
+                    break
     return True
 
 
