@@ -5,7 +5,7 @@
         <div class="w-16 h-1.5 bg-white/30 rounded-full"></div>
     </div>
     <div class="player-topbar absolute top-4 left-6 z-50 flex items-center gap-4 max-w-[calc(100%-100px)]">
-        <button id="player-btn-favorite" onclick="togglePlayerFavorite()"
+        <button id="player-btn-favorite" onclick="togglePlayerFavorite()" aria-label="Yêu thích phim"
             class="shrink-0 w-8 h-8 flex items-center justify-center hover:scale-110 active:scale-90 transition pointer-events-auto">
             <i class="fa-regular fa-heart text-white/70 text-xl"></i>
         </button>
@@ -13,7 +13,7 @@
             class="text-white font-bold text-sm md:text-base drop-shadow-md truncate opacity-70 pointer-events-none">
         </h2>
     </div>
-    <button onclick="closeVideoModal()"
+    <button onclick="closeVideoModal()" aria-label="Đóng trình phát"
         class="player-close absolute top-4 right-4 z-50 w-10 h-10 bg-black/50 backdrop-blur rounded-full flex items-center justify-center text-white/80 hover:bg-white/20 transition">
         <i class="fa-solid fa-xmark text-xl"></i>
     </button>
