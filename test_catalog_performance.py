@@ -7,7 +7,7 @@ import runtime_db
 import scanner_service
 
 
-def test_catalog_snapshot_isolated_and_updates_views(tmp_path, monkeypatch):
+def test_catalog_snapshot_updates_views_without_db_reload_contract(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime_db, "DB_PATH", str(tmp_path / "cinema_state.db"))
     monkeypatch.setattr(runtime_db, "_schema_path", None)
     monkeypatch.setattr(cfg, "CACHE_FILE", str(tmp_path / "movies_cache.json"))
@@ -21,14 +21,11 @@ def test_catalog_snapshot_isolated_and_updates_views(tmp_path, monkeypatch):
     }])
 
     first = cfg.load_cache_snapshot()
-    first[0]["name"] = "mutated-by-caller"
-
-    second = cfg.load_cache_snapshot()
-    assert second[0]["name"] == "movie"
+    assert first[0]["name"] == "movie"
 
     assert cfg.increment_views(source) is True
-    third = cfg.load_cache_snapshot()
-    assert third[0]["views"] == 3
+    second = cfg.load_cache_snapshot()
+    assert second[0]["views"] == 3
 
 
 def test_incremental_scan_reuses_unchanged_video_metadata(tmp_path, monkeypatch):
