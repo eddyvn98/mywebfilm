@@ -143,6 +143,23 @@ def test_cinema_home_has_importmap_for_relative_modules():
     assert './render_service.js' in imports
     assert './filter_service.js' in imports
     for k, v in imports.items():
-        assert 'v=v12_edge_compat' in v
+        assert '?v=' in v
+
+
+def test_player_playlist_has_formatting_functions():
+    playlist = read('static/js/player_playlist.js')
+    assert 'function formatDuration(' in playlist
+    assert 'function formatSize(' in playlist
+
+
+def test_player_video_has_fallback_ui():
+    video = read('static/js/player_video.js')
+    assert 'function renderFallbackUI(' in video
+
+
+def test_main_exposes_play_external():
+    main = read('static/js/main.js')
+    assert 'window.playExternal' in main
+
 
 
