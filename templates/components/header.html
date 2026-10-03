@@ -1,7 +1,7 @@
 <header id="cinema-header" class="p-3 flex flex-col gap-3 border-b border-white/5 bg-slate-900/30 backdrop-blur-xl z-30 select-none">
     <div class="header-top flex items-center justify-between gap-3 w-full">
         <div class="flex items-center gap-2 flex-1">
-            <button onclick="toggleSidebar()"
+            <button onclick="toggleSidebar()" aria-label="Mở menu thư viện"
                 class="mobile-menu-btn md:hidden w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white active:bg-white/5 rounded-md">
                 <i class="fa-solid fa-bars text-lg"></i>
             </button>
@@ -11,7 +11,7 @@
                 <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
                 <input type="text" id="search" oninput="applyFilters()" placeholder="Tìm phim, diễn viên, studio..."
                     class="w-full bg-white/5 rounded-md py-1.5 pl-7 pr-8 text-xs outline-none border border-white/10 focus:border-blue-500/50 transition text-white placeholder-slate-500 focus:bg-white/10">
-                <button onclick="runAiSearch()" title="AI Semantic Search"
+                <button onclick="runAiSearch()" title="AI Semantic Search" aria-label="Tìm kiếm bằng AI"
                     class="mobile-ai-search absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center">
                     <i class="fa-solid fa-robot text-[9px]"></i>
                 </button>
@@ -21,25 +21,25 @@
         <!-- Library utilities -->
         <div class="header-utilities flex items-center gap-1 bg-white/5 p-0.5 rounded-md border border-white/5">
             <div class="relative">
-                <button onclick="refreshLibrary()" id="btn-refresh" title="Làm mới / Sắp xếp video mới"
+                <button onclick="refreshLibrary()" id="btn-refresh" title="Làm mới / Sắp xếp video mới" aria-label="Làm mới và sắp xếp video mới"
                     class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-slate-400 hover:text-slate-200">
                     <i class="fa-solid fa-rotate text-xs"></i>
                 </button>
                 <span id="sort-incoming-badge" style="display:none;position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;border-radius:999px;align-items:center;justify-content:center;line-height:1;z-index:10">0</span>
             </div>
-            <button onclick="toggleBlur()" id="btn-blur" title="Ẩn/Hiện ảnh bìa"
+            <button onclick="toggleBlur()" id="btn-blur" title="Ẩn/Hiện ảnh bìa" aria-label="Ẩn hoặc hiện ảnh bìa"
                 class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-slate-400 hover:text-slate-200">
                 <i class="fa-solid fa-eye-slash text-xs"></i>
             </button>
-            <button onclick="clearAllCache()" title="Xóa cache" data-mobile-secondary
+            <button onclick="clearAllCache()" title="Xóa cache" aria-label="Xóa cache" data-mobile-secondary
                 class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-red-400 hover:text-red-300">
                 <i class="fa-solid fa-broom text-xs"></i>
             </button>
-            <button onclick="openSecurityModal()" title="Bảo mật & thiết bị" data-mobile-secondary
+            <button onclick="openSecurityModal()" title="Bảo mật & thiết bị" aria-label="Bảo mật và thiết bị" data-mobile-secondary
                 class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-emerald-400 hover:text-emerald-300">
                 <i class="fa-solid fa-shield-halved text-xs"></i>
             </button>
-            <button onclick="lockCinema()" title="Khóa Cinema ngay" data-mobile-secondary
+            <button onclick="lockCinema()" title="Khóa Cinema ngay" aria-label="Khóa Cinema ngay" data-mobile-secondary
                 class="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition text-blue-400 hover:text-blue-300">
                 <i class="fa-solid fa-lock text-xs"></i>
             </button>
