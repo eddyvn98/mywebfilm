@@ -72,14 +72,3 @@ async function handleImageWheel(e) {
     lastWheelTime = now;
 }
 
-window.closeVideoModal = closeVideoModal;
-window.closeImageModal = closeImageModal;
-window.playVideoFromIndex = (idx) => {
-    openMediaAtIndex(idx);
-};
-window.playStreamFromIndex = (event, idx) => {
-    event.stopPropagation();
-    window.playVideoFromIndex(idx);
-};
-
-
