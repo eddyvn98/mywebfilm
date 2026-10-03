@@ -1,9 +1,12 @@
 /* --- Mobile UX pass 3: touch ergonomics and 360px stability --- */
-@media (max-width: 640px) {
+@media (max-width: 767px) {
     html.media-modal-open,
     html.media-modal-open body {
         overflow: hidden !important;
-        overscroll-behavior: none;
+        overflow-x: hidden !important;
+        overscroll-behavior: none !important;
+        width: 100% !important;
+        max-width: 100vw !important;
     }
 
     html.media-modal-open #video-modal,

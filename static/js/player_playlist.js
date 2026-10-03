@@ -116,9 +116,15 @@ export function renderPlaylistWindow(anchorIndex = state.currentIndex) {
     if (activeItem) {
         activeItem.classList.add('active', 'bg-blue-600/10', 'border-blue-500/30');
         activeItem.querySelector('.playlist-title')?.classList.add('text-blue-400');
-        requestAnimationFrame(() => {
-            activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
-        });
+        const sb = document.getElementById('playlist-sidebar');
+        if (sb && sb.classList.contains('show')) {
+            container.scrollTop = Math.max(
+                0,
+                activeItem.offsetTop
+                - (container.clientHeight / 2)
+                + (activeItem.clientHeight / 2)
+            );
+        }
     }
 }
 
@@ -151,6 +157,16 @@ window.togglePlaylist = (force) => {
         sb.setAttribute('aria-hidden', 'false');
         overlay?.classList.remove('hidden');
         setTimeout(() => overlay?.classList.remove('opacity-0'), 10);
+        const activeItem = document.getElementById(`plist-item-${state.currentIndex}`);
+        const container = document.getElementById('playlist-content');
+        if (container && activeItem) {
+            container.scrollTop = Math.max(
+                0,
+                activeItem.offsetTop
+                - (container.clientHeight / 2)
+                + (activeItem.clientHeight / 2)
+            );
+        }
     } else {
         sb.classList.remove('show');
         sb.setAttribute('aria-hidden', 'true');

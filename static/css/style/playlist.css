@@ -130,3 +130,15 @@
     background-color: #3b82f6;
 }
 
+
+/* Prevent the offscreen mobile drawer from expanding the layout viewport. */
+#playlist-sidebar {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden;
+}
+#playlist-sidebar.show {
+    display: flex !important;
+    pointer-events: auto !important;
+    visibility: visible;
+}

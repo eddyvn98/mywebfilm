@@ -22,6 +22,10 @@ function syncMobilePlayerViewport() {
     const offsetTop = Math.round(vv?.offsetTop || 0);
     document.documentElement.style.setProperty('--player-vvh', height + 'px');
     document.documentElement.style.setProperty('--player-vvtop', offsetTop + 'px');
+    window.scrollTo(0, 0);
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+    modal.scrollLeft = 0;
 }
 
 export function openVideoModal(idx) {
@@ -42,6 +46,10 @@ export function openVideoModal(idx) {
     modal.classList.add('translate-y-0');
     modal.classList.remove('translate-y-full');
     document.documentElement.classList.add('media-modal-open');
+    window.scrollTo(0, 0);
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+    modal.scrollLeft = 0;
     syncMobilePlayerViewport();
 
     // Update Title & Favorite
