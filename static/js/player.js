@@ -4,6 +4,7 @@ import { ensureSinglePlaylistUI, renderPlaylist } from './player_playlist.js';
 import { loadVideoSource } from './player_video.js';
 import { openImageModal, closeImageModal } from './player_image.js';
 import { playNext, playPrev, openMediaAtIndex } from './player_navigation.js';
+export { openImageModal, closeImageModal, playNext, playPrev, openMediaAtIndex };
 // static/js/player.js
 import { state } from './state.js';
 import { getStreamUrl } from './api.js';
