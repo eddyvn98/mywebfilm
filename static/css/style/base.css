@@ -1,0 +1,199 @@
+/* Base Styles */
+body {
+    background-color: #020617;
+    /* slate-950 */
+    color: white;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.4);
+}
+
+/* Grid Layout */
+#video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 200px));
+    gap: 1.8rem 1rem;
+    align-content: start;
+    justify-content: start;
+}
+
+@media (max-width: 640px) {
+    #video-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.75rem !important;
+        padding: 0.75rem !important;
+    }
+
+    /* Tăng kích thước nút điều khiển cho mobile */
+    .absolute.top-2.left-2 button {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .absolute.top-2.left-2 button i {
+        font-size: 11px !important;
+    }
+
+    .dropdown-menu {
+        min-width: 140px !important;
+        left: 10px !important;
+        right: 10px !important;
+        top: auto !important;
+        bottom: 20px !important;
+        /* Move to bottom as an 'action sheet' for better reach */
+        position: fixed !important;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+        border-radius: 20px 20px 0 0 !important;
+        margin-bottom: constant(safe-area-inset-bottom);
+        margin-bottom: env(safe-area-inset-bottom);
+    }
+
+    .dropdown-menu.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* Backdrop for fixed dropdowns on mobile */
+    .custom-dropdown::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 90;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .custom-dropdown:has(.dropdown-menu.show)::after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .plyr__time {
+        font-size: 10px !important;
+        padding: 0 4px !important;
+    }
+
+    /* Strict 2-Row Layout: Row 1 = Timeline, Row 2 = EVERYTHING ELSE */
+    .plyr__controls {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        padding: 5px 10px 15px 10px !important;
+        justify-content: space-between !important;
+        gap: 0 !important;
+    }
+
+    /* Row 1: Timeline */
+    .plyr__progress__container {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        order: 1 !important;
+        margin: 5px 0 15px 0 !important;
+    }
+
+    /* Row 2: Controls Container */
+    /* We'll use a nested flex or just manual ordering to keep them in one line */
+    .plyr__controls>.plyr__control,
+    .plyr__volume,
+    .plyr__time,
+    .plyr__menu {
+        order: 2 !important;
+        padding: 4px !important;
+        margin: 0 !important;
+    }
+
+    /* Shrink the volume button container to fit */
+    .plyr__volume {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+
+    /* Vertical Volume Transformation */
+    .plyr__volume {
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Hide horizontal bar, prepare for vertical */
+    .plyr__volume input[type=range] {
+        position: absolute !important;
+        bottom: 45px !important;
+        left: 50% !important;
+        transform: rotate(270deg) translateY(-50%) !important;
+        transform-origin: left center !important;
+        width: 80px !important;
+        height: 25px !important;
+        margin: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s, transform 0.2s !important;
+        background: rgba(15, 23, 42, 0.9) !important;
+        border-radius: 20px !important;
+        padding: 10px !important;
+        z-index: 100 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Show on hover (on mobile some 'hover' translates to toggle on tap) */
+    .plyr__volume:hover input[type=range],
+    .plyr__volume:active input[type=range],
+    .plyr__volume--expanded input[type=range] {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    /* Custom button sizes to fit everything */
+    .plyr__control {
+        width: 32px !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .plyr__control svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* Playlist toggle button specifically */
+    #plyr-btn-playlist {
+        font-size: 12px !important;
+        color: #fff !important;
+    }
+
+    /* Make progress bar thicker on mobile or easier seeking */
+    .plyr__progress input[type=range] {
+        height: 12px !important;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    #video-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+

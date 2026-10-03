@@ -1,0 +1,210 @@
+/* --- Mobile UX pass 2: cards, drawers, discovery and bulk actions --- */
+@media (max-width: 640px) {
+    #sidebar {
+        width: min(88vw, 320px) !important;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    #sidebar > div:first-child {
+        padding: 14px 16px 12px !important;
+    }
+
+    #sidebar .folder-chip {
+        min-height: 44px;
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+
+    #source-list > div {
+        min-height: 48px;
+        padding-left: 10px !important;
+        padding-right: 8px !important;
+    }
+
+    #source-list > div > div:last-child {
+        opacity: 1 !important;
+    }
+
+    .movie-card {
+        border-radius: 10px !important;
+    }
+
+    .poster-container {
+        border-radius: 10px !important;
+    }
+
+    .movie-card:hover,
+    .movie-card:hover .poster-container {
+        transform: none !important;
+    }
+
+    .movie-card .card-actions {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    #video-grid.manage-mode-active .movie-card .card-actions {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    #video-grid.manage-mode-active .card-actions button {
+        width: 34px !important;
+        height: 34px !important;
+    }
+
+    .movie-card .movie-title {
+        min-height: 34px;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        margin-bottom: 4px !important;
+    }
+
+    .movie-card > div:last-child {
+        padding-top: 7px !important;
+        padding-bottom: 8px !important;
+    }
+
+    #video-grid .col-span-full.mt-8 {
+        margin-top: 14px !important;
+        margin-bottom: 8px !important;
+        gap: 8px !important;
+    }
+
+    #video-grid .col-span-full.mt-8 > div:nth-child(2) {
+        padding: 4px 10px !important;
+        font-size: 9px !important;
+    }
+
+    #selection-toolbar.selection-toolbar-inner {
+        left: 8px !important;
+        right: 8px !important;
+        bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+        width: auto !important;
+        max-width: none !important;
+        transform: translateY(130%) !important;
+        padding: 10px !important;
+        gap: 8px !important;
+        border-radius: 14px !important;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    #selection-toolbar.selection-toolbar-inner.show {
+        transform: translateY(0) !important;
+    }
+
+    #selection-toolbar .h-6.w-px {
+        display: none !important;
+    }
+
+    #selection-toolbar > div:first-child {
+        flex: 1 0 auto;
+    }
+
+    #selection-toolbar > div:nth-child(3) {
+        order: 3;
+        width: 100%;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px !important;
+    }
+
+    #selection-toolbar > div:nth-child(3) button {
+        min-width: 0 !important;
+        padding: 0 6px !important;
+        height: 38px !important;
+        white-space: nowrap;
+    }
+
+    #discovery-overlay .discovery-header {
+        height: 58px !important;
+        padding: max(8px, env(safe-area-inset-top)) 14px 8px !important;
+    }
+
+    #discovery-overlay .discovery-header h2 {
+        font-size: 17px !important;
+    }
+
+    #discovery-overlay #discovery-content {
+        padding: 16px 12px calc(24px + env(safe-area-inset-bottom)) !important;
+    }
+
+    #discovery-overlay #discovery-content.space-y-10 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 24px !important;
+    }
+
+    .discovery-section-title {
+        margin-bottom: 12px !important;
+        font-size: 9px !important;
+    }
+
+    .discovery-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px 8px !important;
+        padding-bottom: 10px !important;
+    }
+
+    .idol-avatar-container {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .idol-avatar-circle {
+        width: 64px !important;
+        height: 64px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .idol-avatar-initials {
+        font-size: 18px !important;
+    }
+
+    .category-card,
+    .category-card[class*="!w-24"] {
+        width: 100% !important;
+        height: 72px !important;
+        min-width: 0 !important;
+        border-radius: 12px !important;
+    }
+
+    .category-card span {
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+        padding: 0 5px !important;
+    }
+
+    .show-more-btn {
+        margin-top: 4px !important;
+        height: 40px !important;
+    }
+
+    #image-modal .image-modal-close {
+        top: max(8px, env(safe-area-inset-top)) !important;
+        right: 8px !important;
+    }
+
+    #image-modal .image-modal-title {
+        top: max(12px, env(safe-area-inset-top)) !important;
+        left: 12px !important;
+        right: 58px !important;
+    }
+
+    #image-modal .image-modal-title h2 {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #image-modal #image-container {
+        padding: 0 !important;
+    }
+
+    #image-modal .image-nav {
+        display: none !important;
+    }
+}
+
+
