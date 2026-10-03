@@ -85,6 +85,18 @@ export function closeVideoModal() {
 }
 
 
+window.closeVideoModal = closeVideoModal;
+window.closeImageModal = closeImageModal;
+window.openImageModal = openImageModal;
+window.openVideoModal = openVideoModal;
+window.playNext = playNext;
+window.playPrev = playPrev;
+window.playVideoFromIndex = (idx) => openMediaAtIndex(idx);
+window.playStreamFromIndex = (event, idx) => {
+    event.stopPropagation();
+    openMediaAtIndex(idx);
+};
+
 // --- Keyboard Shortcuts ---
 window.addEventListener('keydown', (e) => {
     const modal = document.getElementById('video-modal');
