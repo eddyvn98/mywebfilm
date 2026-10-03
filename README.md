@@ -19,7 +19,7 @@ python webfilm.py
 
 Open `http://localhost:5000`.
 
-Normal execution uses Waitress instead of Flask's development server. Optional runtime settings: `CINEMA_HOST` (default `0.0.0.0`), `CINEMA_PORT` (default `5000`), and `CINEMA_THREADS` (default `8`).
+Normal execution uses Waitress instead of Flask's development server. Optional runtime settings: `CINEMA_HOST` (default `127.0.0.1`), `CINEMA_PORT` (default `5000`), and `CINEMA_THREADS` (default `8`). For a Cloudflare Tunnel on the same Windows 11 PC, keep the app bound to `127.0.0.1`.
 
 ## Runtime data
 
@@ -28,6 +28,13 @@ Runtime authentication state and generated secrets live under `data/` by default
 `CINEMA_SECRET_KEY` can be supplied explicitly. If omitted, the app creates a random persistent key in `data/flask_secret.key`.
 
 For HTTPS/tunnel use, set `CINEMA_SECURE_COOKIES=1`.
+
+Windows 11 performance knobs:
+- `CINEMA_FFMPEG_CONCURRENCY` controls the shared FFmpeg process budget (default `2`; use `1` if the PC is also used interactively).
+- `CINEMA_FFMPEG_SHORT_TIMEOUT_SECONDS` controls thumbnail/preview/startup command timeout (default `90`).
+- `CINEMA_FFPROBE_TIMEOUT_SECONDS` controls probe timeout (default `30`).
+- `CINEMA_FFMPEG_LONG_TIMEOUT_SECONDS` controls long conversion/highlight timeout (default `21600`, six hours).
+- `CINEMA_CONFIG_DIR` can move `config.json` and legacy JSON migration files away from the repository. Paths are resolved absolutely, so Task Scheduler or other launchers no longer depend on their working directory.
 
 `cloudflared.exe` is intentionally not stored in Git. Install Cloudflare Tunnel separately or place a local copy next to `setup_tunnel.py`; it is ignored by Git.
 
