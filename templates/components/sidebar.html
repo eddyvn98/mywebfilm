@@ -70,6 +70,19 @@
                 <nav class="space-y-0.5" id="folder-list"></nav>
             </div>
         </div>
+
+        <div class="h-px bg-white/5 my-3 mx-1"></div>
+        <div class="space-y-1">
+            <div class="px-2 py-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Bảo mật</div>
+            <button onclick="closeSidebarOnMobile(); openSecurityModal()" class="w-full flex items-center justify-between px-3 py-2 text-emerald-300 rounded-lg text-[12px] font-medium transition hover:bg-emerald-500/10 active:scale-[0.98] group">
+                <span class="flex items-center gap-3"><i class="fa-solid fa-shield-halved text-[10px]"></i>Bảo mật &amp; thiết bị</span>
+                <i class="fa-solid fa-chevron-right text-[8px] opacity-40 group-hover:opacity-70 transition"></i>
+            </button>
+            <button onclick="closeSidebarOnMobile(); lockCinema()" class="w-full flex items-center justify-between px-3 py-2 text-blue-300 rounded-lg text-[12px] font-medium transition hover:bg-blue-500/10 active:scale-[0.98] group">
+                <span class="flex items-center gap-3"><i class="fa-solid fa-lock text-[10px]"></i>Khóa Cinema</span>
+                <i class="fa-solid fa-chevron-right text-[8px] opacity-40 group-hover:opacity-70 transition"></i>
+            </button>
+        </div>
     </div>
 
     <!-- macOS style inline add folder input at bottom -->
