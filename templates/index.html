@@ -123,6 +123,44 @@
   /* Alert */
   .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 16px; }
   .alert-info { background: #1e1b4b; border: 1px solid #3730a3; color: #a5b4fc; }
+
+  @media (max-width: 767px) {
+    header { padding: 14px 16px; flex-wrap: wrap; }
+    header h1 { font-size: 1.15rem; }
+    main { padding: 14px 12px 24px; gap: 14px; }
+    .card { padding: 16px; }
+    .status-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .stat { padding: 12px 8px; }
+    .stat-val { font-size: 1.6rem; }
+    .sort-panel { gap: 10px; }
+    .sort-panel .btn { flex: 1 1 160px; min-height: 44px; padding: 10px 14px; }
+    .tabs { overflow-x: auto; overflow-y: hidden; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab { flex: 0 0 auto; padding: 10px 14px; min-height: 44px; }
+    .section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 620px; }
+    .empty { padding: 34px 12px; }
+    .actress-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  }
+
+  @media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 560px) {
+    header { padding: 8px 14px; }
+    main { padding: 10px 12px 18px; gap: 10px; }
+    .card { padding: 12px 14px; }
+    .card-title { margin-bottom: 10px; }
+    .status-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .stat { padding: 9px 8px; }
+    .stat-val { font-size: 1.35rem; }
+    .sort-panel .btn { min-height: 40px; }
+    .tabs { margin-bottom: 12px; }
+    .empty { padding: 22px 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      transition-duration: .01ms !important;
+    }
+  }
 </style>
 </head>
 <body>

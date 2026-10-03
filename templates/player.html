@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Xem phim</title>
     <!-- Plyr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
@@ -15,9 +15,14 @@
             color: white;
             margin: 0;
             height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+
+        @supports (height: 100dvh) {
+            body { height: 100dvh; min-height: 100dvh; }
         }
 
         .video-container {
@@ -94,9 +99,56 @@
                 font-size: 11px !important;
             }
 
+            .custom-back-btn {
+                top: max(8px, env(safe-area-inset-top));
+                left: max(8px, env(safe-area-inset-left));
+                min-height: 44px;
+                padding: 8px 14px;
+            }
+
+            .plyr__controls [data-plyr='restart'],
+            .plyr__controls [data-plyr='rewind'],
+            .plyr__controls [data-plyr='fast-forward'],
+            .plyr__controls [data-plyr='pip'],
+            .plyr__controls [data-plyr='airplay'],
+            .plyr__controls .plyr__time--duration,
+            .plyr__controls .plyr__volume {
+                display: none !important;
+            }
+
+            .plyr__controls .plyr__control {
+                min-width: 40px;
+                min-height: 40px;
+            }
+
             /* Make progress bar thicker on mobile for easier seeking */
             .plyr__progress input[type=range] {
                 height: 12px !important;
+            }
+        }
+
+        @media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 560px) {
+            .custom-back-btn {
+                top: max(4px, env(safe-area-inset-top));
+                left: max(6px, env(safe-area-inset-left));
+                min-height: 40px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .plyr__controls {
+                padding: 4px max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important;
+            }
+
+            .plyr__progress__container {
+                margin-bottom: 4px !important;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                transition-duration: .01ms !important;
             }
         }
     </style>

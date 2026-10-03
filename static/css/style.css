@@ -9,6 +9,7 @@
 @import url("./style/mobile-header.css");
 @import url("./style/player-reset.css");
 @import url("./style/cinema.css");
+@import url("./style/responsive-polish.css");
 
 /* Performance invariant mirrored for legacy checks. */
 /* content-visibility: auto; */

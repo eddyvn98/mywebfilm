@@ -48,7 +48,7 @@
     return [...document.querySelectorAll('button,a,input,[onclick],[role="button"]')].filter(el => {
       if (!visible(el) || el.closest('#qa-inspector')) return false;
       const r = el.getBoundingClientRect();
-      return r.width < 40 || r.height < 40;
+      return r.width < 44 || r.height < 44;
     });
   }
 
@@ -65,7 +65,7 @@
       `dpr       ${devicePixelRatio}`,
       `orient    ${innerWidth > innerHeight ? 'landscape' : 'portrait'}`,
       `overflow  ${overflow.length}`,
-      `<40px     ${small.length}`,
+      `<44px     ${small.length}`,
       `focus     ${active?.id || active?.tagName || '-'}`,
       vr ? `video     ${Math.round(vr.width)}×${Math.round(vr.height)}` : 'video     closed'
     ].join('\n');
