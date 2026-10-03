@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **CinemaProject** (618 symbols, 1466 relationships, 44 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **CinemaProject** (1210 symbols, 3828 relationships, 90 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -97,10 +97,5 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Js area (104 symbols) | `.claude/skills/generated/js/SKILL.md` |
-| Work in the Routes area (86 symbols) | `.claude/skills/generated/routes/SKILL.md` |
-| Work in the Cluster_26 area (7 symbols) | `.claude/skills/generated/cluster-26/SKILL.md` |
-| Work in the Cluster_5 area (6 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
-| Work in the Cluster_21 area (4 symbols) | `.claude/skills/generated/cluster-21/SKILL.md` |
 
 <!-- gitnexus:end -->
