@@ -1,6 +1,7 @@
 import { state, saveState } from './state.js';
 import { renderGrid } from './render_service.js';
 import { favoritesService } from './favorites_service.js';
+import { historyService } from './history_service.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
 let categorySource = null;

@@ -64,12 +64,12 @@ def load_config():
 
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f: 
                 cfg = json.load(f)
-                raw_config = {**default_config, **cfg}
-                _config_cache = normalize_config(raw_config)
-                if _config_cache != raw_config:
-                    atomic_write_json(CONFIG_FILE, _config_cache)
-                _config_mtime = current_mtime
-                return _config_cache
+            raw_config = {**default_config, **cfg}
+            _config_cache = normalize_config(raw_config)
+            if _config_cache != raw_config:
+                atomic_write_json(CONFIG_FILE, _config_cache)
+            _config_mtime = current_mtime
+            return _config_cache
         except Exception as e:
             print(f"Lỗi load config: {e}")
         return default_config

@@ -58,3 +58,63 @@ def test_security_client_is_initialized():
     assert "./security_client.js" in main
     assert "initSecurityClient()" in main
     assert "security_modal.html" in home
+
+
+def test_player_reexports_navigation_and_modal_contract():
+    player = read('static/js/player.js')
+    for symbol in [
+        'playNext',
+        'playPrev',
+        'openMediaAtIndex',
+        'openImageModal',
+        'closeImageModal',
+    ]:
+        assert symbol in player, f'player.js missing export {symbol}'
+
+
+def test_filter_service_imports_history_service():
+    filter_service = read('static/js/filter_service.js')
+    assert "import { historyService } from './history_service.js';" in filter_service
+
+
+def test_all_js_module_named_imports_resolve():
+    import glob
+    import re
+
+    js_files = glob.glob('static/js/*.js')
+    exports_by_file = {}
+
+    for path in js_files:
+        fname = path.replace('\\', '/').split('/')[-1]
+        content = read(path)
+        exports = set()
+        for m in re.finditer(r'export\s+(?:async\s+)?(?:function\*?|class)\s+([a-zA-Z0-9_$]+)', content):
+            exports.add(m.group(1))
+        for m in re.finditer(r'export\s+(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=', content):
+            exports.add(m.group(1))
+        for m in re.finditer(r'export\s+(?:const|let|var)\s*\{([^}]+)\}\s*=', content):
+            for item in m.group(1).split(','):
+                sym = item.strip().split(':')[0].strip()
+                if sym:
+                    exports.add(sym)
+        for m in re.finditer(r'export\s*\{([^}]+)\}', content):
+            for item in m.group(1).split(','):
+                parts = item.strip().split()
+                if not parts:
+                    continue
+                if len(parts) == 1:
+                    exports.add(parts[0])
+                elif len(parts) >= 3 and parts[-2] == 'as':
+                    exports.add(parts[-1])
+        exports_by_file[fname] = exports
+
+    for path in js_files:
+        fname = path.replace('\\', '/').split('/')[-1]
+        content = read(path)
+        for m in re.finditer(r'import\s*\{([^}]+)\}\s*from\s*[\'"]\./([a-zA-Z0-9_.-]+\.js)[\'"]', content):
+            imported_symbols = [s.strip().split()[0] for s in m.group(1).split(',') if s.strip()]
+            target_file = m.group(2)
+            assert target_file in exports_by_file, f'{fname} imports missing module {target_file}'
+            for sym in imported_symbols:
+                assert sym in exports_by_file[target_file], f'{fname} imports "{sym}" from {target_file}, but {target_file} only exports {exports_by_file[target_file]}'
+
