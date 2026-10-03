@@ -1,9 +1,9 @@
 from flask import jsonify, request
 import time
 import runtime_db
-from security_service import security_manager
+from . import auth_common as core
 from .auth_common import (
-    ADMIN_USER_ID, IDLE_LOCK_SECONDS, auth_bp, get_origin,
+    ADMIN_USER_ID, IDLE_LOCK_SECONDS, auth_bp,
     get_session_state, _mark_session_authenticated,
     _rate_limited, _revoke_current_session,
 )
@@ -14,9 +14,9 @@ def login_options():
     if limited:
         return limited
     try:
-        origin = get_origin()
+        origin = core.get_origin()
         return jsonify(
-            security_manager.get_authentication_options(
+            core.security_manager.get_authentication_options(
                 ADMIN_USER_ID,
                 origin,
             )
@@ -37,10 +37,10 @@ def login_verify():
     if limited:
         return limited
     try:
-        origin = get_origin()
+        origin = core.get_origin()
         data = request.get_json(silent=True) or {}
         credential = data.get("credential", data)
-        result = security_manager.verify_authentication(
+        result = core.security_manager.verify_authentication(
             ADMIN_USER_ID,
             origin,
             credential,
