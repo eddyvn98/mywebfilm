@@ -1,0 +1,238 @@
+/* --- Mobile UX pass 3: touch ergonomics and 360px stability --- */
+@media (max-width: 640px) {
+    html.media-modal-open,
+    html.media-modal-open body {
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    html.media-modal-open #video-modal,
+    html.media-modal-open #image-modal,
+    html.media-modal-open #playlist-sidebar {
+        touch-action: manipulation;
+    }
+
+    html.media-modal-open #playlist-content {
+        touch-action: pan-y;
+    }
+
+    #cinema-header {
+        gap: 7px !important;
+    }
+
+    #cinema-header .mobile-menu-btn {
+        width: 40px !important;
+        height: 40px !important;
+        flex: 0 0 40px;
+    }
+
+    #cinema-header .mobile-search {
+        max-width: none !important;
+        min-width: 0;
+    }
+
+    #cinema-header #search {
+        height: 40px !important;
+        font-size: 16px !important;
+        padding-left: 32px !important;
+        padding-right: 42px !important;
+    }
+
+    #cinema-header .mobile-ai-search {
+        width: 32px !important;
+        height: 32px !important;
+        right: 4px !important;
+    }
+
+    #cinema-header .header-utilities button {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    #cinema-header > div:nth-child(2) > div:first-child {
+        margin: 0 -2px;
+        padding: 1px 2px 4px;
+        gap: 8px !important;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #cinema-header .header-primary-actions,
+    #cinema-header .header-filter-actions {
+        gap: 4px !important;
+    }
+
+    #cinema-header .header-primary-actions button {
+        height: 38px !important;
+        min-height: 38px;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        font-size: 10px !important;
+    }
+
+    #cinema-header .dropdown-trigger {
+        min-height: 38px !important;
+        padding: 8px 11px !important;
+        gap: 7px !important;
+        white-space: nowrap;
+        font-size: 10px !important;
+    }
+
+    .action-sheet {
+        max-height: min(82%, 620px) !important;
+        border-radius: 18px 18px 0 0 !important;
+    }
+
+    .action-sheet .action-sheet-header {
+        min-height: 52px;
+        padding: 10px 14px !important;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #0f172a;
+    }
+
+    .action-sheet .action-sheet-header button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .action-sheet .action-sheet-body {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .action-sheet .dropdown-item {
+        min-height: 48px;
+        padding: 12px 14px !important;
+        font-size: 12px !important;
+        display: flex;
+        align-items: center;
+    }
+
+    #video-grid {
+        scroll-padding-top: 12px;
+        overscroll-behavior-y: contain;
+    }
+
+    .movie-card button {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .movie-card [onclick^="handleFavoriteToggle"] {
+        width: 40px !important;
+        height: 40px !important;
+        left: 4px !important;
+        bottom: 4px !important;
+    }
+
+    .movie-card .badge {
+        max-width: 92px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .movie-card .absolute.top-2.right-2 {
+        top: 5px !important;
+        right: 5px !important;
+        max-width: calc(100% - 10px);
+    }
+
+    #selection-toolbar > div:nth-child(3) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    #selection-toolbar > div:nth-child(3) button {
+        min-height: 42px !important;
+        white-space: normal !important;
+        line-height: 1.1 !important;
+    }
+
+    #video-modal .plyr__control {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        padding: 9px !important;
+    }
+
+    #video-modal [data-plyr="captions"],
+    #video-modal #plyr-btn-rotate {
+        display: none !important;
+    }
+
+    #video-modal .plyr__controls {
+        gap: 0 !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
+
+    #video-modal .plyr__time {
+        font-variant-numeric: tabular-nums;
+        padding: 0 3px !important;
+    }
+
+    #video-modal #plyr-btn-playlist,
+    #video-modal [data-plyr="fullscreen"],
+    #video-modal [data-plyr="settings"] {
+        flex: 0 0 40px;
+    }
+
+    #playlist-sidebar {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    #playlist-sidebar > div:first-child {
+        min-height: 54px;
+        padding: 8px 12px !important;
+    }
+
+    #playlist-sidebar > div:first-child button,
+    #playlist-sidebar #btn-shuffle {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    #playlist-sidebar .playlist-item {
+        min-height: 64px;
+        padding: 9px 10px !important;
+        gap: 10px !important;
+    }
+
+    #playlist-sidebar .playlist-item > div:first-child {
+        width: 74px !important;
+    }
+}
+
+@media (max-width: 370px) {
+    #cinema-header {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    #cinema-header .header-utilities #btn-blur {
+        display: none !important;
+    }
+
+    #video-grid {
+        gap: 0.6rem !important;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+    }
+
+    #video-modal .plyr__control {
+        width: 38px !important;
+        min-width: 38px !important;
+        height: 38px !important;
+    }
+
+    #video-modal #plyr-btn-playlist,
+    #video-modal [data-plyr="fullscreen"],
+    #video-modal [data-plyr="settings"] {
+        flex-basis: 38px;
+    }
+}
+
+
