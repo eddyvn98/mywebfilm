@@ -87,6 +87,17 @@ def _can_reuse_cached_item(old_meta, stat_result, nfo_path):
     return old_nfo_mtime is not None and _same_timestamp(old_nfo_mtime, current_nfo_mtime)
 
 
+
+def _iter_media_files(roots):
+    for bdir in roots:
+        for root, dirs, files in os.walk(bdir):
+            dirs[:] = [d for d in dirs if d != ".mycinema"]
+            for name in files:
+                lower_name = name.lower()
+                if lower_name.endswith(VIDEO_EXTS) or lower_name.endswith(IMAGE_EXTS):
+                    yield root, name
+
+
 def scan_videos(video_dirs):
     """Quét các thư mục để tìm file video và hình ảnh"""
     import ffmpeg_service
@@ -142,23 +153,12 @@ def scan_videos(video_dirs):
     auto_convert = False #cfg.get("auto_convert_ts", True) # Disable auto-convert by default
     enable_scraping = cfg.get("enable_jav_scraping", False) # Mặc định tắt (User request)
     
-    # Đếm tổng số file trước để hiện tiến độ
     safe_print(f"Bắt đầu quét. Thư mục Online: {len(reachable_roots)}, Offline: {len(unreachable_roots)}")
-    all_files_to_process = []
-    for bdir in reachable_roots:
-        for root, dirs, files in os.walk(bdir):
-            if '.mycinema' in root: continue
-            for f in files:
-                lower_f = f.lower()
-                if lower_f.endswith(VIDEO_EXTS) or lower_f.endswith(IMAGE_EXTS):
-                    all_files_to_process.append((root, f))
-    
-    total_files = len(all_files_to_process)
-    safe_print(f"Bắt đầu xử lý {total_files} videos (Scraping: {enable_scraping})...")
-    
+    safe_print(f"Bắt đầu xử lý media (Scraping: {enable_scraping})...")
+
     processed_count = 0
     processed_paths = set()
-    for root, f in all_files_to_process:
+    for root, f in _iter_media_files(reachable_roots):
         fp = os.path.join(root, f)
         if fp in processed_paths:
             continue
@@ -176,8 +176,8 @@ def scan_videos(video_dirs):
                 cached_item["is_offline"] = False
                 cached_item["folder"] = os.path.basename(root)
                 items.append(cached_item)
-                if processed_count % 50 == 0 or processed_count == total_files:
-                    safe_print(f"Tiến độ: {processed_count}/{total_files} videos...")
+                if processed_count % 50 == 0:
+                    safe_print(f"Tiến độ: {processed_count} media...")
                 continue
 
             # --- Logic trích xuất ngày từ tên tệp (Đa định dạng) ---
@@ -318,8 +318,8 @@ def scan_videos(video_dirs):
                 media_queue.add_items([fp], task_type="convert")
                 
             # Cập nhật tiến độ
-            if processed_count % 50 == 0 or processed_count == total_files:
-                safe_print(f"Tiến độ: {processed_count}/{total_files} videos...")
+            if processed_count % 50 == 0:
+                safe_print(f"Tiến độ: {processed_count} media...")
                 
         except Exception as e:
             safe_print(f"Lỗi xử lý video {f}: {e}")
