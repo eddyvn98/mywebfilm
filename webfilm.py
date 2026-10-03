@@ -3,6 +3,7 @@ import logging
 import os
 
 from app_factory import app, public_url
+from web_security import _stream_activity_last, _touch_stream_activity, runtime_db
 from request_security import check_auth
 from response_security import apply_security_headers
 from startup_checks import run_startup_checks
