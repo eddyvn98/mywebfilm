@@ -72,7 +72,7 @@ def _compact_catalog_item(item):
 
 @video_bp.route("/api/videos")
 def get_videos():
-    items = cfg.load_cache()
+    items = cfg.load_cache_snapshot()
     compact = request.args.get("compact", "").lower() in {
         "1", "true", "yes", "on"
     }
