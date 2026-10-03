@@ -1,11 +1,15 @@
 import subprocess
 import os
-import threading
 from constants import FFMPEG_PATH, FFPROBE_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
 import ffmpeg_conversion
+from ffmpeg_runtime import (
+    FFMPEG_LONG_TIMEOUT,
+    FFMPEG_SEMAPHORE,
+    FFMPEG_SHORT_TIMEOUT,
+    FFPROBE_TIMEOUT,
+)
 
-# Giới hạn tối đa 2 tiến trình FFmpeg chạy cùng lúc để tránh quá tải RAM/CPU
-ffmpeg_semaphore = threading.Semaphore(2)
+ffmpeg_semaphore = FFMPEG_SEMAPHORE
 
 def validate_media_output(path):
     """Validate a generated media file before any destructive source cleanup."""
@@ -18,7 +22,7 @@ def validate_media_output(path):
             '-show_entries', 'stream=codec_type:format=duration',
             '-of', 'json', path
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFPROBE_TIMEOUT)
         if res.returncode != 0:
             return False
         import json
@@ -52,14 +56,14 @@ def generate_thumbnail(media_path, output_path, is_image=False):
                     output_path
                 ]
             
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
             if res.returncode != 0:
                 if is_image: return False
                 
                 # Giai đoạn 2: Slow-seek (Bền bỉ hơn, sau -i, seek tại 1s)
                 # Giúp xử lý các video quá ngắn hoặc header 'Duration: N/A'
                 cmd_fallback = [
-                    FFMPEG_PATH, '-y',
+                    FFMPEG_PATH, '-loglevel', 'error', '-y',
                     '-analyzeduration', '10M', '-probesize', '10M',
                     '-i', media_path,
                     '-ss', '00:00:01', 
@@ -68,7 +72,7 @@ def generate_thumbnail(media_path, output_path, is_image=False):
                     '-q:v', '5',
                     output_path
                 ]
-                res2 = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                res2 = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
                 if res2.returncode == 0: return True
                 
                 # Giai đoạn 3: Cuối cùng - Không seek gì cả, lấy frame đầu tiên
@@ -79,7 +83,7 @@ def generate_thumbnail(media_path, output_path, is_image=False):
                     '-vf', f'scale={THUMB_SIZE}:force_original_aspect_ratio=increase,crop={THUMB_SIZE}', 
                     output_path
                 ]
-                res3 = subprocess.run(cmd_last, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                res3 = subprocess.run(cmd_last, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
                 if res3.returncode != 0:
                     print(f"FFmpeg Ultimate Error for {media_path}: {res3.stderr}")
                 return res3.returncode == 0
@@ -104,7 +108,7 @@ def generate_preview(media_path, output_path):
                 '-threads', '1', '-movflags', '+faststart',
                 output_path
             ]
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
             if res.returncode != 0:
                 # Giai đoạn 2: Slow-seek tại 1s
                 cmd_fallback = [
@@ -118,12 +122,12 @@ def generate_preview(media_path, output_path):
                     '-threads', '1', '-movflags', '+faststart',
                     output_path
                 ]
-                res2 = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                res2 = subprocess.run(cmd_fallback, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
                 if res2.returncode == 0: return True
                 
                 # Giai đoạn 3: No seek
                 cmd_last = [c for c in cmd if c != '-ss' and c != PREVIEW_SEEK_TIME]
-                res3 = subprocess.run(cmd_last, capture_output=True, text=True, encoding='utf-8', errors='replace')
+                res3 = subprocess.run(cmd_last, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
                 return res3.returncode == 0
             return True
         except Exception as e:
@@ -133,15 +137,15 @@ def generate_preview(media_path, output_path):
 def check_ffmpeg_presence():
     """Kiểm tra FFmpeg có trong PATH không"""
     try:
-        subprocess.run([FFMPEG_PATH, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run([FFMPEG_PATH, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=FFMPEG_SHORT_TIMEOUT)
         return True
-    except FileNotFoundError:
+    except (FileNotFoundError, subprocess.SubprocessError):
         return False
 
 def get_best_gpu_encoder(codec="h264"):
     """Detect available hardware encoders for the specified codec (h264 or hevc)"""
     try:
-        res = subprocess.run([FFMPEG_PATH, "-encoders"], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        res = subprocess.run([FFMPEG_PATH, "-encoders"], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_SHORT_TIMEOUT)
         encoders = res.stdout.lower()
         if codec == "hevc":
             if "hevc_nvenc" in encoders: return "hevc_nvenc"
@@ -168,7 +172,7 @@ def get_video_duration(media_path):
             media_path
         ]
         # Không dùng semaphore cho probe vì nó nhanh và ít tốn resource
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFPROBE_TIMEOUT)
         if res.returncode == 0:
             return float(res.stdout.strip())
     except:
@@ -205,7 +209,7 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
             ]
 
             print(f"Processing Highlight (Pure CPU): {' '.join(cmd)}")
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FFMPEG_LONG_TIMEOUT)
             if res.returncode != 0 or not validate_media_output(temp_output):
                 if os.path.exists(temp_output):
                     os.remove(temp_output)

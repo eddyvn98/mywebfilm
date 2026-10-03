@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 import os
 import config_manager as cfg
-import scanner_service as scanner
+from scan_job import scan_manager
 from startup_checks import run_startup_checks
 from tag_service import tag_manager
 from utils import check_media_root_allowed
@@ -66,8 +66,17 @@ def clear_cache():
 @config_bp.route('/api/scan', methods=['POST'])
 def scan():
     config = cfg.load_config()
-    items = scanner.scan_videos(config.get("video_dirs", []))
-    return jsonify(items)
+    started, state = scan_manager.start(config.get("video_dirs", []))
+    return jsonify({
+        "status": state["status"],
+        "started": started,
+        "scan": state,
+    }), 202
+
+
+@config_bp.route('/api/scan/status')
+def scan_status():
+    return jsonify(scan_manager.status())
 
 @config_bp.route('/api/add_folder', methods=['POST'])
 def add_folder():

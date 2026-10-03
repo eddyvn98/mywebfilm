@@ -2,13 +2,14 @@ import os
 import subprocess
 
 from constants import FFMPEG_PATH
+from ffmpeg_runtime import FFMPEG_LONG_TIMEOUT
 
 
 def remux_ts_to_mp4(input_path, output_path, semaphore):
     with semaphore:
         try:
             cmd = [
-                FFMPEG_PATH, "-y",
+                FFMPEG_PATH, "-loglevel", "error", "-y",
                 "-fflags", "+genpts",
                 "-err_detect", "ignore_err",
                 "-i", input_path,
@@ -20,7 +21,7 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             ]
             res = subprocess.run(
                 cmd, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
+                encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
             )
             if res.returncode == 0:
                 return True
@@ -28,13 +29,13 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             cmd_no_bsf = [c for c in cmd if c not in ["-bsf:a", "aac_adtstoasc"]]
             res = subprocess.run(
                 cmd_no_bsf, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
+                encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
             )
             if res.returncode == 0:
                 return True
 
             cmd_hybrid = [
-                FFMPEG_PATH, "-y",
+                FFMPEG_PATH, "-loglevel", "error", "-y",
                 "-fflags", "+genpts",
                 "-i", input_path,
                 "-c:v", "copy",
@@ -44,7 +45,7 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             ]
             res = subprocess.run(
                 cmd_hybrid, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
+                encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
             )
             return res.returncode == 0
         except Exception as exc:
@@ -88,7 +89,7 @@ def convert_ts_to_mp4(
 
             pref_codec = load_config().get("preferred_codec", "h264").lower()
             encoder = get_encoder(pref_codec)
-            cmd = [FFMPEG_PATH, "-y", "-i", input_path, "-c:v", encoder]
+            cmd = [FFMPEG_PATH, "-loglevel", "error", "-y", "-i", input_path, "-c:v", encoder]
 
             if "libx264" in encoder or "libx265" in encoder:
                 cmd.extend(["-preset", "veryfast", "-crf", "18"])
@@ -108,7 +109,7 @@ def convert_ts_to_mp4(
             ])
             res = subprocess.run(
                 cmd, capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
+                encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
             )
             if res.returncode != 0:
                 return None

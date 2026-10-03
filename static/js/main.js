@@ -9,6 +9,7 @@ import { startQueuePolling } from './manage_service.js';
 import { fetchConfig, fetchVideos, apiAddFolder, apiRemoveFolder } from './api.js';
 import { playOnServer } from './api.js';
 import { initSecurityClient } from './security_client.js';
+import { runLibraryScan } from './scan_service.js';
 
 function syncUIFromState() {
     const typeMap = { 'all': 'TẤT CẢ', 'video': 'VIDEO', 'image': 'ẢNH' };
@@ -181,8 +182,9 @@ window.refreshLibrary = async () => {
         // Step 2: Rebalance already sorted movies across G -> H -> E
         await autoRebalanceLibrary({ silent: false });
 
-        // Step 3: Normal library scan (picks up newly moved files)
-        await fetch('/api/scan', { method: 'POST' }).catch(e => console.warn("Scan fetch failed (server restarting?):", e));
+        // Step 3: Run the library scan outside the Waitress request thread,
+        // then reload the catalog only after the background job is complete.
+        await runLibraryScan();
         state.allVideos = await fetchVideos().catch(e => {
             console.error("Fetch videos failed:", e);
             return state.allVideos;
