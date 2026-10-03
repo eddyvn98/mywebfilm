@@ -1,5 +1,5 @@
 import { playerRuntime } from './player_runtime.js';
-import { ensureSinglePlaylistUI, renderPlaylist, renderPlaylistWindow } from './player_playlist.js';
+import { ensureSinglePlaylistUI, renderPlaylist } from './player_playlist.js';
 import { loadVideoSource } from './player_video.js';
 import { openImageModal, closeImageModal } from './player_image.js';
 import { playNext, playPrev, openMediaAtIndex } from './player_navigation.js';
@@ -52,12 +52,7 @@ export function openVideoModal(idx) {
 
     loadVideoSource(v);
 
-    const playlist = document.getElementById('playlist-content');
-    if (playlist && (playlist.children.length === 0 || playlistRenderedForLength !== state.currentGridVideos.length)) {
-        renderPlaylist();
-    } else {
-        renderPlaylistWindow();
-    }
+    renderPlaylist();
 }
 
 function scheduleHistoryRecord(video) {
