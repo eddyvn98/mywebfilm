@@ -17,6 +17,23 @@ export function applyFilters(preserveScroll = false) {
     const type = state.filterType || 'all';
     const sort = state.sortOrder || 'added_newest';
 
+    if (state.allVideos?.length > 0) {
+        if (state.currentFolder !== 'all' && state.currentFolder !== 'favorites' && state.currentFolder !== 'history') {
+            const folderExists = state.allVideos.some(v => v.folder === state.currentFolder);
+            if (!folderExists) {
+                state.currentFolder = 'all';
+                saveState();
+            }
+        }
+        if (state.currentCategory !== 'all') {
+            const catExists = state.allVideos.some(v => v.categories && v.categories.includes(state.currentCategory));
+            if (!catExists) {
+                state.currentCategory = 'all';
+                saveState();
+            }
+        }
+    }
+
     let filtered = state.allVideos.filter(v => {
         let matchesSearch = true;
         if (search) {

@@ -118,3 +118,31 @@ def test_all_js_module_named_imports_resolve():
             for sym in imported_symbols:
                 assert sym in exports_by_file[target_file], f'{fname} imports "{sym}" from {target_file}, but {target_file} only exports {exports_by_file[target_file]}'
 
+
+def test_static_assets_cache_control_revalidation():
+    from webfilm import app
+    with app.test_client() as client:
+        for path in ['/static/js/main.js', '/static/css/style.css']:
+            resp = client.get(path)
+            assert resp.status_code == 200
+            cc = resp.headers.get('Cache-Control', '')
+            assert 'no-cache' in cc
+            assert 'must-revalidate' in cc
+
+
+def test_cinema_home_has_importmap_for_relative_modules():
+    import json
+    import re
+    content = read('templates/cinema_home.html')
+    match = re.search(r'<script type="importmap">\s*(\{.*?\})\s*</script>', content, re.DOTALL)
+    assert match is not None, 'cinema_home.html missing <script type="importmap">'
+    map_data = json.loads(match.group(1))
+    imports = map_data.get('imports', {})
+    assert './player.js' in imports
+    assert './gestures.js' in imports
+    assert './render_service.js' in imports
+    assert './filter_service.js' in imports
+    for k, v in imports.items():
+        assert 'v=v12_edge_compat' in v
+
+
