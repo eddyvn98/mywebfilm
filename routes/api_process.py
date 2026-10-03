@@ -2,7 +2,6 @@ from flask import Blueprint, jsonify, request
 import os
 
 import config_manager as cfg
-import ffmpeg_service as ff
 from queue_worker import media_queue
 from utils import check_path_safe
 
@@ -74,31 +73,9 @@ def process_manual_highlight():
             "msg": "Access denied",
         }), 403
 
-    video_dir = os.path.dirname(path)
-    processed_dir = os.path.join(
-        video_dir,
-        "Processed",
-    )
-    try:
-        out_path = ff.process_highlight_video(
-            path,
-            processed_dir,
-        )
-        if out_path:
-            config = cfg.load_config()
-            if processed_dir not in config["video_dirs"]:
-                config["video_dirs"].append(processed_dir)
-                cfg.save_config(config)
-            return jsonify({
-                "status": "ok",
-                "output": out_path,
-            })
-        return jsonify({
-            "status": "err",
-            "msg": "FFmpeg failed",
-        }), 500
-    except Exception as exc:
-        return jsonify({
-            "status": "err",
-            "msg": str(exc),
-        }), 500
+    media_queue.add_items([path], task_type="highlight")
+    return jsonify({
+        "status": "ok",
+        "queued": True,
+        "msg": "Highlight added to queue",
+    }), 202
