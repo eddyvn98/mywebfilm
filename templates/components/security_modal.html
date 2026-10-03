@@ -10,46 +10,35 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-
         <div class="p-5 space-y-5">
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="lockCinema()" class="h-11 rounded-xl bg-blue-600/15 border border-blue-500/20 text-blue-300 text-xs font-bold hover:bg-blue-600/25">
-                    <i class="fa-solid fa-lock mr-2"></i>Khóa ngay
-                </button>
-                <button onclick="logoutCinema()" class="h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-bold hover:bg-red-500/20">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
-                </button>
+                <button onclick="lockCinema()" class="h-11 rounded-xl bg-blue-600/15 border border-blue-500/20 text-blue-300 text-xs font-bold hover:bg-blue-600/25"><i class="fa-solid fa-lock mr-2"></i>Khóa ngay</button>
+                <button onclick="logoutCinema()" class="h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-bold hover:bg-red-500/20"><i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất</button>
             </div>
-
             <section>
                 <div class="flex items-center justify-between mb-2">
                     <div>
                         <h4 class="text-xs font-bold text-white uppercase tracking-wider">Thiết bị tin cậy</h4>
                         <p class="text-[10px] text-slate-500">Mỗi thiết bị dùng một Passkey riêng hoặc Passkey đã đồng bộ.</p>
                     </div>
-                    <button onclick="createDeviceInvite()" class="px-3 h-8 rounded-lg bg-emerald-500/10 text-emerald-300 text-[10px] font-bold hover:bg-emerald-500/20">
-                        <i class="fa-solid fa-plus mr-1"></i>Thêm thiết bị
-                    </button>
+                    <button onclick="createDeviceInvite()" class="px-3 h-8 rounded-lg bg-emerald-500/10 text-emerald-300 text-[10px] font-bold hover:bg-emerald-500/20"><i class="fa-solid fa-plus mr-1"></i>Thêm thiết bị</button>
                 </div>
                 <div id="trusted-device-list" class="space-y-2"></div>
             </section>
-
             <section id="device-invite-panel" class="hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                 <div class="flex flex-col sm:flex-row items-center gap-4">
                     <div id="device-invite-qr" class="bg-white p-2 rounded-xl shrink-0"></div>
                     <div class="w-full min-w-0">
-                        <div class="text-xs font-bold text-emerald-300 mb-1">Đăng ký thiết bị mới</div>
+                        <div class="text-xs font-bold text-emerald-300 mb-1">Thêm thiết bị khác bằng QR</div>
+                        <div class="text-[10px] text-slate-400 mb-2">Mở camera trên thiết bị mới để quét mã này. Thiết bị đang dùng không cần đăng ký lại.</div>
                         <div id="device-invite-ttl" class="text-[10px] text-slate-500 mb-2"></div>
                         <input id="device-invite-url" readonly class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-slate-400 truncate">
-                        <button onclick="copyDeviceInvite()" class="mt-2 w-full h-9 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white">
-                            <i class="fa-solid fa-copy mr-1"></i>Copy link
-                        </button>
+                        <button onclick="copyDeviceInvite()" class="mt-2 w-full h-9 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white"><i class="fa-solid fa-copy mr-1"></i>Copy link</button>
                     </div>
                 </div>
             </section>
-
             <div class="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[10px] leading-5 text-slate-500">
-                Thiết bị mất hoặc không còn dùng nên được thu hồi tại đây. Thiết bị hiện tại không thể tự thu hồi để tránh tự khóa tài khoản.
+                Thiết bị mất hoặc không còn dùng nên được thu hồi tại đây. Nếu Passkey đã đồng bộ sang thiết bị mới, chỉ cần đăng nhập bằng Passkey đó — không cần thêm lại.
             </div>
         </div>
     </div>
