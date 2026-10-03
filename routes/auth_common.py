@@ -21,7 +21,11 @@ IDLE_LOCK_SECONDS = max(
 )
 REMEMBER_SESSION_SECONDS = 7 * 24 * 60 * 60
 SHORT_SESSION_SECONDS = 12 * 60 * 60
-from .auth_request import is_direct_local_request, rate_limited as _rate_limited
+from .auth_request import (
+    _is_loopback_peer,
+    is_direct_local_request,
+    rate_limited as _rate_limited,
+)
 
 def _bootstrap_token():
     return (
