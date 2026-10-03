@@ -3,6 +3,7 @@ import os
 import json
 import shutil
 from constants import FFPROBE_PATH, FFMPEG_PATH
+from ffmpeg_runtime import ffmpeg_subprocess_kwargs
 
 def get_ffmpeg_path():
     return FFMPEG_PATH
@@ -71,7 +72,7 @@ def inject_metadata(file_path, metadata):
     
     try:
         print(f"Injecting metadata into: {file_path}")
-        subprocess.run(cmd, check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True, **ffmpeg_subprocess_kwargs())
         
         # Kiểm tra file tạm có hợp lệ không trước khi ghi đè
         if os.path.getsize(temp_file) > 0:
@@ -94,7 +95,15 @@ def read_metadata(file_path):
         FFPROBE_PATH, "-v", "quiet", "-print_format", "json", "-show_format", file_path
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore', check=True)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='ignore',
+            check=True,
+            **ffmpeg_subprocess_kwargs(),
+        )
         data = json.loads(result.stdout)
         tags = data.get('format', {}).get('tags', {})
         

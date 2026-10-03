@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from constants import FFMPEG_PATH
-from ffmpeg_runtime import FFMPEG_LONG_TIMEOUT
+from ffmpeg_runtime import FFMPEG_LONG_TIMEOUT, ffmpeg_subprocess_kwargs
 
 
 def remux_ts_to_mp4(input_path, output_path, semaphore):
@@ -22,6 +22,7 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             res = subprocess.run(
                 cmd, capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
+                **ffmpeg_subprocess_kwargs(),
             )
             if res.returncode == 0:
                 return True
@@ -30,6 +31,7 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             res = subprocess.run(
                 cmd_no_bsf, capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
+                **ffmpeg_subprocess_kwargs(),
             )
             if res.returncode == 0:
                 return True
@@ -46,6 +48,7 @@ def remux_ts_to_mp4(input_path, output_path, semaphore):
             res = subprocess.run(
                 cmd_hybrid, capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
+                **ffmpeg_subprocess_kwargs(),
             )
             return res.returncode == 0
         except Exception as exc:
@@ -110,6 +113,7 @@ def convert_ts_to_mp4(
             res = subprocess.run(
                 cmd, capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=FFMPEG_LONG_TIMEOUT,
+                **ffmpeg_subprocess_kwargs(),
             )
             if res.returncode != 0:
                 return None
