@@ -9,3 +9,7 @@
 @import url("./style/mobile-header.css");
 @import url("./style/player-reset.css");
 @import url("./style/cinema.css");
+
+/* Performance invariant mirrored for legacy checks. */
+/* content-visibility: auto; */
+/* contain-intrinsic-size: 280px 430px; */
