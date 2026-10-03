@@ -384,5 +384,8 @@ const initBlur = () => {
     }
 };
 
+window.playExternal = (path, type = 'video') => playOnServer(path, type);
+
 // Initial load
 init().then(initBlur);
+

@@ -6,6 +6,20 @@ import { playerRuntime } from './player_runtime.js';
 const PLAYLIST_WINDOW_RADIUS = 40;
 let playlistRenderedForLength = -1;
 
+function formatDuration(sec) {
+    if (!sec || sec <= 0) return '00:00';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function formatSize(bytes) {
+    if (!bytes || bytes <= 0) return '0 MB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
 export function ensureSinglePlaylistUI() {
     const modal = document.getElementById('video-modal');
     if (!modal) return;
