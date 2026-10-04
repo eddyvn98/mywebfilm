@@ -42,9 +42,11 @@ def run_startup_checks(config=None, data_dir=None):
     existing_roots = sum(1 for path in roots if os.path.isdir(path))
     missing_roots = len(roots) - existing_roots
 
+    javinizer_command = os.environ.get("CINEMA_JAVINIZER_BIN", "javinizer")
     checks = {
         "ffmpeg": _command_available(FFMPEG_PATH),
         "ffprobe": _command_available(FFPROBE_PATH),
+        "javinizer": _command_available(javinizer_command),
         "data_dir_writable": _check_data_dir(data_dir),
         "sqlite": _check_sqlite(),
         "media_roots_configured": len(roots),
