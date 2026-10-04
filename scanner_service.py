@@ -349,6 +349,17 @@ def scan_videos(video_dirs):
             processed_paths.add(path) # Mark as kept
     
     save_scanned_cache(items)
+
+    # Queue real metadata lookup for every coded video. The worker deduplicates
+    # jobs in SQLite, so a full library scan is safe to run repeatedly.
+    try:
+        from metadata_worker import enqueue_catalog_items
+        queued = enqueue_catalog_items(items)
+        if queued:
+            safe_print(f"Đã xếp hàng {queued} phim có code để lấy metadata.")
+    except Exception as exc:
+        safe_print(f"Không thể xếp hàng metadata: {exc}")
+
     safe_print(f"Quét hoàn tất! Tổng cộng: {len(items)} items ({len(reachable_roots)} online, {len(unreachable_roots)} offline roots)")
     return items
 
