@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from datetime import datetime, timezone
@@ -20,6 +21,12 @@ from metadata_job_store import (
 from nfo_service import save_nfo
 
 logger = logging.getLogger(__name__)
+
+WINDOWS_CREATE_NO_WINDOW = (
+    subprocess.CREATE_NO_WINDOW
+    if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW")
+    else 0
+)
 
 JAVINIZER_BIN = os.environ.get("CINEMA_JAVINIZER_BIN", "javinizer")
 JAVINIZER_CONFIG = os.environ.get("CINEMA_JAVINIZER_CONFIG", "").strip()
@@ -112,6 +119,10 @@ def fetch_from_javinizer(code):
     executable = JAVINIZER_BIN
     if not (os.path.isabs(executable) or os.path.dirname(executable)):
         executable = shutil.which(executable)
+        if not executable and os.name == "nt":
+            candidate = os.path.expandvars(r"%LOCALAPPDATA%\javinizer\bin\javinizer.exe")
+            if os.path.isfile(candidate):
+                executable = candidate
     elif not os.path.isfile(executable):
         executable = None
     if not executable:
@@ -119,13 +130,21 @@ def fetch_from_javinizer(code):
 
     command = _javinizer_command(code)
     command[0] = executable
+    run_kwargs = {
+        "capture_output": True,
+        "text": True,
+        "encoding": "utf-8",
+        "errors": "replace",
+        "timeout": JAVINIZER_TIMEOUT_SECONDS,
+        "check": False,
+    }
+    if WINDOWS_CREATE_NO_WINDOW:
+        run_kwargs["creationflags"] = WINDOWS_CREATE_NO_WINDOW
+
     try:
         proc = subprocess.run(
             command,
-            capture_output=True,
-            text=True,
-            timeout=JAVINIZER_TIMEOUT_SECONDS,
-            check=False,
+            **run_kwargs,
         )
     except subprocess.TimeoutExpired:
         return None, "unavailable", "Javinizer scrape timed out"

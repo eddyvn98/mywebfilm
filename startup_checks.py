@@ -13,7 +13,11 @@ DEFAULT_DATA_DIR = os.environ.get("CINEMA_DATA_DIR", os.path.join(BASE_DIR, "dat
 def _command_available(command):
     if os.path.isabs(command) or os.path.dirname(command):
         return os.path.isfile(command)
-    return shutil.which(command) is not None
+    found = shutil.which(command)
+    if not found and os.name == "nt" and command == "javinizer":
+        candidate = os.path.expandvars(r"%LOCALAPPDATA%\javinizer\bin\javinizer.exe")
+        return os.path.isfile(candidate)
+    return found is not None
 
 
 def _check_data_dir(data_dir):
