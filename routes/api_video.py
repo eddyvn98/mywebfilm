@@ -68,8 +68,6 @@ def _compact_catalog_item(item):
                 "source_runtime",
                 "poster_url",
                 "cover_url",
-                "source",
-                "source_url",
                 "metadata_status",
                 "metadata_fetched_at",
             )
