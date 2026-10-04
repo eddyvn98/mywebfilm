@@ -40,7 +40,23 @@ def enqueue_metadata_job(path, code):
             )
             return cur.lastrowid
     except sqlite3.IntegrityError:
-        return None
+        # A completed job may need to run again after the catalog/cache was
+        # deliberately cleared. Keep not_found jobs terminal so the periodic
+        # monitor does not hammer sources for codes that genuinely do not exist.
+        with runtime_db.db_session() as conn:
+            cur = conn.execute(
+                """
+                UPDATE metadata_jobs
+                SET status = 'pending',
+                    attempts = 0,
+                    next_retry_at = 0,
+                    error = '',
+                    updated_at = ?
+                WHERE path = ? AND code = ? AND status = 'completed'
+                """,
+                (runtime_db.utc_now(), path, code),
+            )
+            return -1 if cur.rowcount else None
 
 
 def claim_next_metadata_job():
