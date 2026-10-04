@@ -21,6 +21,8 @@ function syncUIFromState() {
         'name_desc': 'TÊN Z-A',
         'duration_desc': 'DÀI NHẤT',
         'duration_asc': 'NGẮN NHẤT',
+        'release_desc': 'PHÁT HÀNH MỚI',
+        'metadata_desc': 'METADATA MỚI',
         'size_desc': 'DUNG LƯỢNG LỚN',
         'size_asc': 'DUNG LƯỢNG NHỎ'
     };

@@ -62,6 +62,14 @@ def _compact_catalog_item(item):
                 "studio",
                 "actors",
                 "genres",
+                "series",
+                "label",
+                "release_date",
+                "source_runtime",
+                "poster_url",
+                "cover_url",
+                "metadata_status",
+                "metadata_fetched_at",
             )
             if meta.get(key) not in (None, "", [], {})
         }

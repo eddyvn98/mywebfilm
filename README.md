@@ -21,6 +21,10 @@ Open `http://localhost:5000`.
 
 Normal execution uses Waitress instead of Flask's development server. Optional runtime settings: `CINEMA_HOST` (default `127.0.0.1`), `CINEMA_PORT` (default `5000`), and `CINEMA_THREADS` (default `8`). For a Cloudflare Tunnel on the same Windows 11 PC, keep the app bound to `127.0.0.1`.
 
+## Automatic metadata
+
+Coded video filenames are enriched automatically by a persistent metadata worker. The primary lookup uses Javinizer Go with the free `r18dev` scraper; verified results are stored in the local catalog with source provenance and written to NFO sidecars. See `docs/METADATA_DEPLOY.md` for the pre-deployment checklist.
+
 ## Runtime data
 
 Runtime authentication state and generated secrets live under `data/` by default and must not be committed. Set `CINEMA_DATA_DIR` to move that directory. The media catalog, history, favorites, media-job state, migration markers, and destructive-operation journal entries are stored in `data/cinema_state.db` (SQLite/WAL).
