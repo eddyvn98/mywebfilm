@@ -38,11 +38,16 @@ export function applyFilters(preserveScroll = false) {
         let matchesSearch = true;
         if (search) {
             const meta = v.jav_metadata || {};
-            const matchesName = v.name.toLowerCase().includes(search);
+            const matchesName = (v.name || '').toLowerCase().includes(search);
             const matchesCats = (v.categories || []).some(c => c.toLowerCase().includes(search));
             const matchesMetaTitle = (meta.title || '').toLowerCase().includes(search);
             const matchesMetaCode = (meta.code || '').toLowerCase().includes(search);
-            matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode;
+            const matchesStudio = (meta.studio || '').toLowerCase().includes(search);
+            const matchesSeries = (meta.series || '').toLowerCase().includes(search);
+            const matchesActors = (meta.actors || []).some(a => String(a).toLowerCase().includes(search));
+            const matchesGenres = (meta.genres || []).some(g => String(g).toLowerCase().includes(search));
+            matchesSearch = matchesName || matchesCats || matchesMetaTitle || matchesMetaCode ||
+                matchesStudio || matchesSeries || matchesActors || matchesGenres;
         }
 
         // Favorites / History override
@@ -74,6 +79,10 @@ export function applyFilters(preserveScroll = false) {
     else if (sort === 'duration_asc') filtered.sort((a, b) => (a.duration || 0) - (b.duration || 0));
     else if (sort === 'size_desc') filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
     else if (sort === 'size_asc') filtered.sort((a, b) => (a.size || 0) - (b.size || 0));
+    else if (sort === 'release_desc') filtered.sort((a, b) =>
+        String(b.jav_metadata?.release_date || '').localeCompare(String(a.jav_metadata?.release_date || '')));
+    else if (sort === 'metadata_desc') filtered.sort((a, b) =>
+        String(b.jav_metadata?.metadata_fetched_at || '').localeCompare(String(a.jav_metadata?.metadata_fetched_at || '')));
     else filtered.sort((a, b) => b.date_added - a.date_added);
 
     // If preserveScroll is true, we don't want to reset to page 1
