@@ -97,6 +97,25 @@ def ensure_schema():
                 ON media_jobs(path, task_type)
                 WHERE status IN ('pending', 'processing');
 
+                CREATE TABLE IF NOT EXISTS metadata_jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    path TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    next_retry_at REAL NOT NULL DEFAULT 0,
+                    error TEXT,
+                    source TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_metadata_jobs_identity
+                ON metadata_jobs(path, code);
+
+                CREATE INDEX IF NOT EXISTS idx_metadata_jobs_ready
+                ON metadata_jobs(status, next_retry_at, id);
+
                 CREATE TABLE IF NOT EXISTS operation_journal (
                     id TEXT PRIMARY KEY,
                     op_type TEXT NOT NULL,
