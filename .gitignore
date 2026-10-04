@@ -32,6 +32,7 @@ rebalance_status.json
 
 # Runtime state / secrets
 data/
+configs/
 credentials.json
 history_cache.json
 favorites_cache.json
