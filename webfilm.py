@@ -1,6 +1,12 @@
 """Cinema web application entry point."""
 import logging
 import os
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from app_factory import app, public_url
 from web_security import _stream_activity_last, _touch_stream_activity, runtime_db

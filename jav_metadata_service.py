@@ -1,10 +1,13 @@
-import os
-import re
 import json
-import requests
-import time
+import logging
+import os
 import random
+import re
+import time
 from bs4 import BeautifulSoup
+import requests
+
+logger = logging.getLogger(__name__)
 
 # Persistent cache for metadata
 CACHE_FILE = 'jav_metadata_cache.json'
@@ -62,10 +65,10 @@ def fetch_jav_metadata(code):
         if time.time() - cached.get('timestamp', 0) < 86400:
             return None
 
-    print(f"Tra cứu JAV metadata cho mã: {code_upper}")
+    logger.info("Looking up JAV metadata for code: %s", code_upper)
     metadata = fetch_from_javlibrary(code_upper)
     if not metadata:
-        print(f"JAVLibrary thất bại, thử JAVBus cho {code_upper}...")
+        logger.info("JAVLibrary failed, trying JAVBus for %s", code_upper)
         metadata = fetch_from_javbus(code_upper)
         
     if metadata:
@@ -108,7 +111,7 @@ def fetch_from_javlibrary(code_upper):
         
         return metadata if metadata['actors'] or metadata['studio'] else None
     except Exception as e:
-        print(f"Lỗi JAVLibrary: {e}")
+        logger.warning("JAVLibrary scrape error for %s: %s", code_upper, e)
     return None
 
 def fetch_from_javbus(code_upper):
@@ -147,7 +150,7 @@ def fetch_from_javbus(code_upper):
                 
         return metadata if metadata['actors'] or metadata['studio'] else None
     except Exception as e:
-        print(f"Lỗi JAVBus: {e}")
+        logger.warning("JAVBus scrape error for %s: %s", code_upper, e)
     return None
 
 def fetch_and_cache_actor_avatar(actor_obj):
