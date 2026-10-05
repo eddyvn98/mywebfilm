@@ -3,6 +3,7 @@ import { renderGrid } from './render_service.js';
 import { favoritesService } from './favorites_service.js';
 import { historyService } from './history_service.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
+import { buildSmartMix } from './smart_mix_service.js';
 // closeDiscovery is used from window.closeDiscovery to avoid circular imports
 let categorySource = null;
 
@@ -15,7 +16,7 @@ export function applyFilters(preserveScroll = false) {
     const currentScroll = preserveScroll ? (grid?.scrollTop || 0) : 0;
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const type = state.filterType || 'all';
-    const sort = state.sortOrder || 'added_newest';
+    const sort = state.sortOrder || 'smart_mix';
 
     if (state.allVideos?.length > 0) {
         if (state.currentFolder !== 'all' && state.currentFolder !== 'favorites' && state.currentFolder !== 'history') {
@@ -71,7 +72,13 @@ export function applyFilters(preserveScroll = false) {
         return matchesSearch && matchesFolder && matchesType && matchesExt && matchesCategory;
     });
 
-    if (sort === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'smart_mix') {
+        filtered = buildSmartMix(filtered, {
+            favoritePaths: favoritesService.favoritePaths,
+            historyPaths: historyService.getHistoryPaths() || [],
+        });
+    }
+    else if (sort === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === 'name_desc') filtered.sort((a, b) => b.name.localeCompare(a.name));
     else if (sort === 'views_desc') filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
     else if (sort === 'newest') filtered.sort((a, b) => b.mtime - a.mtime);
