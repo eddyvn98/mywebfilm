@@ -209,16 +209,24 @@
 
     #video-modal .plyr__control,
     #video-modal .plyr__menu .plyr__control {
-        width: 40px !important;
-        min-width: 40px !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        padding: 10px !important;
+        width: 44px !important;
+        min-width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        padding: 11px !important;
     }
 
     #video-modal .plyr__time {
-        height: 40px !important;
+        height: 44px !important;
         font-size: 11px !important;
+    }
+
+    #video-modal .player-close,
+    #video-modal #player-btn-favorite {
+        width: 44px !important;
+        min-width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
     }
 
     #video-modal .plyr__time--duration {
@@ -245,21 +253,18 @@
 }
 
 @media (max-width: 390px) {
+    /* Keep touch targets at 44px; reclaim space by hiding a secondary action. */
     #video-modal #plyr-btn-rotate {
         display: none !important;
     }
 
-    #video-modal .plyr__control,
-    #video-modal .plyr__menu .plyr__control {
-        width: 38px !important;
-        min-width: 38px !important;
-        height: 38px !important;
-        min-height: 38px !important;
-        padding: 9px !important;
+    #video-modal .plyr__time {
+        font-size: 10px !important;
+        margin-left: 2px !important;
     }
 
-    #video-modal .plyr__time {
-        height: 38px !important;
-        font-size: 10px !important;
+    #video-modal .plyr__controls {
+        padding-left: 2px !important;
+        padding-right: 2px !important;
     }
 }
