@@ -133,7 +133,10 @@ function buildGroups(videos, signalPreference) {
 function scoreVideo(video, itemPreference, groupKey) {
     const preference = itemPreference.get(video.full_path) || 0;
     const release = String(video.jav_metadata?.release_date || '');
-    const freshness = release ? Math.min(1, Math.max(0, Number(release.slice(0, 4)) - 2015) / 12) : 0;
+    const releaseYear = Number.parseInt(release.slice(0, 4), 10);
+    const freshness = Number.isFinite(releaseYear)
+        ? Math.min(1, Math.max(0, releaseYear - 2015) / 12)
+        : 0;
     return (
         preference * 2.8
         + freshness * 0.7
