@@ -88,13 +88,111 @@ def _can_reuse_cached_item(old_meta, stat_result, nfo_path):
 
 
 
+EXCLUDED_DIR_NAMES = {
+    "node_modules",
+    "$recycle.bin",
+    "system volume information",
+    "__pycache__",
+    "appdata",
+    "windows",
+    "program files",
+    "program files (x86)",
+    "build",
+    "dist",
+    "bin",
+    "obj",
+    "temp",
+    "tmp",
+}
+
+EXCLUDED_IMAGE_BASENAMES = {
+    "poster",
+    "cover",
+    "fanart",
+    "folder",
+    "thumb",
+    "banner",
+    "logo",
+    "clearart",
+    "disc",
+}
+
+
+def is_valid_ts_video(fp, size=None):
+    """Verify that a .ts file is a real MPEG Transport Stream video, not TypeScript code."""
+    if fp.lower().endswith(".d.ts"):
+        return False
+    try:
+        sz = size if size is not None else os.path.getsize(fp)
+        if sz < 100 * 1024:
+            return False
+        with open(fp, "rb") as f:
+            magic = f.read(1)
+            return magic == b"\x47"
+    except OSError:
+        return False
+
+
+def is_corrupted_empty_video(fp, size):
+    """Detect empty MP4 stub files (e.g. 48-byte or 261-byte files with 0 media data)."""
+    if size > 2048:
+        return False
+    try:
+        with open(fp, "rb") as f:
+            header = f.read(512)
+            if b"ftypisom" in header and (b"\x00\x00\x00\x00mdat" in header or b"\x00\x00\x00\x08mdat" in header):
+                return True
+    except OSError:
+        pass
+    return False
+
+
+def is_valid_media_file(fp, name, is_video):
+    """Filter out non-media, code files, corrupted stubs, and icons."""
+    lower_name = name.lower()
+    if is_video:
+        if lower_name.endswith(".d.ts"):
+            return False
+        if os.path.exists(fp):
+            try:
+                sz = os.path.getsize(fp)
+                if is_corrupted_empty_video(fp, sz):
+                    return False
+                if lower_name.endswith(".ts") and not is_valid_ts_video(fp, sz):
+                    return False
+            except OSError:
+                pass
+    else:
+        if lower_name.endswith(".9.png"):
+            return False
+        base, _ = os.path.splitext(lower_name)
+        if base in EXCLUDED_IMAGE_BASENAMES:
+            return False
+        if os.path.exists(fp):
+            try:
+                sz = os.path.getsize(fp)
+                if sz < 30 * 1024:
+                    return False
+            except OSError:
+                pass
+    return True
+
+
 def _iter_media_files(roots):
     for bdir in roots:
         for root, dirs, files in os.walk(bdir):
-            dirs[:] = [d for d in dirs if d != ".mycinema"]
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".") and d.lower() not in EXCLUDED_DIR_NAMES
+            ]
             for name in files:
                 lower_name = name.lower()
-                if lower_name.endswith(VIDEO_EXTS) or lower_name.endswith(IMAGE_EXTS):
+                is_video = lower_name.endswith(VIDEO_EXTS)
+                is_image = lower_name.endswith(IMAGE_EXTS)
+                if not (is_video or is_image):
+                    continue
+                fp = os.path.join(root, name)
+                if is_valid_media_file(fp, name, is_video):
                     yield root, name
 
 
@@ -169,6 +267,8 @@ def scan_videos(video_dirs):
         is_video = lower_f.endswith(VIDEO_EXTS)
         try:
             st = os.stat(fp)
+            if is_video and is_corrupted_empty_video(fp, st.st_size):
+                continue
             nfo_path = os.path.splitext(fp)[0] + '.nfo'
             direct_old_meta = meta_map.get(fp)
             if _can_reuse_cached_item(direct_old_meta, st, nfo_path):
