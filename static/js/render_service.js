@@ -122,13 +122,20 @@ export function renderGrid(videos, append = false, resetPage = true) {
         </article>`;
     }).join('');
 
+    const isSmartMix = state.sortOrder === 'smart_mix' && state.currentFolder === 'all';
     const heading = append ? '' : `
         <div class="cinema-grid-heading col-span-full">
             <div>
-                <p class="cinema-grid-kicker">THƯ VIỆN CÁ NHÂN</p>
-                <h2>Phim của bạn</h2>
+                <p class="cinema-grid-kicker">${isSmartMix ? 'SMART MIX · METADATA' : 'THƯ VIỆN CÁ NHÂN'}</p>
+                <h2>${isSmartMix ? 'Gợi ý cho bạn' : 'Phim của bạn'}</h2>
             </div>
-            <div class="cinema-grid-count">${videos.length.toLocaleString('vi-VN')} mục</div>
+            <div class="flex items-center gap-2">
+                ${isSmartMix ? `
+                <button onclick="filterByFolder('all')" class="cinema-grid-count hover:text-white hover:border-blue-400/40 transition" title="Đổi nhóm gợi ý">
+                    <i class="fa-solid fa-shuffle mr-1"></i>Đổi gợi ý
+                </button>` : ''}
+                <div class="cinema-grid-count">${videos.length.toLocaleString('vi-VN')} mục</div>
+            </div>
         </div>`;
 
     if (append) grid.insertAdjacentHTML('beforeend', cards);
