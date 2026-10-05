@@ -10,10 +10,12 @@ import { fetchConfig, fetchVideos, apiAddFolder, apiRemoveFolder } from './api.j
 import { playOnServer } from './api.js';
 import { initSecurityClient } from './security_client.js';
 import { runLibraryScan } from './scan_service.js';
+import { beginSmartMixVisit } from './smart_mix_service.js';
 
 function syncUIFromState() {
     const typeMap = { 'all': 'TẤT CẢ', 'video': 'VIDEO', 'image': 'ẢNH' };
     const sortMap = {
+        'smart_mix': 'GỢI Ý',
         'added_newest': 'MỚI CẬP NHẬT',
         'newest': 'FILE MỚI NHẤT',
         'views_desc': 'XEM NHIỀU',
@@ -33,7 +35,7 @@ function syncUIFromState() {
 
     if (typeLabel) typeLabel.innerText = typeMap[state.filterType] || 'TẤT CẢ';
     if (categoryLabel) categoryLabel.innerText = state.currentCategory === 'all' ? 'THỂ LOẠI' : state.currentCategory.toUpperCase();
-    if (sortLabel) sortLabel.innerText = sortMap[state.sortOrder] || 'MỚI CẬP NHẬT';
+    if (sortLabel) sortLabel.innerText = sortMap[state.sortOrder] || 'GỢI Ý';
 }
 
 function uniquePaths(paths) {
@@ -54,6 +56,7 @@ async function loadLibrary() {
         const [videos] = await Promise.all([
             fetchVideos(),
             favoritesService.loadFavorites(),
+            historyService.loadHistoryData(),
         ]);
         console.log("fetchVideos() returned:", videos ? videos.length : 'NULL', "items");
         state.allVideos = videos;
@@ -71,6 +74,7 @@ async function loadLibrary() {
 async function init() {
     try {
         console.log("Initializing App...");
+        beginSmartMixVisit();
         const config = await fetchConfig();
         console.log("Config loaded:", config);
 
