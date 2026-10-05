@@ -142,6 +142,7 @@ def test_cinema_home_has_importmap_for_relative_modules():
     assert './gestures.js' in imports
     assert './render_service.js' in imports
     assert './filter_service.js' in imports
+    assert './smart_mix_service.js' in imports
     for k, v in imports.items():
         assert '?v=' in v
 
@@ -163,3 +164,23 @@ def test_main_exposes_play_external():
 
 
 
+
+
+def test_smart_mix_home_contract():
+    smart_mix = read('static/js/smart_mix_service.js')
+    filter_service = read('static/js/filter_service.js')
+    state = read('static/js/state.js')
+    main = read('static/js/main.js')
+    menu = read('templates/components/mobile_menus.html')
+
+    assert 'export function buildSmartMix(' in smart_mix
+    assert 'export function getMetadataSignals(' in smart_mix
+    assert 'beginSmartMixVisit' in smart_mix
+    for signal in ['actor', 'genre', 'series', 'studio', 'label']:
+        assert signal in smart_mix
+
+    assert "buildSmartMix(filtered" in filter_service
+    assert "sort === 'smart_mix'" in filter_service
+    assert "sortOrder: 'smart_mix'" in state
+    assert 'historyService.loadHistoryData()' in main
+    assert "selectSort('smart_mix', 'GỢI Ý')" in menu

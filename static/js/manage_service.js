@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { deleteFile, apiRename, openExplorer } from './api.js';
 import { applyFilters } from './filter_service.js';
 import { escapeAttr } from './security.js';
+import { advanceSmartMixVisit } from './smart_mix_service.js';
 
 // Import from sub-services
 import * as selection from './selection_service.js';
@@ -35,7 +36,14 @@ export async function confirmRename() {
 }
 
 // Misc UI helpers
-export function filterByFolder(folder) { state.currentFolder = folder; window.renderFolders(); applyFilters(); }
+export function filterByFolder(folder) {
+    if (folder === 'all' && state.sortOrder === 'smart_mix') {
+        advanceSmartMixVisit();
+    }
+    state.currentFolder = folder;
+    window.renderFolders();
+    applyFilters();
+}
 
 const previewTimers = new WeakMap();
 let activePreviewCard = null;

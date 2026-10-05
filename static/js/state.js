@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'mycinema_ui_state';
+const SMART_MIX_MIGRATION_KEY = 'mycinema_smart_mix_default_v1';
 
 const defaultState = {
     allVideos: [],
@@ -7,7 +8,7 @@ const defaultState = {
     player: null,
     currentFolder: 'all',
     filterType: 'all',
-    sortOrder: 'added_newest',
+    sortOrder: 'smart_mix',
     manageMode: false,
     selectedPaths: [],
     renamingIndex: null,
@@ -24,18 +25,24 @@ function loadStoredState() {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
+            let sortOrder = parsed.sortOrder || 'smart_mix';
+            if (!localStorage.getItem(SMART_MIX_MIGRATION_KEY)) {
+                if (sortOrder === 'added_newest') sortOrder = 'smart_mix';
+                localStorage.setItem(SMART_MIX_MIGRATION_KEY, '1');
+            }
             // Only merge specific persistent fields
             return {
                 ...defaultState,
                 currentFolder: parsed.currentFolder || 'all',
                 filterType: parsed.filterType || 'all',
-                sortOrder: parsed.sortOrder || 'added_newest',
+                sortOrder,
                 scrollPos: parsed.scrollPos || 0
             };
         }
     } catch (e) {
         console.error("Failed to load state:", e);
     }
+    localStorage.setItem(SMART_MIX_MIGRATION_KEY, '1');
     return { ...defaultState };
 }
 
