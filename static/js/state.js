@@ -26,8 +26,8 @@ function loadStoredState() {
         if (stored) {
             const parsed = JSON.parse(stored);
             let sortOrder = parsed.sortOrder || 'smart_mix';
-            if (!localStorage.getItem(SMART_MIX_MIGRATION_KEY) && sortOrder === 'added_newest') {
-                sortOrder = 'smart_mix';
+            if (!localStorage.getItem(SMART_MIX_MIGRATION_KEY)) {
+                if (sortOrder === 'added_newest') sortOrder = 'smart_mix';
                 localStorage.setItem(SMART_MIX_MIGRATION_KEY, '1');
             }
             // Only merge specific persistent fields
