@@ -44,9 +44,8 @@ function ensurePlayer(video) {
 
     state.player = new Plyr(video, {
         controls: [
-            'play-large', 'restart', 'rewind', 'play', 'fast-forward', 'progress',
-            'current-time', 'duration', 'mute', 'volume', 'captions', 'settings',
-            'pip', 'airplay', 'fullscreen'
+            'play-large', 'play', 'progress', 'current-time', 'duration',
+            'mute', 'volume', 'settings', 'fullscreen'
         ],
         fullscreen: { container: '#video-modal' },
         seekTime: 10,
@@ -138,41 +137,57 @@ export function loadVideoSource(v) {
     state.player.play().catch(() => { });
 }
 
+function createCustomControl(id, iconClass, label, onClick) {
+    if (document.getElementById(id)) return null;
+    const btn = document.createElement('button');
+    btn.id = id;
+    btn.type = 'button';
+    btn.className = 'plyr__control type-custom';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+    btn.innerHTML = `<i class="${iconClass}"></i>`;
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
 function injectPlyrCustomControls() {
-    const controls = document.querySelector('.plyr__controls');
-    if (controls) {
-        // Rotation Button
-        if (!document.getElementById('plyr-btn-rotate')) {
-            const btn = document.createElement('button');
-            btn.id = 'plyr-btn-rotate';
-            btn.type = 'button';
-            btn.className = 'plyr__control type-custom';
-            btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i>';
-            btn.onclick = () => window.rotateVideo();
+    const controls = document.querySelector('#video-modal .plyr__controls');
+    if (!controls) return;
 
-            // Insert before exit fullscreen or end
-            const pBtn = controls.querySelector('#plyr-btn-playlist');
-            if (pBtn) controls.insertBefore(btn, pBtn);
-            else {
-                const fsBtn = controls.querySelector('[data-plyr="fullscreen"]');
-                if (fsBtn) controls.insertBefore(btn, fsBtn);
-                else controls.appendChild(btn);
-            }
-        }
+    const playBtn = controls.querySelector('[data-plyr="play"]');
+    const fullscreenBtn = controls.querySelector('[data-plyr="fullscreen"]');
 
-        // Playlist Button
-        if (!document.getElementById('plyr-btn-playlist')) {
-            const btn = document.createElement('button');
-            btn.id = 'plyr-btn-playlist';
-            btn.type = 'button';
-            btn.className = 'plyr__control type-custom';
-            btn.innerHTML = '<i class="fa-solid fa-list-ul"></i>';
-            btn.onclick = () => window.togglePlaylist();
+    const nextBtn = createCustomControl(
+        'plyr-btn-next',
+        'fa-solid fa-forward-step',
+        'Phim tiếp theo',
+        () => window.playNext?.()
+    );
+    if (nextBtn) {
+        if (playBtn?.nextSibling) controls.insertBefore(nextBtn, playBtn.nextSibling);
+        else controls.appendChild(nextBtn);
+    }
 
-            const fsBtn = controls.querySelector('[data-plyr="fullscreen"]');
-            if (fsBtn) controls.insertBefore(btn, fsBtn);
-            else controls.appendChild(btn);
-        }
+    const playlistBtn = createCustomControl(
+        'plyr-btn-playlist',
+        'fa-solid fa-list-ul',
+        'Danh sách phát',
+        () => window.togglePlaylist?.()
+    );
+    if (playlistBtn) {
+        if (fullscreenBtn) controls.insertBefore(playlistBtn, fullscreenBtn);
+        else controls.appendChild(playlistBtn);
+    }
+
+    const rotateBtn = createCustomControl(
+        'plyr-btn-rotate',
+        'fa-solid fa-rotate-right',
+        'Xoay video',
+        () => window.rotateVideo?.()
+    );
+    if (rotateBtn) {
+        if (fullscreenBtn) controls.insertBefore(rotateBtn, fullscreenBtn);
+        else controls.appendChild(rotateBtn);
     }
 }
 
