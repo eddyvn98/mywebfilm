@@ -82,3 +82,15 @@ The wand now opens a settings panel instead of cycling blindly.
 - HLS is an experimental progressive transcoding stream; seeking across unencoded parts of long movies is limited. Source subtitles are not yet repackaged into the transcoded HLS stream.
 - GTX 1050 Ti NVDEC may not handle every source codec/pixel format; an unsupported file can fail GPU startup instead of transcoding. The original source playback remains available.
 - The CI unit tests mock NVENC, and browser tests exercise shader rendering; they cannot prove that a physical GTX 1050 Ti sustains 24/30/60 FPS or that a specific FFmpeg Windows build supports the GPU.
+
+
+## Saved-mode auto-apply and Plyr layout fix (October 2026)
+
+- After saving a non-Off preset, every newly opened movie automatically reuses the saved processing source and settings. Server mode starts the authenticated GTX 1050 Ti HLS stream without requiring another click on Apply. Browser FSR mode continues to restore its chosen preset.
+- HLS resume uses the original movie timeline rather than resetting the saved watch position to the transcoded segment's local timestamp.
+- Switching movies, closing the modal or manually applying settings cancels pending auto-start. The backend may replace an existing GPU job for the same authenticated session, but will not steal a different user's encode session.
+- When server GPU processing fails, the original video remains playable; a warning appears, and the selected setting is retained so you can retry.
+- WebGL FSR canvas is now a child of Plyr's video wrapper (not of the full player stage), with a confined stacking context and object-fit contain. This prevents the processed picture from covering or shifting above the playback controls on mobile and desktop.
+- To receive updated code after `git pull origin main`, restart the Windows service and hard-reload Chrome/Edge with Ctrl+Shift+R. Asset version: `v20_auto_upscale_layer`.
+
+**Important:** Saved "server GPU" mode performs CUDA spatial scaling + NVENC, not a neural AI super-resolution model. FSRCNNX remains a separate host-local capability.
