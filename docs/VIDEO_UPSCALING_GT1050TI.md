@@ -120,3 +120,26 @@ The last command must exit successfully. If not, the error is usually a driver/N
 The backend logs a sanitized failure category to the browser and retains diagnostic detail only in private server logs; media paths/log data are not exposed to users. All input video stays unmodified. CI checks the FFmpeg command structure and a mocked preflight; it **cannot confirm** that your particular GTX 1050 Ti works until you run the commands locally.
 
 Deploy `main`, restart MyWebFilm, then hard-reload the page (Ctrl+Shift+R). Asset revision: `v21_cuda_probe`.
+
+
+## MacBook macOS Retina: FSR appeared enabled but GPU stayed idle
+
+The original FSR code measured the media element using CSS layout pixels. A Retina display typically draws roughly twice as many physical pixels in each direction (`window.devicePixelRatio === 2`). It also refused to run either shader pass unless the capped output resolution was strictly higher than the source, so 1080p films with an FSR cap of 1080p did **no GPU shader processing**.
+
+Fixed in `v22_retina_fsr`:
+
+- Compute the drawing-buffer resolution from the video's CSS size **times devicePixelRatio**, within the user's pixel-budget cap.
+- For true upscaling, run EASU → RCAS in WebGL2.
+- At 1:1 / capped-to-source resolution, still run WebGL2 EASU + RCAS sharpening; indicate **RCAS 1:1** on screen. This can improve perceived sharpness but does not invent missing detail.
+- Only skip if the video is *larger than the physical on-screen display*, or the selected cap is lower than the source. The settings panel now reports the specific idle reason.
+- Display actual WebGL output dimensions (physical pixels), Retina factor and processed FPS; blue/green wand shows active only after shader frames were processed.
+
+### Verify on a Mac
+
+1. After restarting the MyWebFilm server and refreshing the webpage (Cmd+Shift+R on Chrome/Edge; use reload without content blockers in Safari), open a 720p or 1080p film.
+2. Open the wand → **GPU thiết bị đang xem · FSR** → **Sắc nét** → 1440p → Apply.
+3. Go fullscreen for a larger target. The panel should report `FSR WebGL2 · <width>×<height> pixel · Retina 2.0× · <N> FPS xử lý` (values vary). With a 1080p limit and 1080p source it should show `RCAS 1:1`.
+4. Use macOS **Activity Monitor → Window → GPU History** for a supplementary activity graph. GPU % by itself is not a reliable pass/fail criterion for light video shaders. The on-player output/FPS telemetry is the direct application-level check.
+5. In case of WebGL error, open the browser developer console and search for `[Video upscaling]`. If playback at >1080p stutters, turn Auto on or select 1080p/720p.
+
+FSR is local spatial upscaling/sharpening, **not neural AI**. Even when running on a MacBook, the GTX 1050 Ti Windows server is not used for browser FSR.
