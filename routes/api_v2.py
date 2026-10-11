@@ -1,6 +1,7 @@
 from flask import Blueprint
 from .api_ai import ai_bp
 from .api_video import video_bp
+from .api_upscale import upscale_bp
 from .api_process import process_bp
 from .api_fs import fs_bp
 from .api_config import config_bp
@@ -23,6 +24,7 @@ from flask import Flask
 def register_api_v2(app: Flask):
     app.register_blueprint(ai_bp)
     app.register_blueprint(video_bp)
+    app.register_blueprint(upscale_bp)
     app.register_blueprint(process_bp)
     app.register_blueprint(fs_bp)
     app.register_blueprint(config_bp)
