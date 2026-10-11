@@ -10,6 +10,8 @@ let serverStatus = '';
 let serverSpeed = null;
 let lastStatus = '';
 let savedRestoreVersion = 0;
+let lastGpuDiagnostic = null;
+let diagnosticSerial = 0;
 
 function byId(id) { return document.getElementById(id); }
 function label(mode) {
@@ -32,9 +34,44 @@ function updateDisabled() {
     strength.disabled = source !== 'browser' || preset !== 'custom';
     byId('upscale-strength-output').textContent = strength.value + '%';
     byId('upscale-method').textContent = source === 'browser'
-        ? 'FSR 1 + RCAS dùng GPU thiết bị đang xem, không phải AI neural.'
-        : 'Server GTX 1050 Ti: CUDA + NVENC → HLS. Tối đa 1080p, không phải AI neural. Tua phim có giới hạn.';
+        ? 'FSR xử lý trên thiết bị xem, KHÔNG chạy GTX server; video đủ nét ở 1:1 sẽ bỏ qua shader.'
+        : 'Server GTX 1050 Ti: giải mã CPU → nâng độ phân giải CUDA → mã hóa NVENC/HLS. Không phải AI neural.';
+    void checkGpuReadiness();
 }
+async function checkGpuReadiness(force = false) {
+    const target = byId('upscale-gpu-readiness');
+    if (!target) return lastGpuDiagnostic;
+    if (byId('upscale-source').value !== 'server') {
+        target.hidden = true;
+        return null;
+    }
+    target.hidden = false;
+    if (!force && lastGpuDiagnostic) {
+        target.textContent = lastGpuDiagnostic.available
+            ? 'GPU server sẵn sàng · CUDA/NVENC đã thử mã hóa thành công'
+            : 'GPU không sẵn sàng: ' + lastGpuDiagnostic.reason;
+        return lastGpuDiagnostic;
+    }
+    const token = ++diagnosticSerial;
+    target.textContent = 'Đang kiểm tra CUDA/NVENC thật trên server...';
+    try {
+        const response = await fetch('/api/upscale/capabilities', { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        if (token !== diagnosticSerial) return data;
+        lastGpuDiagnostic = data;
+        target.textContent = data.available
+            ? 'GPU server sẵn sàng · CUDA/NVENC đã thử mã hóa thành công'
+            : 'GPU không sẵn sàng: ' + (data.reason || 'Không xác định');
+        return data;
+    } catch (error) {
+        if (token === diagnosticSerial) {
+            target.textContent = 'Không kiểm tra được GPU server: ' + error.message;
+        }
+        return null;
+    }
+}
+
 function showError(message) {
     const el = byId('upscale-panel-error');
     el.textContent = message;
@@ -43,19 +80,23 @@ function showError(message) {
 function drawState(stateValue) {
     const p = getUpscalePrefs();
     if (wand) {
-        wand.dataset.upscaleMode = p.source === 'server' && getServerStreamState().active
-            ? 'server' : stateValue.mode;
+        wand.dataset.upscaleMode = p.source === 'server'
+            ? (getServerStreamState().active ? 'server' : 'off') : stateValue.mode;
         wand.title = p.source === 'server' ? 'GTX server: ' + serverStatus
             : 'FSR ' + label(stateValue.mode) + ' · ' + stateValue.status;
         wand.setAttribute('aria-label', 'Cài đặt nâng nét: ' + wand.title);
-        wand.setAttribute('aria-pressed', p.preset !== 'off' ? 'true' : 'false');
+        wand.setAttribute('aria-pressed',
+            (p.source === 'server' ? getServerStreamState().active : stateValue.active)
+                ? 'true' : 'false');
     }
     const drops = Number.isFinite(stateValue.dropped) ? stateValue.dropped : 'N/A';
     const speed = serverSpeed === null ? 'Chưa có' : serverSpeed.toFixed(2) + '×';
-    const info = p.source === 'server' && getServerStreamState().active
-        ? 'Server ' + getServerStreamState().height + 'p · Mã hóa ' + speed + ' · ' + serverStatus
-        : 'FSR ' + stateValue.fps + ' FPS xử lý · Dropped frames: ' + drops
-            + ' · Giới hạn thực tế: ' + stateValue.effectiveCap + 'p · ' + stateValue.status;
+    const info = p.source === 'server'
+        ? (getServerStreamState().active
+            ? 'GPU SERVER ' + getServerStreamState().height + 'p · NVENC ' + speed + ' · ' + serverStatus
+            : 'GPU SERVER CHƯA HOẠT ĐỘNG · ' + (serverStatus || 'Kiểm tra CUDA/NVENC'))
+        : 'FSR TRÌNH DUYỆT ' + stateValue.fps + ' FPS xử lý · Dropped frames: ' + drops
+            + ' · ' + stateValue.status;
     byId('upscale-metrics').textContent = info;
     if (lastStatus !== stateValue.status && lastStatus) {
         const notice = byId('player-upscale-notice');
@@ -97,6 +138,10 @@ async function apply() {
         const resumePosition = Number(state.player.currentTime) || 0;
         const originalTime = wasServer ? previousServer.startAt + resumePosition : resumePosition;
         if (settings.source === 'server' && settings.preset !== 'off') {
+            const available = await checkGpuReadiness(true);
+            if (available && !available.available) {
+                throw new Error(available.reason || 'GPU server chưa sẵn sàng');
+            }
             const resume = originalTime;
             teardownUpscale();
             await startServerStream(movie.full_path, { ...settings, startAt: resume }, video);
@@ -107,8 +152,9 @@ async function apply() {
         }
         hideUpscalePanel();
     } catch (error) {
-        showError(error.message || 'Không thể bật GPU nâng nét');
-        if (!getServerStreamState().active) restoreOriginal();
+        serverStatus = error.message || 'Không thể bật GPU nâng nét';
+        showError(serverStatus);
+        if (!getServerStreamState().active) restoreOriginal(originalTime);
     } finally {
         applyButton.disabled = false;
         drawState(getUpscaleState());
@@ -137,11 +183,11 @@ export async function restoreSavedUpscale(path, video, startAt = 0) {
     } catch (error) {
         if (version !== savedRestoreVersion) return;
         // The original stream is still playable and must remain visible on failure.
-        serverStatus = 'Không thể tự bật xử lý server';
-        showError('Tự nâng nét: ' + (error.message || 'Không thể tạo luồng GPU'));
+        serverStatus = 'Không thể tự bật xử lý server: ' + (error.message || 'GPU không sẵn sàng');
+        showError(serverStatus);
         const notice = byId('player-upscale-notice');
         if (notice) {
-            notice.textContent = 'Không thể xử lý trên server. Đang sử dụng phim gốc.';
+            notice.textContent = serverStatus + ' · Đang phát phim gốc.';
             notice.hidden = false;
             setTimeout(() => { notice.hidden = true; }, 5500);
         }

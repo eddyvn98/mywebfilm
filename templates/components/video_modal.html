@@ -29,7 +29,8 @@
             <option value="browser">GPU thiết bị đang xem · FSR</option>
             <option value="server">GTX 1050 Ti trên server · HLS</option>
         </select>
-        <p id="upscale-method" class="upscale-hint">FSR 1 là nâng nét không dùng mạng neural.</p>
+        <p id="upscale-method" class="upscale-hint">FSR dùng GPU thiết bị xem, không phải GPU máy chủ.</p>
+        <p id="upscale-gpu-readiness" class="upscale-hint" role="status" aria-live="polite" hidden></p>
         <label for="upscale-preset">Preset</label>
         <select id="upscale-preset">
             <option value="off">Tắt · Video gốc</option>

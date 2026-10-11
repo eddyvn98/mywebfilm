@@ -43,9 +43,11 @@ def test_cuda_pipeline_and_session_owner(mock_gpu):
     record = service.start("C:/Films/Movie 720p.mp4", "login-1", 1080,
                            "lanczos")
     args = mock_gpu[0]
-    assert args[args.index("-hwaccel") + 1] == "cuda"
+    assert args[args.index("-init_hw_device") + 1] == "cuda=cuda:0"
+    assert args[args.index("-filter_hw_device") + 1] == "cuda"
+    assert "format=nv12,hwupload,scale_cuda=w=-2:h=1080:interp_algo=lanczos" in args
     assert args[args.index("-c:v") + 1] == "h264_nvenc"
-    assert "scale_cuda=w=-2:h=1080:interp_algo=lanczos" in args
+    assert any("scale_cuda=w=-2:h=1080:interp_algo=lanczos" in arg for arg in args)
     assert "C:/Films/Movie 720p.mp4" in args
     assert service.get_owned(record["id"], "login-2") is None
     assert service.get_owned(record["id"], "login-1") is record
@@ -72,3 +74,50 @@ def test_limits_one_encoder_and_validates_parameters(mock_gpu):
     assert not record["directory"].exists()
     assert service.stop(record["id"], "user") is False
     assert service.stop(replacement["id"], "user")
+
+def test_cuda_real_probe_reports_driver_failure(monkeypatch):
+    class Result:
+        def __init__(self, stdout="", returncode=0, stderr=""):
+            self.stdout = stdout
+            self.returncode = returncode
+            self.stderr = stderr
+    calls = []
+    def run(args, **kwargs):
+        calls.append(args)
+        if "-encoders" in args:
+            return Result(stdout=" V..... h264_nvenc")
+        if "-filters" in args:
+            return Result(stdout=" ... scale_cuda\n... hwupload")
+        return Result(returncode=1, stderr="Cannot load nvcuda.dll")
+    monkeypatch.setenv("CINEMA_FFMPEG_PATH", "C:/gpu/ffmpeg.exe")
+    monkeypatch.setattr(service.subprocess, "run", run)
+    service.capabilities.cache_clear()
+    try:
+        info = service.capabilities()
+        assert info["available"] is False
+        assert info["code"] == "CUDA_NVENC_PROBE_FAILED"
+        assert any("-init_hw_device" in cmd for cmd in calls)
+    finally:
+        service.capabilities.cache_clear()
+
+
+def test_cuda_probe_succeeds_with_test_encode(monkeypatch):
+    class Result:
+        stdout = "h264_nvenc scale_cuda hwupload"
+        stderr = ""
+        returncode = 0
+    monkeypatch.setenv("CINEMA_FFMPEG_PATH", "C:/gpu/ffmpeg.exe")
+    monkeypatch.setattr(service.subprocess, "run", lambda *args, **kw: Result())
+    service.capabilities.cache_clear()
+    try:
+        cap = service.capabilities()
+        assert cap["available"] is True and cap["gpu"] is True
+        assert cap["code"] == "GPU_READY"
+    finally:
+        service.capabilities.cache_clear()
+
+
+def test_cuda_failure_log_messages_are_safe():
+    assert "NVENC" in service._diagnose_failure("NVENC: No capable devices found")
+    assert "CUDA" in service._diagnose_failure("Cannot load nvcuda.dll")
+    assert "log server" in service._diagnose_failure("Unknown failure")

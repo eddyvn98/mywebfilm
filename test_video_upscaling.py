@@ -42,7 +42,7 @@ def test_wand_reports_click_results_and_caches_are_refreshed():
     assert "window.addEventListener('resize', renderFrame)" in renderer
     assert "renderFrame(); // Work when paused" in renderer
     assert "mode = 'off';" in renderer
-    assert "v20_auto_upscale_layer" in entry
+    assert "v21_cuda_probe" in entry
     assert '"./player_upscale.js"' in entry
 
 
@@ -67,7 +67,7 @@ def test_gpu_server_and_browser_paths_are_distinct():
     assert "getUpscalePrefs" in prefs and "localStorage.setItem" in prefs
     assert "startServerStream" in panel
     assert "h264_nvenc" in service and "scale_cuda" in service
-    assert "-hwaccel" in service and "cuda" in service
+    assert "-init_hw_device" in service and "hwupload" in service and "cuda" in service
     assert "poorSpeedSamples >= 2" in hls
     assert "get_session_state" in api
     assert "check_path_safe(path)" in api
@@ -99,3 +99,16 @@ def test_saved_upscale_autostarts_and_canvas_stays_below_controls():
     assert "requestToken !== sequence" in streaming
     assert "auto_result" in smoke
     assert 'geometry["canvasZ"] < geometry["controlsZ"]' in smoke
+
+def test_server_gpu_readiness_is_visible_and_real():
+    panel = read("static/js/player_upscale_panel.js")
+    ui = read("templates/components/video_modal.html")
+    backend = read("server_upscale_service.py")
+    assert "upscale-gpu-readiness" in ui
+    assert "checkGpuReadiness" in panel
+    assert "/api/upscale/capabilities" in panel
+    assert "GPU SERVER CHƯA HOẠT ĐỘNG" in panel
+    assert "CUDA_NVENC_PROBE_FAILED" in backend
+    assert "testsrc2=size=160x90:rate=1" in backend
+    assert "format=nv12,hwupload,scale_cuda" in backend
+    assert "_diagnose_failure" in backend
