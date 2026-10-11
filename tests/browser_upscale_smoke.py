@@ -36,9 +36,17 @@ def run():
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(f"http://127.0.0.1:{server.server_address[1]}/tests/upscale_harness.html")
                 page.set_content("""
+                  <link rel="stylesheet" href="/static/css/style/player-upscale.css">
                   <div id="video-modal">
                     <div class="player-stage" style="position:relative;width:960px;height:540px">
-                      <video id="modal-player" muted playsinline></video>
+                      <div class="plyr" style="position:relative;width:100%;height:100%">
+                        <div class="plyr__video-wrapper" style="width:100%;height:100%">
+                          <video id="modal-player" muted playsinline></video>
+                        </div>
+                        <div class="plyr__controls" style="position:absolute;bottom:0;height:65px;width:100%">
+                          <button type="button" data-plyr="play">Play</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 """)
@@ -70,6 +78,21 @@ def run():
                   window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
                   timeout=15000)
                 assert page.locator("#cinema-fsr-canvas").count() == 1
+                assert page.locator(".plyr__video-wrapper > #cinema-fsr-canvas").count() == 1
+                # Canvas must stay inside the video stacking context below Plyr controls.
+                geometry = page.evaluate("""() => {
+                  const canvas = document.getElementById('cinema-fsr-canvas');
+                  const box = document.querySelector('.plyr__video-wrapper');
+                  const controls = document.querySelector('.plyr__controls');
+                  return { inside: box.contains(canvas),
+                    canvasZ: Number(getComputedStyle(canvas).zIndex),
+                    controlsZ: Number(getComputedStyle(controls).zIndex),
+                    canvasRight: canvas.getBoundingClientRect().right,
+                    wrapperRight: box.getBoundingClientRect().right };
+                }""")
+                assert geometry["inside"]
+                assert geometry["canvasZ"] < geometry["controlsZ"]
+                assert geometry["canvasRight"] <= geometry["wrapperRight"] + 1
                 assert page.locator("#modal-player").evaluate("(el) => el.style.opacity") == "0"
                 # Validate persisted custom RCAS, adjustable cap, and rendered GPU frame.
                 page.evaluate("""async () => {
