@@ -6,74 +6,74 @@
     <title>My Cinema Manager</title>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="/static/css/style.css?v=v19_gpu_stream_settings" rel="stylesheet">
+    <link href="/static/css/style.css?v=v20_auto_upscale_layer" rel="stylesheet">
     <link href="/static/css/qa_inspector.css?v=1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
     <script type="importmap">
     {
         "imports": {
-            "/static/js/player.js": "/static/js/player.js?v=v19_gpu_stream_settings",
-            "/static/js/player_runtime.js": "/static/js/player_runtime.js?v=v19_gpu_stream_settings",
-            "/static/js/player_playlist.js": "/static/js/player_playlist.js?v=v19_gpu_stream_settings",
-            "/static/js/player_video.js": "/static/js/player_video.js?v=v19_gpu_stream_settings",
-            "/static/js/player_upscale.js": "/static/js/player_upscale.js?v=v19_gpu_stream_settings",
-            "/static/js/player_upscale_prefs.js": "/static/js/player_upscale_prefs.js?v=v19_gpu_stream_settings",
-            "/static/js/player_upscale_quality.js": "/static/js/player_upscale_quality.js?v=v19_gpu_stream_settings",
-            "/static/js/player_upscale_panel.js": "/static/js/player_upscale_panel.js?v=v19_gpu_stream_settings",
-            "/static/js/player_server_stream.js": "/static/js/player_server_stream.js?v=v19_gpu_stream_settings",
-            "/static/js/player_image.js": "/static/js/player_image.js?v=v19_gpu_stream_settings",
-            "/static/js/player_navigation.js": "/static/js/player_navigation.js?v=v19_gpu_stream_settings",
-            "/static/js/gestures.js": "/static/js/gestures.js?v=v19_gpu_stream_settings",
-            "/static/js/render_service.js": "/static/js/render_service.js?v=v19_gpu_stream_settings",
-            "/static/js/filter_service.js": "/static/js/filter_service.js?v=v19_gpu_stream_settings",
-            "/static/js/manage_service.js": "/static/js/manage_service.js?v=v19_gpu_stream_settings",
-            "/static/js/discovery_service.js": "/static/js/discovery_service.js?v=v19_gpu_stream_settings",
-            "/static/js/ai_search_service.js": "/static/js/ai_search_service.js?v=v19_gpu_stream_settings",
-            "/static/js/ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v19_gpu_stream_settings",
-            "/static/js/mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v19_gpu_stream_settings",
-            "/static/js/grid.js": "/static/js/grid.js?v=v19_gpu_stream_settings",
-            "/static/js/main.js": "/static/js/main.js?v=v19_gpu_stream_settings",
-            "/static/js/state.js": "/static/js/state.js?v=v19_gpu_stream_settings",
-            "/static/js/api.js": "/static/js/api.js?v=v19_gpu_stream_settings",
-            "/static/js/security.js": "/static/js/security.js?v=v19_gpu_stream_settings",
-            "/static/js/history_service.js": "/static/js/history_service.js?v=v19_gpu_stream_settings",
-            "/static/js/favorites_service.js": "/static/js/favorites_service.js?v=v19_gpu_stream_settings",
-            "/static/js/security_client.js": "/static/js/security_client.js?v=v19_gpu_stream_settings",
-            "/static/js/scan_service.js": "/static/js/scan_service.js?v=v19_gpu_stream_settings",
-            "/static/js/selection_service.js": "/static/js/selection_service.js?v=v19_gpu_stream_settings",
-            "/static/js/queue_service.js": "/static/js/queue_service.js?v=v19_gpu_stream_settings",
-            "/static/js/smart_mix_service.js": "/static/js/smart_mix_service.js?v=v19_gpu_stream_settings",
-            "./player.js": "/static/js/player.js?v=v19_gpu_stream_settings",
-            "./player_runtime.js": "/static/js/player_runtime.js?v=v19_gpu_stream_settings",
-            "./player_playlist.js": "/static/js/player_playlist.js?v=v19_gpu_stream_settings",
-            "./player_video.js": "/static/js/player_video.js?v=v19_gpu_stream_settings",
-            "./player_upscale.js": "/static/js/player_upscale.js?v=v19_gpu_stream_settings",
-            "./player_upscale_prefs.js": "/static/js/player_upscale_prefs.js?v=v19_gpu_stream_settings",
-            "./player_upscale_quality.js": "/static/js/player_upscale_quality.js?v=v19_gpu_stream_settings",
-            "./player_upscale_panel.js": "/static/js/player_upscale_panel.js?v=v19_gpu_stream_settings",
-            "./player_server_stream.js": "/static/js/player_server_stream.js?v=v19_gpu_stream_settings",
-            "./player_image.js": "/static/js/player_image.js?v=v19_gpu_stream_settings",
-            "./player_navigation.js": "/static/js/player_navigation.js?v=v19_gpu_stream_settings",
-            "./gestures.js": "/static/js/gestures.js?v=v19_gpu_stream_settings",
-            "./render_service.js": "/static/js/render_service.js?v=v19_gpu_stream_settings",
-            "./filter_service.js": "/static/js/filter_service.js?v=v19_gpu_stream_settings",
-            "./manage_service.js": "/static/js/manage_service.js?v=v19_gpu_stream_settings",
-            "./discovery_service.js": "/static/js/discovery_service.js?v=v19_gpu_stream_settings",
-            "./ai_search_service.js": "/static/js/ai_search_service.js?v=v19_gpu_stream_settings",
-            "./ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v19_gpu_stream_settings",
-            "./mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v19_gpu_stream_settings",
-            "./grid.js": "/static/js/grid.js?v=v19_gpu_stream_settings",
-            "./main.js": "/static/js/main.js?v=v19_gpu_stream_settings",
-            "./state.js": "/static/js/state.js?v=v19_gpu_stream_settings",
-            "./api.js": "/static/js/api.js?v=v19_gpu_stream_settings",
-            "./security.js": "/static/js/security.js?v=v19_gpu_stream_settings",
-            "./history_service.js": "/static/js/history_service.js?v=v19_gpu_stream_settings",
-            "./favorites_service.js": "/static/js/favorites_service.js?v=v19_gpu_stream_settings",
-            "./security_client.js": "/static/js/security_client.js?v=v19_gpu_stream_settings",
-            "./scan_service.js": "/static/js/scan_service.js?v=v19_gpu_stream_settings",
-            "./selection_service.js": "/static/js/selection_service.js?v=v19_gpu_stream_settings",
-            "./queue_service.js": "/static/js/queue_service.js?v=v19_gpu_stream_settings",
-            "./smart_mix_service.js": "/static/js/smart_mix_service.js?v=v19_gpu_stream_settings"
+            "/static/js/player.js": "/static/js/player.js?v=v20_auto_upscale_layer",
+            "/static/js/player_runtime.js": "/static/js/player_runtime.js?v=v20_auto_upscale_layer",
+            "/static/js/player_playlist.js": "/static/js/player_playlist.js?v=v20_auto_upscale_layer",
+            "/static/js/player_video.js": "/static/js/player_video.js?v=v20_auto_upscale_layer",
+            "/static/js/player_upscale.js": "/static/js/player_upscale.js?v=v20_auto_upscale_layer",
+            "/static/js/player_upscale_prefs.js": "/static/js/player_upscale_prefs.js?v=v20_auto_upscale_layer",
+            "/static/js/player_upscale_quality.js": "/static/js/player_upscale_quality.js?v=v20_auto_upscale_layer",
+            "/static/js/player_upscale_panel.js": "/static/js/player_upscale_panel.js?v=v20_auto_upscale_layer",
+            "/static/js/player_server_stream.js": "/static/js/player_server_stream.js?v=v20_auto_upscale_layer",
+            "/static/js/player_image.js": "/static/js/player_image.js?v=v20_auto_upscale_layer",
+            "/static/js/player_navigation.js": "/static/js/player_navigation.js?v=v20_auto_upscale_layer",
+            "/static/js/gestures.js": "/static/js/gestures.js?v=v20_auto_upscale_layer",
+            "/static/js/render_service.js": "/static/js/render_service.js?v=v20_auto_upscale_layer",
+            "/static/js/filter_service.js": "/static/js/filter_service.js?v=v20_auto_upscale_layer",
+            "/static/js/manage_service.js": "/static/js/manage_service.js?v=v20_auto_upscale_layer",
+            "/static/js/discovery_service.js": "/static/js/discovery_service.js?v=v20_auto_upscale_layer",
+            "/static/js/ai_search_service.js": "/static/js/ai_search_service.js?v=v20_auto_upscale_layer",
+            "/static/js/ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v20_auto_upscale_layer",
+            "/static/js/mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v20_auto_upscale_layer",
+            "/static/js/grid.js": "/static/js/grid.js?v=v20_auto_upscale_layer",
+            "/static/js/main.js": "/static/js/main.js?v=v20_auto_upscale_layer",
+            "/static/js/state.js": "/static/js/state.js?v=v20_auto_upscale_layer",
+            "/static/js/api.js": "/static/js/api.js?v=v20_auto_upscale_layer",
+            "/static/js/security.js": "/static/js/security.js?v=v20_auto_upscale_layer",
+            "/static/js/history_service.js": "/static/js/history_service.js?v=v20_auto_upscale_layer",
+            "/static/js/favorites_service.js": "/static/js/favorites_service.js?v=v20_auto_upscale_layer",
+            "/static/js/security_client.js": "/static/js/security_client.js?v=v20_auto_upscale_layer",
+            "/static/js/scan_service.js": "/static/js/scan_service.js?v=v20_auto_upscale_layer",
+            "/static/js/selection_service.js": "/static/js/selection_service.js?v=v20_auto_upscale_layer",
+            "/static/js/queue_service.js": "/static/js/queue_service.js?v=v20_auto_upscale_layer",
+            "/static/js/smart_mix_service.js": "/static/js/smart_mix_service.js?v=v20_auto_upscale_layer",
+            "./player.js": "/static/js/player.js?v=v20_auto_upscale_layer",
+            "./player_runtime.js": "/static/js/player_runtime.js?v=v20_auto_upscale_layer",
+            "./player_playlist.js": "/static/js/player_playlist.js?v=v20_auto_upscale_layer",
+            "./player_video.js": "/static/js/player_video.js?v=v20_auto_upscale_layer",
+            "./player_upscale.js": "/static/js/player_upscale.js?v=v20_auto_upscale_layer",
+            "./player_upscale_prefs.js": "/static/js/player_upscale_prefs.js?v=v20_auto_upscale_layer",
+            "./player_upscale_quality.js": "/static/js/player_upscale_quality.js?v=v20_auto_upscale_layer",
+            "./player_upscale_panel.js": "/static/js/player_upscale_panel.js?v=v20_auto_upscale_layer",
+            "./player_server_stream.js": "/static/js/player_server_stream.js?v=v20_auto_upscale_layer",
+            "./player_image.js": "/static/js/player_image.js?v=v20_auto_upscale_layer",
+            "./player_navigation.js": "/static/js/player_navigation.js?v=v20_auto_upscale_layer",
+            "./gestures.js": "/static/js/gestures.js?v=v20_auto_upscale_layer",
+            "./render_service.js": "/static/js/render_service.js?v=v20_auto_upscale_layer",
+            "./filter_service.js": "/static/js/filter_service.js?v=v20_auto_upscale_layer",
+            "./manage_service.js": "/static/js/manage_service.js?v=v20_auto_upscale_layer",
+            "./discovery_service.js": "/static/js/discovery_service.js?v=v20_auto_upscale_layer",
+            "./ai_search_service.js": "/static/js/ai_search_service.js?v=v20_auto_upscale_layer",
+            "./ai_mgmt_service.js": "/static/js/ai_mgmt_service.js?v=v20_auto_upscale_layer",
+            "./mgmt_ui_service.js": "/static/js/mgmt_ui_service.js?v=v20_auto_upscale_layer",
+            "./grid.js": "/static/js/grid.js?v=v20_auto_upscale_layer",
+            "./main.js": "/static/js/main.js?v=v20_auto_upscale_layer",
+            "./state.js": "/static/js/state.js?v=v20_auto_upscale_layer",
+            "./api.js": "/static/js/api.js?v=v20_auto_upscale_layer",
+            "./security.js": "/static/js/security.js?v=v20_auto_upscale_layer",
+            "./history_service.js": "/static/js/history_service.js?v=v20_auto_upscale_layer",
+            "./favorites_service.js": "/static/js/favorites_service.js?v=v20_auto_upscale_layer",
+            "./security_client.js": "/static/js/security_client.js?v=v20_auto_upscale_layer",
+            "./scan_service.js": "/static/js/scan_service.js?v=v20_auto_upscale_layer",
+            "./selection_service.js": "/static/js/selection_service.js?v=v20_auto_upscale_layer",
+            "./queue_service.js": "/static/js/queue_service.js?v=v20_auto_upscale_layer",
+            "./smart_mix_service.js": "/static/js/smart_mix_service.js?v=v20_auto_upscale_layer"
         }
     }
     </script>
@@ -214,14 +214,14 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.6.0/hls.min.js"></script>
-    <script type="module" src="/static/js/player.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/render_service.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/filter_service.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/manage_service.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/discovery_service.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/ai_search_service.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/grid.js?v=v19_gpu_stream_settings"></script>
-    <script type="module" src="/static/js/main.js?v=v19_gpu_stream_settings"></script>
+    <script type="module" src="/static/js/player.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/render_service.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/filter_service.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/manage_service.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/discovery_service.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/ai_search_service.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/grid.js?v=v20_auto_upscale_layer"></script>
+    <script type="module" src="/static/js/main.js?v=v20_auto_upscale_layer"></script>
     <script src="/static/js/qa_inspector.js?v=1"></script>
 </body>
 </html>
