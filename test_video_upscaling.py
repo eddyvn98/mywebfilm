@@ -62,8 +62,8 @@ def test_gpu_server_and_browser_paths_are_distinct():
     assert "upscale-preset" in ui
     assert "upscale-cap" in ui
     assert "upscale-auto" in ui
-    assert "getVideoPlaybackQuality" in read("static/js/player_upscale.js")
-    assert "trackDroppedFrames" in read("static/js/player_upscale.js")
+    assert "getVideoPlaybackQuality" in read("static/js/player_upscale_quality.js")
+    assert "createDropMonitor" in read("static/js/player_upscale.js")
     assert "getUpscalePrefs" in prefs and "localStorage.setItem" in prefs
     assert "startServerStream" in panel
     assert "h264_nvenc" in service and "scale_cuda" in service
