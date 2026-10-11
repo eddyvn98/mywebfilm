@@ -1,5 +1,6 @@
 import { getUpscalePrefs, saveUpscalePrefs, rcasStops } from './player_upscale_prefs.js';
 import { createDropMonitor } from './player_upscale_quality.js';
+import { targetFsrSize } from './player_upscale_geometry.js';
 // FSR 1 (EASU + RCAS), locally rendered on the viewer's WebGL2 GPU. Not neural AI.
 const QUAD = `#version 300 es
 in vec2 p;
@@ -13,9 +14,10 @@ let active = false;
 let callbackId = 0;
 let generation = 0;
 let frameCount = 0;
-let started = 0;
 let status = 'Tắt';
 let lastFrameTime = -1;
+let processing = false;
+let renderInfo = { kind: 'waiting', width: 0, height: 0, dpr: 1 };
 let effectiveCap = getUpscalePrefs().cap;
 let measuredFps = 0;
 let fpsWindowAt = 0;
@@ -26,8 +28,9 @@ const quality = createDropMonitor({ getPrefs: getUpscalePrefs,
     setStatus, fail: failUpscale, notify });
 
 export function getUpscaleState() {
-    return { mode, active, status, fps: measuredFps, dropped: quality.dropped(),
-        effectiveCap, settings: getUpscalePrefs() };
+    return { mode, active, processing, status, fps: measuredFps,
+        dropped: quality.dropped(), effectiveCap, renderInfo: { ...renderInfo },
+        settings: getUpscalePrefs() };
 }
 export function onUpscaleChange(fn) {
     listeners.add(fn);
@@ -128,17 +131,13 @@ async function createRenderer(video) {
     function draw() {
         if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return 'waiting';
         const rect = mediaLayer.getBoundingClientRect();
-        if (!rect.width || !rect.height) return 'waiting';
-        const ratio = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight);
-        // 1080p is the GTX 1050 Ti default; cap can be lowered automatically.
-        const budget = 1920 * 1080 * Math.pow(effectiveCap / 1080, 2);
-        const cap = Math.min(1, Math.sqrt(budget / Math.max(1, video.videoWidth * ratio * video.videoHeight * ratio)));
-        const w = Math.max(2, Math.round(video.videoWidth * ratio * cap));
-        const h = Math.max(2, Math.round(video.videoHeight * ratio * cap));
-        if (w <= video.videoWidth || h <= video.videoHeight) {
-            showOriginal();
-            return 'native';
-        }
+        renderInfo = targetFsrSize({ videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight, cssWidth: rect.width,
+            cssHeight: rect.height, dpr: window.devicePixelRatio || 1,
+            cap: effectiveCap });
+        if (renderInfo.kind === 'waiting') return 'waiting';
+        if (renderInfo.kind === 'native') { showOriginal(); return 'native'; }
+        const w = renderInfo.width, h = renderInfo.height;
         if (video.videoWidth !== sw || video.videoHeight !== sh || ow !== w || oh !== h) {
             if (src) gl.deleteTexture(src);
             if (intermediate) gl.deleteTexture(intermediate);
@@ -157,7 +156,6 @@ async function createRenderer(video) {
         pass(first, src, ow, oh, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         pass(second, intermediate, ow, oh, rcasStops(mode));
-        if (!frameCount) started = performance.now();
         frameCount++;
         fpsWindowFrames++;
         const now = performance.now();
@@ -171,7 +169,7 @@ async function createRenderer(video) {
         video.style.opacity = '0';
         canvas.style.display = 'block';
         if (frameCount % 120 === 0) notify();
-        return 'processed';
+        return renderInfo.kind;
     }
     return { draw, dispose() {
         canvas.removeEventListener('webglcontextlost', contextLost);
@@ -196,8 +194,13 @@ function renderFrame() {
     if (!active || !renderer || !currentVideo) return;
     try {
         const result = renderer.draw();
-        if (result === 'processed') setStatus('FSR GPU đang hoạt động');
-        if (result === 'native') setStatus('Video không cần phóng to ở kích thước hiện tại');
+        const isRendering = result === 'upscale' || result === 'sharpen';
+        const changed = processing !== isRendering;
+        processing = isRendering;
+        if (isRendering) setStatus('FSR GPU đang hoạt động (' +
+            (result === 'upscale' ? 'nâng nét' : 'RCAS 1:1') + ')');
+        if (result === 'native') setStatus(renderInfo.reason || 'Phát video gốc');
+        if (changed) notify();
     } catch (err) {
         console.error('[Video upscaling]', err);
         failUpscale('FSR lỗi GPU/shader; đang phát video gốc');
@@ -233,7 +236,8 @@ function stopUpscale(resetStatus = true) {
     window.removeEventListener('resize', renderFrame);
     if (renderer) { renderer.dispose(); renderer = null; }
     currentVideo = null;
-    frameCount = 0; started = 0; lastFrameTime = -1;
+    frameCount = 0; lastFrameTime = -1; processing = false;
+    renderInfo = { kind: 'waiting', width: 0, height: 0, dpr: 1 };
     effectiveCap = getUpscalePrefs().cap;
     quality.reset();
     measuredFps = 0; fpsWindowAt = 0; fpsWindowFrames = 0;
