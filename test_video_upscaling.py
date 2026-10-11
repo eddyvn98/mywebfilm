@@ -10,7 +10,8 @@ def test_fsr_has_local_shader_assets_and_neural_mode_is_distinct():
     assert "FsrEasuF" in easu
     assert "FsrRcasF" in rcas
     assert "webgl2" in player
-    assert "1920 * 1080" in player
+    assert "targetFsrSize" in player
+    assert "1920 * 1080" in read("static/js/player_upscale_geometry.js")
     assert "cinema_upscale_mode" in player
     assert "teardownUpscale" in read("static/js/player.js")
     assert "injectUpscaleControl" in read("static/js/player_video.js")
@@ -42,7 +43,7 @@ def test_wand_reports_click_results_and_caches_are_refreshed():
     assert "window.addEventListener('resize', renderFrame)" in renderer
     assert "renderFrame(); // Work when paused" in renderer
     assert "mode = 'off';" in renderer
-    assert "v21_cuda_probe" in entry
+    assert "v22_retina_fsr" in entry
     assert '"./player_upscale.js"' in entry
 
 
@@ -112,3 +113,17 @@ def test_server_gpu_readiness_is_visible_and_real():
     assert "testsrc2=size=160x90:rate=1" in backend
     assert "format=nv12,hwupload,scale_cuda" in backend
     assert "_diagnose_failure" in backend
+
+def test_mac_retina_fsr_reports_only_real_gpu_processing():
+    geometry = read("static/js/player_upscale_geometry.js")
+    renderer = read("static/js/player_upscale.js")
+    panel = read("static/js/player_upscale_panel.js")
+    assert "vw * density" in geometry and "vh * density" in geometry
+    assert "kind: 'sharpen'" in geometry
+    assert "targetFsrSize" in renderer
+    assert "window.devicePixelRatio" in renderer
+    assert "processing = isRendering" in renderer
+    assert "stateValue.processing" in panel
+    assert "stateValue.renderInfo.width" in panel
+    assert "FSR CHƯA XỬ LÝ" in panel
+    assert "deviceScaleFactor" not in geometry
