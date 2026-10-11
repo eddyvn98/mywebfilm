@@ -35,6 +35,10 @@ jobs:
           for file in static/js/*.js; do
             node --check "$file"
           done
+      - name: Smoke test FSR WebGL2 shaders in headless Chrome
+        run: |
+          python -m pip install playwright==1.56.0
+          python tests/browser_upscale_smoke.py
 
 
   windows-e2e:
