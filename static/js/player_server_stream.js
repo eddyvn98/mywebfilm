@@ -56,14 +56,14 @@ function connectHls(video, url) {
         throw new Error('Trình duyệt không hỗ trợ HLS (hls.js/MediaSource)');
     }
 }
-async function attachStream(path, height, interpolation, startAt, video) {
+async function attachStream(path, height, interpolation, startAt, video, auto = true) {
     const token = ++sequence;
     const data = await requestStream(path, height, interpolation, startAt);
     if (token !== sequence) {
         void fetch('/api/upscale/sessions/' + data.session_id, { method: 'DELETE' });
         return;
     }
-    session = { id: data.session_id, path, height, interpolation, startAt };
+    session = { id: data.session_id, path, height, interpolation, startAt, auto };
     try {
         connectHls(video, data.url);
         notify('Đang phát video đã xử lý trên server GTX 1050 Ti');
@@ -88,13 +88,13 @@ async function samplePerformance(video) {
         notify('Đang mã hóa trên server', data.speed);
         poorSpeedSamples = data.speed !== null && data.speed < 0.85
             ? poorSpeedSamples + 1 : 0;
-        if (poorSpeedSamples >= 2 && current.height > 540) {
+        if (current.auto && poorSpeedSamples >= 2 && current.height > 540) {
             poorSpeedSamples = 0;
             const height = current.height > 720 ? 720 : 540;
             const resumeAt = current.startAt + (Number(video.currentTime) || 0);
             notify('Server quá tải; đang hạ về ' + height + 'p', data.speed);
             stopServerStream();
-            await attachStream(current.path, height, current.interpolation, resumeAt, video);
+            await attachStream(current.path, height, current.interpolation, resumeAt, video, current.auto);
         }
     } catch (error) {
         console.warn('[Server HLS status]', error);
@@ -107,5 +107,5 @@ export async function startServerStream(path, opts, video) {
     if (!supported) throw new Error('Thiếu hỗ trợ HLS trên trình duyệt này');
     const interpolation = opts.preset === 'balanced' ? 'bicubic' : 'lanczos';
     const height = [540, 720, 1080].filter(value => value <= opts.cap).pop() || 540;
-    await attachStream(path, height, interpolation, Number(opts.startAt) || 0, video);
+    await attachStream(path, height, interpolation, Number(opts.startAt) || 0, video, opts.auto !== false);
 }
