@@ -7,7 +7,8 @@ let poorSpeedSamples = 0;
 let callback = () => {};
 export function onServerStreamUpdate(fn) { callback = fn; }
 export function getServerStreamState() {
-    return { active: Boolean(session), height: session?.height || 0 };
+    return { active: Boolean(session), height: session?.height || 0,
+        startAt: session?.startAt || 0 };
 }
 function notify(status, speed = null) {
     callback({ status, speed, height: session?.height || 0, active: Boolean(session) });
@@ -48,7 +49,7 @@ function connectHls(video, url) {
         video.load();
         hls.loadSource(url);
         hls.attachMedia(video);
-        hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
+        hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => notify('Nhấn Play để bắt đầu phát HLS')); });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.play().catch(() => {});
