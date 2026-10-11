@@ -96,6 +96,7 @@ def start(path, owner, height=720, interpolation="lanczos", start_at=0):
         log = (directory / "ffmpeg.log").open("wb")
         output = str(directory / "index.m3u8")
         command = [ffmpeg, "-hide_banner", "-loglevel", "warning", "-nostdin",
+                   "-stats_period", "2", "-progress", str(directory / "progress.txt"),
                    "-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
         if start_at:
             command += ["-ss", str(round(start_at, 2))]
@@ -160,3 +161,18 @@ def stop(session_id, owner):
         _SESSIONS.pop(session_id, None)
         _terminate(record)
         return True
+
+def telemetry(record):
+    result = {"height": record["height"], "speed": None, "encoding_fps": None,
+              "running": record["process"].poll() is None}
+    progress = record["directory"] / "progress.txt"
+    try:
+        content = progress.read_text(encoding="utf-8", errors="replace")
+        values = dict(line.split("=", 1) for line in content.splitlines() if "=" in line)
+        speed = values.get("speed", "").strip().rstrip("x")
+        fps = values.get("fps", "").strip()
+        result["speed"] = float(speed) if speed and speed != "N/A" else None
+        result["encoding_fps"] = float(fps) if fps else None
+    except (OSError, ValueError):
+        pass
+    return result
