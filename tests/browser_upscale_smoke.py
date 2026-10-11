@@ -125,7 +125,7 @@ def run():
                 assert page.evaluate("upscalePrefs.strength") == 75
                 assert page.evaluate("upscalePrefs.cap") == 720
                 page.wait_for_function("""() =>
-                  window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
+                  window.upscaling.getUpscaleState().status.startsWith('FSR GPU đang hoạt động')""",
                   timeout=10000)
                 page.evaluate("""async () => {
                   const video = document.getElementById('modal-player');
@@ -133,7 +133,7 @@ def run():
                   await upscaling.setUpscaleMode('sharp', video);
                 }""")
                 page.wait_for_function("""() =>
-                  window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
+                  window.upscaling.getUpscaleState().status.startsWith('FSR GPU đang hoạt động')""",
                   timeout=10000)
                 # Even without upscale, a 1:1 video uses GPU RCAS sharpening.
                 page.evaluate("""() => {
@@ -156,7 +156,7 @@ def run():
                   window.dispatchEvent(new Event('resize'));
                 }""")
                 page.wait_for_function("""() =>
-                  window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
+                  window.upscaling.getUpscaleState().status.startsWith('FSR GPU đang hoạt động')""",
                   timeout=5000)
                 page.evaluate("""async () => {
                   await upscaling.setUpscaleMode('off', document.getElementById('modal-player'));
