@@ -89,7 +89,13 @@ def start(path, owner, height=720, interpolation="lanczos", start_at=0):
     with _LOCK:
         _cleanup()
         if _SESSIONS:
-            raise UpscaleUnavailable("GTX 1050 Ti đang xử lý một phim khác")
+            # Switching movies in one authenticated session must replace the old GPU job.
+            # A different login cannot evict another viewer's stream.
+            if any(record["owner"] != owner for record in _SESSIONS.values()):
+                raise UpscaleUnavailable("GTX 1050 Ti đang xử lý một phim khác")
+            for old_id, old_record in list(_SESSIONS.items()):
+                _SESSIONS.pop(old_id, None)
+                _terminate(old_record)
         session_id = uuid.uuid4().hex
         directory = ROOT / session_id
         directory.mkdir(mode=0o700)
