@@ -137,6 +137,51 @@ def run():
                   window.stopPainting();
                 }""")
                 assert page.locator("#cinema-fsr-canvas").count() == 0
+                # Saved server preference should auto-launch HLS without clicking Apply.
+                auto_result = page.evaluate("""async () => {
+                  const realFetch = window.fetch.bind(window);
+                  const requests = [];
+                  window.fetch = (url, options = {}) => {
+                    if (typeof url === 'string' && url.startsWith('/api/upscale/sessions')) {
+                      requests.push({ url, method: options.method || 'GET',
+                        body: options.body || null });
+                      const payload = { session_id: 'test-session',
+                        url: '/api/upscale/sessions/test-session/index.m3u8' };
+                      return Promise.resolve(new Response(JSON.stringify(payload),
+                        { status: 200, headers: {'Content-Type':'application/json'} }));
+                    }
+                    return realFetch(url, options);
+                  };
+                  class FakeHls {
+                    static isSupported() { return true; }
+                    on() {}
+                    loadSource() {}
+                    attachMedia() {}
+                    destroy() {}
+                  }
+                  FakeHls.Events = { ERROR: 'error', MANIFEST_PARSED: 'manifest' };
+                  window.Hls = FakeHls;
+                  document.body.insertAdjacentHTML('beforeend',
+                    '<p id="upscale-metrics"></p><p id="upscale-panel-error"></p>');
+                  const prefs = await import('/static/js/player_upscale_prefs.js');
+                  const store = await import('/static/js/state.js');
+                  const panel = await import('/static/js/player_upscale_panel.js');
+                  const stream = await import('/static/js/player_server_stream.js');
+                  store.state.currentGridVideos = [{full_path:'test-film.mp4'}];
+                  store.state.currentIndex = 0;
+                  prefs.saveUpscalePrefs({ source:'server', preset:'sharp', cap:720 });
+                  await panel.restoreSavedUpscale('test-film.mp4',
+                    document.getElementById('modal-player'), 18);
+                  const result = { requests: [...requests],
+                    active: stream.getServerStreamState().active,
+                    startAt: stream.getServerStreamState().startAt };
+                  panel.cancelSavedUpscale();
+                  await stream.stopServerStream();
+                  return result;
+                }""")
+                assert auto_result["active"]
+                assert auto_result["startAt"] == 18
+                assert sum(x["method"] == "POST" for x in auto_result["requests"]) == 1
                 assert not errors, errors
                 browser.close()
         finally:
