@@ -94,3 +94,29 @@ The wand now opens a settings panel instead of cycling blindly.
 - To receive updated code after `git pull origin main`, restart the Windows service and hard-reload Chrome/Edge with Ctrl+Shift+R. Asset version: `v20_auto_upscale_layer`.
 
 **Important:** Saved "server GPU" mode performs CUDA spatial scaling + NVENC, not a neural AI super-resolution model. FSRCNNX remains a separate host-local capability.
+
+
+## GPU shows zero activity after deploy — troubleshooting (2026-10-11)
+
+**First distinguish which GPU should run:**
+- **Browser GPU / FSR**: executes only on the viewing device, never on the Windows server. The shader skips processing when source resolution is already at least the displayed resolution (e.g. 1080p on a 1080p player). Use a 480p/720p video in an enlarged viewer to see it process. The panel now explicitly reports "FSR TRÌNH DUYỆT" and the reason it is idle.
+- **Server GPU / HLS**: choose GTX 1050 Ti on server, choose Balanced or Sharp, and Apply. The panel reports "GPU SERVER 720p" only after a session exists and displays NVENC speed. If inactive, the button remains visually off and the panel indicates "GPU SERVER CHƯA HOẠT ĐỘNG".
+
+**The CUDA server mode now uses software decoding → format=nv12 → hwupload → scale_cuda → h264_nvenc**, consistent with NVIDIA's official FFmpeg guidance. This supports source codecs that the older forced `-hwaccel cuda` path could not decode, while still requiring an actual NVIDIA GPU for scaling/encoding.
+
+**Preflight:** `GET /api/upscale/capabilities` performs a *real one-frame* test of CUDA upload, 2x scaling and NVENC encode, not just checking the strings in FFmpeg's encoder/filter list. Opening the player settings in server mode shows the result and a clear error reason. The result is cached until MyWebFilm restarts.
+
+On Windows PowerShell, verify installed NVIDIA driver and FFmpeg:
+
+```powershell
+nvidia-smi
+ffmpeg -hide_banner -filters | findstr scale_cuda
+ffmpeg -hide_banner -encoders | findstr h264_nvenc
+ffmpeg -hide_banner -loglevel error -init_hw_device cuda=cuda:0 -filter_hw_device cuda -f lavfi -i testsrc2=size=160x90:rate=1 -frames:v 1 -vf "format=nv12,hwupload,scale_cuda=w=320:h=180:interp_algo=bilinear" -c:v h264_nvenc -f null -
+```
+
+The last command must exit successfully. If not, the error is usually a driver/NVENC/CUDA/FFmpeg build issue, not a browser UI error.
+
+The backend logs a sanitized failure category to the browser and retains diagnostic detail only in private server logs; media paths/log data are not exposed to users. All input video stays unmodified. CI checks the FFmpeg command structure and a mocked preflight; it **cannot confirm** that your particular GTX 1050 Ti works until you run the commands locally.
+
+Deploy `main`, restart MyWebFilm, then hard-reload the page (Ctrl+Shift+R). Asset revision: `v21_cuda_probe`.
