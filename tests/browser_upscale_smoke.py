@@ -148,7 +148,7 @@ def run():
                   window.dispatchEvent(new Event('resize'));
                 }""")
                 page.wait_for_function("""() =>
-                  window.upscaling.getUpscaleState().status.includes('không cần phóng to')""",
+                  window.upscaling.getUpscaleState().status.includes('Video gốc đã lớn hơn vùng hiển thị')""",
                   timeout=5000)
                 assert page.locator("#modal-player").evaluate("(el) => el.style.opacity") == ""
                 page.evaluate("""() => {
