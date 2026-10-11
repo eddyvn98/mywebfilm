@@ -42,7 +42,7 @@ def test_wand_reports_click_results_and_caches_are_refreshed():
     assert "window.addEventListener('resize', renderFrame)" in renderer
     assert "renderFrame(); // Work when paused" in renderer
     assert "mode = 'off';" in renderer
-    assert "v20_auto_upscale_layer" in entry
+    assert "v21_cuda_probe" in entry
     assert '"./player_upscale.js"' in entry
 
 
