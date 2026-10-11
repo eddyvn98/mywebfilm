@@ -66,10 +66,11 @@ function drawState(stateValue) {
     }
     lastStatus = stateValue.status;
 }
-function restoreOriginal() {
+function restoreOriginal(seekTo = 0) {
     const v = getMedia();
     if (!v || !state.player) return;
     const player = state.player;
+    if (seekTo > 5) player.once('loadedmetadata', () => { player.currentTime = seekTo; });
     player.source = { type: 'video', title: v.name,
         sources: [{ src: getStreamUrl(v.full_path) }] };
     player.play().catch(() => {});
@@ -89,14 +90,17 @@ async function apply() {
     applyButton.disabled = true;
     showError('');
     try {
-        const wasServer = getServerStreamState().active;
+        const previousServer = getServerStreamState();
+        const wasServer = previousServer.active;
+        const resumePosition = Number(state.player.currentTime) || 0;
+        const originalTime = wasServer ? previousServer.startAt + resumePosition : resumePosition;
         if (settings.source === 'server' && settings.preset !== 'off') {
-            const resume = wasServer ? 0 : Number(state.player.currentTime) || 0;
+            const resume = originalTime;
             teardownUpscale();
             await startServerStream(movie.full_path, { ...settings, startAt: resume }, video);
         } else {
             stopServerStream();
-            if (wasServer) restoreOriginal();
+            if (wasServer) restoreOriginal(originalTime);
             await configureUpscale(settings, state.player?.media || video);
         }
         hideUpscalePanel();
