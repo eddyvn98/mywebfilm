@@ -1,6 +1,8 @@
 import './security.js';
 import { playerRuntime } from './player_runtime.js';
 import { teardownUpscale } from './player_upscale.js';
+import { stopServerStream } from './player_server_stream.js';
+import { hideUpscalePanel } from './player_upscale_panel.js';
 import { ensureSinglePlaylistUI, renderPlaylist } from './player_playlist.js';
 import { loadVideoSource } from './player_video.js';
 import { openImageModal, closeImageModal } from './player_image.js';
@@ -81,6 +83,8 @@ function scheduleHistoryRecord(video) {
 // --- Main Player Logic ---
 
 export function closeVideoModal() {
+    stopServerStream();
+    hideUpscalePanel();
     teardownUpscale();
     clearTimeout(historyRecordTimer);
     historyRecordTimer = null;
