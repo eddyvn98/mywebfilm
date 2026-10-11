@@ -66,5 +66,9 @@ def test_limits_one_encoder_and_validates_parameters(mock_gpu):
         service.start("example.mp4", "user", 720, "inject;bad")
     record = service.start("example.mp4", "user", 720, "bicubic")
     with pytest.raises(service.UpscaleUnavailable):
-        service.start("example2.mp4", "user", 720, "bicubic")
-    assert service.stop(record["id"], "user")
+        service.start("example2.mp4", "different-user", 720, "bicubic")
+    replacement = service.start("example2.mp4", "user", 720, "bicubic")
+    assert service.get_owned(record["id"], "user") is None
+    assert not record["directory"].exists()
+    assert service.stop(record["id"], "user") is False
+    assert service.stop(replacement["id"], "user")

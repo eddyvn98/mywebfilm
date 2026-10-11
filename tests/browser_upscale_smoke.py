@@ -36,9 +36,17 @@ def run():
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(f"http://127.0.0.1:{server.server_address[1]}/tests/upscale_harness.html")
                 page.set_content("""
+                  <link rel="stylesheet" href="/static/css/style/player-upscale.css">
                   <div id="video-modal">
                     <div class="player-stage" style="position:relative;width:960px;height:540px">
-                      <video id="modal-player" muted playsinline></video>
+                      <div class="plyr" style="position:relative;width:100%;height:100%">
+                        <div class="plyr__video-wrapper" style="width:100%;height:100%">
+                          <video id="modal-player" muted playsinline></video>
+                        </div>
+                        <div class="plyr__controls" style="position:absolute;bottom:0;height:65px;width:100%">
+                          <button type="button" data-plyr="play">Play</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 """)
@@ -70,6 +78,21 @@ def run():
                   window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
                   timeout=15000)
                 assert page.locator("#cinema-fsr-canvas").count() == 1
+                assert page.locator(".plyr__video-wrapper > #cinema-fsr-canvas").count() == 1
+                # Canvas must stay inside the video stacking context below Plyr controls.
+                geometry = page.evaluate("""() => {
+                  const canvas = document.getElementById('cinema-fsr-canvas');
+                  const box = document.querySelector('.plyr__video-wrapper');
+                  const controls = document.querySelector('.plyr__controls');
+                  return { inside: box.contains(canvas),
+                    canvasZ: Number(getComputedStyle(canvas).zIndex),
+                    controlsZ: Number(getComputedStyle(controls).zIndex),
+                    canvasRight: canvas.getBoundingClientRect().right,
+                    wrapperRight: box.getBoundingClientRect().right };
+                }""")
+                assert geometry["inside"]
+                assert geometry["canvasZ"] < geometry["controlsZ"]
+                assert geometry["canvasRight"] <= geometry["wrapperRight"] + 1
                 assert page.locator("#modal-player").evaluate("(el) => el.style.opacity") == "0"
                 # Validate persisted custom RCAS, adjustable cap, and rendered GPU frame.
                 page.evaluate("""async () => {
@@ -114,6 +137,51 @@ def run():
                   window.stopPainting();
                 }""")
                 assert page.locator("#cinema-fsr-canvas").count() == 0
+                # Saved server preference should auto-launch HLS without clicking Apply.
+                auto_result = page.evaluate("""async () => {
+                  const realFetch = window.fetch.bind(window);
+                  const requests = [];
+                  window.fetch = (url, options = {}) => {
+                    if (typeof url === 'string' && url.startsWith('/api/upscale/sessions')) {
+                      requests.push({ url, method: options.method || 'GET',
+                        body: options.body || null });
+                      const payload = { session_id: 'test-session',
+                        url: '/api/upscale/sessions/test-session/index.m3u8' };
+                      return Promise.resolve(new Response(JSON.stringify(payload),
+                        { status: 200, headers: {'Content-Type':'application/json'} }));
+                    }
+                    return realFetch(url, options);
+                  };
+                  class FakeHls {
+                    static isSupported() { return true; }
+                    on() {}
+                    loadSource() {}
+                    attachMedia() {}
+                    destroy() {}
+                  }
+                  FakeHls.Events = { ERROR: 'error', MANIFEST_PARSED: 'manifest' };
+                  window.Hls = FakeHls;
+                  document.body.insertAdjacentHTML('beforeend',
+                    '<p id="upscale-metrics"></p><p id="upscale-panel-error"></p>');
+                  const prefs = await import('/static/js/player_upscale_prefs.js');
+                  const store = await import('/static/js/state.js');
+                  const panel = await import('/static/js/player_upscale_panel.js');
+                  const stream = await import('/static/js/player_server_stream.js');
+                  store.state.currentGridVideos = [{full_path:'test-film.mp4'}];
+                  store.state.currentIndex = 0;
+                  prefs.saveUpscalePrefs({ source:'server', preset:'sharp', cap:720 });
+                  await panel.restoreSavedUpscale('test-film.mp4',
+                    document.getElementById('modal-player'), 18);
+                  const result = { requests: [...requests],
+                    active: stream.getServerStreamState().active,
+                    startAt: stream.getServerStreamState().startAt };
+                  panel.cancelSavedUpscale();
+                  await stream.stopServerStream();
+                  return result;
+                }""")
+                assert auto_result["active"]
+                assert auto_result["startAt"] == 18
+                assert sum(x["method"] == "POST" for x in auto_result["requests"]) == 1
                 assert not errors, errors
                 browser.close()
         finally:

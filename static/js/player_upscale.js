@@ -81,12 +81,14 @@ function allocate(gl, w, h) {
     return texture;
 }
 async function createRenderer(video) {
-    const stage = document.querySelector('#video-modal .player-stage');
-    if (!stage) throw new Error('Không tìm thấy vùng phát');
+    // Place the processed frame INSIDE Plyr media, never above its controls.
+    const mediaLayer = video.closest('#video-modal .plyr__video-wrapper');
+    if (!mediaLayer) throw new Error('Không tìm thấy vùng hình ảnh Plyr');
     const canvas = document.createElement('canvas');
     canvas.id = 'cinema-fsr-canvas';
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;object-fit:contain;display:none';
+    canvas.className = 'cinema-fsr-canvas';
+    canvas.style.display = 'none';
     const gl = canvas.getContext('webgl2', { alpha: false, antialias: false });
     if (!gl) throw new Error('Trình duyệt không hỗ trợ WebGL2');
     const [easu, rcas] = await loadShaders();
@@ -96,7 +98,7 @@ async function createRenderer(video) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
     const framebuffer = gl.createFramebuffer();
     let src = null, intermediate = null, sw = 0, sh = 0, ow = 0, oh = 0;
-    stage.appendChild(canvas);
+    mediaLayer.appendChild(canvas);
 
     const contextLost = event => {
         event.preventDefault();
@@ -125,7 +127,7 @@ async function createRenderer(video) {
     }
     function draw() {
         if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return 'waiting';
-        const rect = stage.getBoundingClientRect();
+        const rect = mediaLayer.getBoundingClientRect();
         if (!rect.width || !rect.height) return 'waiting';
         const ratio = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight);
         // 1080p is the GTX 1050 Ti default; cap can be lowered automatically.

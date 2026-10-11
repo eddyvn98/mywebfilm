@@ -42,7 +42,7 @@ def test_wand_reports_click_results_and_caches_are_refreshed():
     assert "window.addEventListener('resize', renderFrame)" in renderer
     assert "renderFrame(); // Work when paused" in renderer
     assert "mode = 'off';" in renderer
-    assert "v19_gpu_stream_settings" in entry
+    assert "v20_auto_upscale_layer" in entry
     assert '"./player_upscale.js"' in entry
 
 
@@ -74,3 +74,28 @@ def test_gpu_server_and_browser_paths_are_distinct():
     assert "stream_status" in api
     assert "get_owned" in service
     assert "shell=True" not in service
+
+def test_saved_upscale_autostarts_and_canvas_stays_below_controls():
+    player = read("static/js/player_video.js")
+    modal = read("static/js/player.js")
+    panel = read("static/js/player_upscale_panel.js")
+    renderer = read("static/js/player_upscale.js")
+    streaming = read("static/js/player_server_stream.js")
+    css = read("static/css/style/player-upscale.css")
+    smoke = read("tests/browser_upscale_smoke.py")
+    assert "restoreSavedUpscale(v.full_path, video" in player
+    assert "cancelSavedUpscale();" in player
+    assert "cancelSavedUpscale();" in modal
+    assert "export async function restoreSavedUpscale" in panel
+    assert "prefs.source !== 'server'" in panel
+    assert "await startServerStream(path" in panel
+    assert "getMedia()?.full_path !== path" in panel
+    assert "video.closest('#video-modal .plyr__video-wrapper')" in renderer
+    assert "mediaLayer.appendChild(canvas)" in renderer
+    assert "stage.appendChild(canvas)" not in renderer
+    assert "isolation: isolate" in css
+    assert "pointer-events: none" in css
+    assert "const pendingStop = stopServerStream()" in streaming
+    assert "requestToken !== sequence" in streaming
+    assert "auto_result" in smoke
+    assert 'geometry["canvasZ"] < geometry["controlsZ"]' in smoke
