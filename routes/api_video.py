@@ -3,6 +3,7 @@ import mimetypes
 import os
 import subprocess
 import shutil
+from web_security import is_direct_local_request
 
 import config_manager as cfg
 import ffmpeg_service as ff
@@ -214,7 +215,7 @@ def play_upscaled():
         return jsonify({"status": "err", "msg": "Access denied"}), 403
     if not os.path.isfile(path):
         return jsonify({"status": "err", "msg": "File not found"}), 404
-    if os.name != "nt" or request.remote_addr not in {"127.0.0.1", "::1"}:
+    if os.name != "nt" or not is_direct_local_request():
         return jsonify({"status": "err", "msg": "Chỉ mở AI player trên Windows localhost"}), 403
 
     executable = os.environ.get("CINEMA_MPV_PATH") or shutil.which("mpv")
