@@ -1,4 +1,5 @@
 import { getUpscalePrefs, saveUpscalePrefs, rcasStops } from './player_upscale_prefs.js';
+import { createDropMonitor } from './player_upscale_quality.js';
 // FSR 1 (EASU + RCAS), locally rendered on the viewer's WebGL2 GPU. Not neural AI.
 const QUAD = `#version 300 es
 in vec2 p;
@@ -16,17 +17,16 @@ let started = 0;
 let status = 'Tắt';
 let lastFrameTime = -1;
 let effectiveCap = getUpscalePrefs().cap;
-let droppedFrames = 0;
-let lastDropped = 0;
-let qualityTime = 0;
-let badSamples = 0;
 let measuredFps = 0;
 let fpsWindowAt = 0;
 let fpsWindowFrames = 0;
 const listeners = new Set();
+const quality = createDropMonitor({ getPrefs: getUpscalePrefs,
+    getCap: () => effectiveCap, setCap: cap => { effectiveCap = cap; },
+    setStatus, fail: failUpscale, notify });
 
 export function getUpscaleState() {
-    return { mode, active, status, fps: measuredFps, dropped: droppedFrames,
+    return { mode, active, status, fps: measuredFps, dropped: quality.dropped(),
         effectiveCap, settings: getUpscalePrefs() };
 }
 export function onUpscaleChange(fn) {
@@ -213,33 +213,11 @@ function schedule() {
         }
         lastFrameTime = video.currentTime;
         renderFrame();
-        trackDroppedFrames(video);
+        quality.sample(video);
         schedule();
     };
     callbackId = video.requestVideoFrameCallback ? video.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
 }
-function trackDroppedFrames(video) {
-    if (!video.getVideoPlaybackQuality) return;
-    const current = video.getVideoPlaybackQuality().droppedVideoFrames;
-    if (!Number.isFinite(current)) return;
-    droppedFrames = Math.max(0, current);
-    const now = performance.now();
-    if (!qualityTime) { qualityTime = now; lastDropped = current; return; }
-    if (now - qualityTime < 8000) return;
-    const delta = Math.max(0, current - lastDropped);
-    lastDropped = current; qualityTime = now;
-    const cfg = getUpscalePrefs();
-    badSamples = cfg.auto && delta >= 6 ? badSamples + 1 : 0;
-    if (badSamples >= 2) {
-        badSamples = 0;
-        if (effectiveCap > 720) effectiveCap = 720;
-        else if (effectiveCap > 540) effectiveCap = 540;
-        else { failUpscale('Tự tắt FSR do thiết bị xem rớt quá nhiều khung hình'); return; }
-        setStatus('Auto: giảm xử lý còn ' + effectiveCap + 'p để hạn chế giật');
-    }
-    notify();
-}
-
 function stopUpscale(resetStatus = true) {
     generation++;
     active = false;
@@ -255,8 +233,8 @@ function stopUpscale(resetStatus = true) {
     currentVideo = null;
     frameCount = 0; started = 0; lastFrameTime = -1;
     effectiveCap = getUpscalePrefs().cap;
-    badSamples = 0; qualityTime = 0; lastDropped = 0;
-    droppedFrames = 0; measuredFps = 0; fpsWindowAt = 0; fpsWindowFrames = 0;
+    quality.reset();
+    measuredFps = 0; fpsWindowAt = 0; fpsWindowFrames = 0;
     if (resetStatus) status = 'Tắt';
     notify();
 }
