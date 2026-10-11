@@ -72,3 +72,10 @@ def close_session(sid):
     if not streams.stop(sid, _owner()):
         return jsonify({"error": "Không tồn tại phiên của bạn"}), 404
     return jsonify({"ok": True})
+
+@upscale_bp.route("/api/upscale/sessions/<sid>/status")
+def stream_status(sid):
+    record = streams.get_owned(sid, _owner())
+    if not record:
+        return jsonify({"error": "Không tồn tại phiên của bạn"}), 404
+    return jsonify(streams.telemetry(record))
