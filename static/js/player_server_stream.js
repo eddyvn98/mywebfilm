@@ -2,6 +2,7 @@
 let hls = null;
 let session = null;
 let sequence = 0;
+let lastStop = Promise.resolve();
 let monitor = null;
 let poorSpeedSamples = 0;
 let callback = () => {};
@@ -25,9 +26,13 @@ export function stopServerStream() {
     const old = session;
     session = null;
     if (old) {
-        void fetch('/api/upscale/sessions/' + old.id,
-            { method: 'DELETE', keepalive: true }).catch(() => {});
+        const previous = lastStop;
+        lastStop = previous.catch(() => {}).then(() =>
+            fetch('/api/upscale/sessions/' + old.id,
+                { method: 'DELETE', keepalive: true }).catch(() => {})
+        );
     }
+    return lastStop;
 }
 async function requestStream(path, height, interpolation, startAt) {
     const res = await fetch('/api/upscale/sessions', {
@@ -102,7 +107,7 @@ async function samplePerformance(video) {
     }
 }
 export async function startServerStream(path, opts, video) {
-    stopServerStream();
+    await stopServerStream();
     const supported = window.Hls?.isSupported() ||
         Boolean(video.canPlayType('application/vnd.apple.mpegurl'));
     if (!supported) throw new Error('Thiếu hỗ trợ HLS trên trình duyệt này');
