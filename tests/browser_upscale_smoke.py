@@ -62,7 +62,7 @@ def run():
                   const video = document.getElementById('modal-player');
                   video.srcObject = source.captureStream(24);
                   await video.play();
-                  await new Promise(resolve => video.addEventListener('loadeddata', resolve, { once:true }));
+                  if (video.readyState < 2) await new Promise(resolve => video.addEventListener('loadeddata', resolve, { once:true }));
                   await mod.setUpscaleMode('balanced', video);
                 }""")
                 page.wait_for_function("""() =>
