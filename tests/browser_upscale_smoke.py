@@ -34,7 +34,7 @@ def run():
                 page = browser.new_page(viewport={"width": 1100, "height": 700})
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
-                page.goto(f"http://127.0.0.1:{server.server_address[1]}/static/shaders/LICENSE.web-fsr")
+                page.goto(f"http://127.0.0.1:{server.server_address[1]}/tests/upscale_harness.html")
                 page.set_content("""
                   <div id="video-modal">
                     <div class="player-stage" style="position:relative;width:960px;height:540px">
