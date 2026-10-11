@@ -174,10 +174,10 @@ def start(path, owner, height=720, interpolation="lanczos", start_at=0):
 
 def _diagnose_failure(log):
     info = log.lower()
-    if "no capable devices" in info or "cannot load nvcuda" in info or "cuda_error" in info:
-        return "CUDA không hoạt động: kiểm tra driver NVIDIA và quyền GPU"
     if "nvenc" in info or "minimum required nvidia driver" in info:
         return "NVENC không hoạt động: kiểm tra driver hoặc bản FFmpeg"
+    if "no capable devices" in info or "cannot load nvcuda" in info or "cuda_error" in info:
+        return "CUDA không hoạt động: kiểm tra driver NVIDIA và quyền GPU"
     if "error while decoding" in info or "invalid data found" in info:
         return "Không giải mã được codec video nguồn"
     if "scale_cuda" in info or "hwupload" in info or "impossible to convert" in info:
