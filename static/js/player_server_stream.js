@@ -107,7 +107,10 @@ async function samplePerformance(video) {
     }
 }
 export async function startServerStream(path, opts, video) {
-    await stopServerStream();
+    const pendingStop = stopServerStream();
+    const requestToken = sequence;
+    await pendingStop;
+    if (requestToken !== sequence) return;
     const supported = window.Hls?.isSupported() ||
         Boolean(video.canPlayType('application/vnd.apple.mpegurl'));
     if (!supported) throw new Error('Thiếu hỗ trợ HLS trên trình duyệt này');
