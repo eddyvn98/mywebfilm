@@ -71,6 +71,21 @@ def run():
                   timeout=15000)
                 assert page.locator("#cinema-fsr-canvas").count() == 1
                 assert page.locator("#modal-player").evaluate("(el) => el.style.opacity") == "0"
+                # Validate persisted custom RCAS, adjustable cap, and rendered GPU frame.
+                page.evaluate("""async () => {
+                  const video = document.getElementById('modal-player');
+                  await upscaling.configureUpscale({
+                    source: 'browser', preset: 'custom', strength: 75,
+                    cap: 720, auto: true
+                  }, video);
+                  window.upscalePrefs = (await import('/static/js/player_upscale_prefs.js')).getUpscalePrefs();
+                }""")
+                assert page.evaluate("upscalePrefs.preset") == "custom"
+                assert page.evaluate("upscalePrefs.strength") == 75
+                assert page.evaluate("upscalePrefs.cap") == 720
+                page.wait_for_function("""() =>
+                  window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
+                  timeout=10000)
                 page.evaluate("""async () => {
                   const video = document.getElementById('modal-player');
                   video.pause();

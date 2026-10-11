@@ -17,6 +17,46 @@
         class="player-close absolute top-4 right-4 z-50 w-10 h-10 bg-black/50 backdrop-blur rounded-full flex items-center justify-center text-white/80 hover:bg-white/20 transition">
         <i class="fa-solid fa-xmark text-xl"></i>
     </button>
+
+    <section id="player-upscale-panel" class="upscale-panel" aria-label="Cài đặt nâng nét"
+        aria-modal="false" role="dialog" hidden>
+        <header class="upscale-panel-heading">
+            <strong><i class="fa-solid fa-wand-magic-sparkles"></i> Nâng nét video</strong>
+            <button id="upscale-close" type="button" aria-label="Đóng cài đặt">×</button>
+        </header>
+        <label for="upscale-source">Nơi xử lý</label>
+        <select id="upscale-source">
+            <option value="browser">GPU thiết bị đang xem · FSR</option>
+            <option value="server">GTX 1050 Ti trên server · HLS</option>
+        </select>
+        <p id="upscale-method" class="upscale-hint">FSR 1 là nâng nét không dùng mạng neural.</p>
+        <label for="upscale-preset">Preset</label>
+        <select id="upscale-preset">
+            <option value="off">Tắt · Video gốc</option>
+            <option value="balanced">Cân bằng</option>
+            <option value="sharp">Sắc nét</option>
+            <option value="custom">Tùy chỉnh</option>
+        </select>
+        <div class="upscale-panel-row">
+            <label for="upscale-strength">RCAS (trình duyệt)</label>
+            <output id="upscale-strength-output">50%</output>
+        </div>
+        <input id="upscale-strength" type="range" min="0" max="100" step="5" value="50"/>
+        <label for="upscale-cap">Giới hạn độ phân giải xử lý</label>
+        <select id="upscale-cap">
+            <option value="720">720p</option>
+            <option value="1080">1080p</option>
+            <option value="1440">1440p</option>
+            <option value="2160">4K</option>
+        </select>
+        <label class="upscale-check">
+            <input id="upscale-auto" type="checkbox" checked/>
+            Tự giảm tải khi phát giật
+        </label>
+        <p id="upscale-metrics" class="upscale-metrics" aria-live="polite">Chưa có thống kê.</p>
+        <p id="upscale-panel-error" class="upscale-error" role="alert" hidden></p>
+        <button id="upscale-apply" type="button" class="upscale-apply">Áp dụng</button>
+    </section>
     <div class="player-stage flex-1 relative bg-black flex items-center justify-center overflow-hidden">
         <video id="modal-player" playsinline controls preload="metadata" class="player-media"></video>
     </div>

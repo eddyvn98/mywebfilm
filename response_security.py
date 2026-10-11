@@ -60,6 +60,7 @@ def apply_security_headers(response):
             "img-src 'self' data: blob:; "
             "media-src 'self' blob:; "
             "connect-src 'self'; "
+            "worker-src 'self' blob:; "
             "object-src 'none'; "
             "base-uri 'none'; "
             "frame-src 'none'; "

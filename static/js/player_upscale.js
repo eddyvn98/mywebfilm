@@ -1,11 +1,12 @@
+import { getUpscalePrefs, saveUpscalePrefs, rcasStops } from './player_upscale_prefs.js';
+import { createDropMonitor } from './player_upscale_quality.js';
 // FSR 1 (EASU + RCAS), locally rendered on the viewer's WebGL2 GPU. Not neural AI.
 const QUAD = `#version 300 es
 in vec2 p;
 void main() { gl_Position = vec4(p, 0., 1.); }`;
-const MODES = new Set(['off', 'balanced', 'sharp']);
+const MODES = new Set(['off', 'balanced', 'sharp', 'custom']);
 const KEY = 'cinema_upscale_mode';
-let mode = 'off';
-try { const saved = localStorage.getItem(KEY); if (MODES.has(saved)) mode = saved; } catch {}
+let mode = getUpscalePrefs().preset;
 let renderer = null;
 let currentVideo = null;
 let active = false;
@@ -15,10 +16,18 @@ let frameCount = 0;
 let started = 0;
 let status = 'Tắt';
 let lastFrameTime = -1;
+let effectiveCap = getUpscalePrefs().cap;
+let measuredFps = 0;
+let fpsWindowAt = 0;
+let fpsWindowFrames = 0;
 const listeners = new Set();
+const quality = createDropMonitor({ getPrefs: getUpscalePrefs,
+    getCap: () => effectiveCap, setCap: cap => { effectiveCap = cap; },
+    setStatus, fail: failUpscale, notify });
 
 export function getUpscaleState() {
-    return { mode, active, status, fps: started ? Math.round(frameCount * 1000 / Math.max(1, performance.now() - started)) : 0 };
+    return { mode, active, status, fps: measuredFps, dropped: quality.dropped(),
+        effectiveCap, settings: getUpscalePrefs() };
 }
 export function onUpscaleChange(fn) {
     listeners.add(fn);
@@ -119,7 +128,9 @@ async function createRenderer(video) {
         const rect = stage.getBoundingClientRect();
         if (!rect.width || !rect.height) return 'waiting';
         const ratio = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight);
-        const cap = Math.min(1, Math.sqrt(1920 * 1080 / Math.max(1, video.videoWidth * ratio * video.videoHeight * ratio)));
+        // 1080p is the GTX 1050 Ti default; cap can be lowered automatically.
+        const budget = 1920 * 1080 * Math.pow(effectiveCap / 1080, 2);
+        const cap = Math.min(1, Math.sqrt(budget / Math.max(1, video.videoWidth * ratio * video.videoHeight * ratio)));
         const w = Math.max(2, Math.round(video.videoWidth * ratio * cap));
         const h = Math.max(2, Math.round(video.videoHeight * ratio * cap));
         if (w <= video.videoWidth || h <= video.videoHeight) {
@@ -143,9 +154,18 @@ async function createRenderer(video) {
         gl.viewport(0, 0, ow, oh);
         pass(first, src, ow, oh, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        pass(second, intermediate, ow, oh, mode === 'sharp' ? 0.15 : 1.5);
+        pass(second, intermediate, ow, oh, rcasStops(mode));
         if (!frameCount) started = performance.now();
         frameCount++;
+        fpsWindowFrames++;
+        const now = performance.now();
+        if (!fpsWindowAt) fpsWindowAt = now;
+        if (now - fpsWindowAt >= 3000) {
+            measuredFps = Math.round(fpsWindowFrames * 1000 / (now - fpsWindowAt));
+            fpsWindowAt = now;
+            fpsWindowFrames = 0;
+            notify();
+        }
         video.style.opacity = '0';
         canvas.style.display = 'block';
         if (frameCount % 120 === 0) notify();
@@ -193,6 +213,7 @@ function schedule() {
         }
         lastFrameTime = video.currentTime;
         renderFrame();
+        quality.sample(video);
         schedule();
     };
     callbackId = video.requestVideoFrameCallback ? video.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
@@ -211,11 +232,15 @@ function stopUpscale(resetStatus = true) {
     if (renderer) { renderer.dispose(); renderer = null; }
     currentVideo = null;
     frameCount = 0; started = 0; lastFrameTime = -1;
+    effectiveCap = getUpscalePrefs().cap;
+    quality.reset();
+    measuredFps = 0; fpsWindowAt = 0; fpsWindowFrames = 0;
     if (resetStatus) status = 'Tắt';
     notify();
 }
 function failUpscale(message) {
     mode = 'off';
+    saveUpscalePrefs({ preset: 'off' });
     try { localStorage.setItem(KEY, mode); } catch {}
     stopUpscale(false);
     setStatus(message);
@@ -224,6 +249,7 @@ export function teardownUpscale() { stopUpscale(); }
 export async function setUpscaleMode(nextMode, video) {
     if (!MODES.has(nextMode)) return;
     mode = nextMode;
+    saveUpscalePrefs({ preset: mode, source: 'browser' });
     try { localStorage.setItem(KEY, mode); } catch {}
     stopUpscale();
     if (nextMode === 'off' || !video) return;
@@ -252,4 +278,14 @@ export async function setUpscaleMode(nextMode, video) {
         failUpscale('Không thể bật FSR (WebGL2/shader); đang phát gốc');
     }
 }
-export function restoreUpscale(video) { return setUpscaleMode(mode, video); }
+export function restoreUpscale(video) {
+    return getUpscalePrefs().source === 'browser' ? setUpscaleMode(mode, video) : Promise.resolve();
+}
+export function configureUpscale(changes, video) {
+    const settings = saveUpscalePrefs(changes);
+    if (settings.source !== 'browser') {
+        teardownUpscale();
+        return Promise.resolve();
+    }
+    return setUpscaleMode(settings.preset, video);
+}
