@@ -78,7 +78,7 @@ async function createRenderer(video) {
     const canvas = document.createElement('canvas');
     canvas.id = 'cinema-fsr-canvas';
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;object-fit:contain';
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;object-fit:contain;display:none';
     const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, preserveDrawingBuffer: false });
     if (!gl) throw new Error('Trình duyệt không hỗ trợ WebGL2');
     const [easu, rcas] = await loadShaders();
