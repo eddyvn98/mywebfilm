@@ -75,8 +75,26 @@ def run():
                   await mod.setUpscaleMode('balanced', video);
                 }""")
                 page.wait_for_function("""() =>
-                  window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
+                  window.upscaling.getUpscaleState().status.startsWith('FSR GPU đang hoạt động')""",
                   timeout=15000)
+                # A Retina Mac must use physical pixels, not CSS layout pixels.
+                geometry_test = page.evaluate("""async () => {
+                  const geo = await import('/static/js/player_upscale_geometry.js');
+                  const input = { videoWidth: 1280, videoHeight: 720,
+                    cssWidth: 960, cssHeight: 540, cap: 1440 };
+                  const ordinary = geo.targetFsrSize({...input, dpr: 1});
+                  const retina = geo.targetFsrSize({...input, dpr: 2});
+                  const sharpen = geo.targetFsrSize({
+                    videoWidth: 1920, videoHeight: 1080, cssWidth: 1512,
+                    cssHeight: 850, dpr: 2, cap: 1080
+                  });
+                  return { ordinary, retina, sharpen };
+                }""")
+                assert geometry_test["ordinary"]["kind"] == "native"
+                assert geometry_test["retina"]["kind"] == "upscale"
+                assert geometry_test["retina"]["width"] == 1920
+                assert geometry_test["retina"]["height"] == 1080
+                assert geometry_test["sharpen"]["kind"] == "sharpen"
                 assert page.locator("#cinema-fsr-canvas").count() == 1
                 assert page.locator(".plyr__video-wrapper > #cinema-fsr-canvas").count() == 1
                 # Canvas must stay inside the video stacking context below Plyr controls.
@@ -117,6 +135,14 @@ def run():
                 page.wait_for_function("""() =>
                   window.upscaling.getUpscaleState().status === 'FSR GPU đang hoạt động'""",
                   timeout=10000)
+                # Even without upscale, a 1:1 video uses GPU RCAS sharpening.
+                page.evaluate("""() => {
+                  document.querySelector('.player-stage').style.width = '320px';
+                  window.dispatchEvent(new Event('resize'));
+                }""")
+                page.wait_for_function("""() =>
+                  window.upscaling.getUpscaleState().renderInfo.kind === 'sharpen'
+                  && window.upscaling.getUpscaleState().processing""", timeout=5000)
                 page.evaluate("""() => {
                   document.querySelector('.player-stage').style.width = '160px';
                   window.dispatchEvent(new Event('resize'));
