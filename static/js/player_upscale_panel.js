@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { getStreamUrl } from './api.js';
 import { getUpscalePrefs, saveUpscalePrefs } from './player_upscale_prefs.js';
-import { getUpscaleState, configureUpscale, teardownUpscale, onUpscaleChange } from './player_upscale.js';
+import { getUpscaleState, configureUpscale, restoreUpscale, teardownUpscale, onUpscaleChange } from './player_upscale.js';
 import { startServerStream, stopServerStream, getServerStreamState, onServerStreamUpdate } from './player_server_stream.js';
 
 let initialized = false;
@@ -9,6 +9,7 @@ let wand = null;
 let serverStatus = '';
 let serverSpeed = null;
 let lastStatus = '';
+let savedRestoreVersion = 0;
 
 function byId(id) { return document.getElementById(id); }
 function label(mode) {
@@ -76,6 +77,7 @@ function restoreOriginal(seekTo = 0) {
     player.play().catch(() => {});
 }
 async function apply() {
+    cancelSavedUpscale();
     const applyButton = byId('upscale-apply');
     const video = state.player?.media || byId('modal-player');
     const movie = getMedia();
@@ -112,6 +114,42 @@ async function apply() {
         drawState(getUpscaleState());
     }
 }
+
+export function cancelSavedUpscale() {
+    ++savedRestoreVersion;
+}
+export async function restoreSavedUpscale(path, video, startAt = 0) {
+    const version = ++savedRestoreVersion;
+    const prefs = getUpscalePrefs();
+    if (prefs.source !== 'server' || prefs.preset === 'off') {
+        return restoreUpscale(video);
+    }
+    // Let Plyr finish replacing the media source before attaching the HLS stream.
+    await new Promise(resolve => setTimeout(resolve, 150));
+    if (version !== savedRestoreVersion || getMedia()?.full_path !== path) return;
+    try {
+        await startServerStream(path, { ...prefs, startAt: Math.max(0, startAt || 0) }, video);
+        if (version !== savedRestoreVersion) return;
+        const fallback = video.parentElement?.querySelector('.fallback-overlay');
+        if (fallback) fallback.style.display = 'none';
+        serverStatus = 'Đã khôi phục cấu hình GPU server';
+        drawState(getUpscaleState());
+    } catch (error) {
+        if (version !== savedRestoreVersion) return;
+        // The original stream is still playable and must remain visible on failure.
+        serverStatus = 'Không thể tự bật xử lý server';
+        showError('Tự nâng nét: ' + (error.message || 'Không thể tạo luồng GPU'));
+        const notice = byId('player-upscale-notice');
+        if (notice) {
+            notice.textContent = 'Không thể xử lý trên server. Đang sử dụng phim gốc.';
+            notice.hidden = false;
+            setTimeout(() => { notice.hidden = true; }, 5500);
+        }
+        drawState(getUpscaleState());
+        console.warn('[Auto GPU stream]', error);
+    }
+}
+
 export function hideUpscalePanel() {
     const panel = byId('player-upscale-panel');
     if (panel) panel.hidden = true;
