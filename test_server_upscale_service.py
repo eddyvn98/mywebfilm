@@ -47,7 +47,7 @@ def test_cuda_pipeline_and_session_owner(mock_gpu):
     assert args[args.index("-filter_hw_device") + 1] == "cuda"
     assert "format=nv12,hwupload,scale_cuda=w=-2:h=1080:interp_algo=lanczos" in args
     assert args[args.index("-c:v") + 1] == "h264_nvenc"
-    assert "scale_cuda=w=-2:h=1080:interp_algo=lanczos" in args
+    assert any("scale_cuda=w=-2:h=1080:interp_algo=lanczos" in arg for arg in args)
     assert "C:/Films/Movie 720p.mp4" in args
     assert service.get_owned(record["id"], "login-2") is None
     assert service.get_owned(record["id"], "login-1") is record
