@@ -61,8 +61,9 @@ def run():
                   window.stopPainting = () => { running = false; };
                   const video = document.getElementById('modal-player');
                   video.srcObject = source.captureStream(24);
-                  await video.play();
-                  if (video.readyState < 2) await new Promise(resolve => video.addEventListener('loadeddata', resolve, { once:true }));
+                  const withTimeout = (promise, label) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out: ' + label)), 8000))]);
+                  await withTimeout(video.play(), 'video.play');
+                  if (video.readyState < 2) await withTimeout(new Promise(resolve => video.addEventListener('loadeddata', resolve, { once:true })), 'loadeddata');
                   await mod.setUpscaleMode('balanced', video);
                 }""")
                 page.wait_for_function("""() =>
