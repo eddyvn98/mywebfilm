@@ -268,3 +268,40 @@
         padding-right: 2px !important;
     }
 }
+
+
+/* FSR wand must remain visibly active even though Plyr forces white icon color. */
+#video-modal #plyr-btn-upscale {
+    order: 21 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+}
+#video-modal #plyr-btn-upscale[data-upscale-mode="balanced"] {
+    background: rgba(37, 99, 235, .9) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 0 2px rgba(147, 197, 253, .6) inset;
+}
+#video-modal #plyr-btn-upscale[data-upscale-mode="sharp"] {
+    background: rgba(21, 128, 61, .9) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 0 2px rgba(134, 239, 172, .7) inset;
+}
+#video-modal .player-upscale-notice {
+    position: absolute;
+    left: 50%;
+    bottom: max(104px, calc(76px + env(safe-area-inset-bottom)));
+    transform: translateX(-50%);
+    z-index: 70;
+    width: max-content;
+    max-width: min(90vw, 460px);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .88);
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+}
+#video-modal .player-upscale-notice[hidden] { display: none !important; }
