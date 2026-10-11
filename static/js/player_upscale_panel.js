@@ -34,7 +34,7 @@ function updateDisabled() {
     strength.disabled = source !== 'browser' || preset !== 'custom';
     byId('upscale-strength-output').textContent = strength.value + '%';
     byId('upscale-method').textContent = source === 'browser'
-        ? 'FSR xử lý trên thiết bị xem, KHÔNG chạy GTX server; video đủ nét ở 1:1 sẽ bỏ qua shader.'
+        ? 'FSR trên GPU máy đang xem: nhận biết màn hình Retina; video 1:1 vẫn làm nét RCAS.'
         : 'Server GTX 1050 Ti: giải mã CPU → nâng độ phân giải CUDA → mã hóa NVENC/HLS. Không phải AI neural.';
     void checkGpuReadiness();
 }
@@ -81,12 +81,13 @@ function drawState(stateValue) {
     const p = getUpscalePrefs();
     if (wand) {
         wand.dataset.upscaleMode = p.source === 'server'
-            ? (getServerStreamState().active ? 'server' : 'off') : stateValue.mode;
+            ? (getServerStreamState().active ? 'server' : 'off')
+            : (stateValue.processing ? stateValue.mode : 'off');
         wand.title = p.source === 'server' ? 'GTX server: ' + serverStatus
             : 'FSR ' + label(stateValue.mode) + ' · ' + stateValue.status;
         wand.setAttribute('aria-label', 'Cài đặt nâng nét: ' + wand.title);
         wand.setAttribute('aria-pressed',
-            (p.source === 'server' ? getServerStreamState().active : stateValue.active)
+            (p.source === 'server' ? getServerStreamState().active : stateValue.processing)
                 ? 'true' : 'false');
     }
     const drops = Number.isFinite(stateValue.dropped) ? stateValue.dropped : 'N/A';
@@ -95,8 +96,13 @@ function drawState(stateValue) {
         ? (getServerStreamState().active
             ? 'GPU SERVER ' + getServerStreamState().height + 'p · NVENC ' + speed + ' · ' + serverStatus
             : 'GPU SERVER CHƯA HOẠT ĐỘNG · ' + (serverStatus || 'Kiểm tra CUDA/NVENC'))
-        : 'FSR TRÌNH DUYỆT ' + stateValue.fps + ' FPS xử lý · Dropped frames: ' + drops
-            + ' · ' + stateValue.status;
+        : (stateValue.processing
+            ? 'FSR WebGL2 · ' + stateValue.renderInfo.width + '×' +
+                stateValue.renderInfo.height + ' pixel · Retina ' +
+                stateValue.renderInfo.dpr.toFixed(1) + '× · ' +
+                stateValue.fps + ' FPS xử lý · Drops: ' + drops +
+                ' · ' + stateValue.status
+            : 'FSR CHƯA XỬ LÝ · ' + stateValue.status);
     byId('upscale-metrics').textContent = info;
     if (lastStatus !== stateValue.status && lastStatus) {
         const notice = byId('player-upscale-notice');
