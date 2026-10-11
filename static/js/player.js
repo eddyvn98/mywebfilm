@@ -1,5 +1,6 @@
 import './security.js';
 import { playerRuntime } from './player_runtime.js';
+import { teardownUpscale } from './player_upscale.js';
 import { ensureSinglePlaylistUI, renderPlaylist } from './player_playlist.js';
 import { loadVideoSource } from './player_video.js';
 import { openImageModal, closeImageModal } from './player_image.js';
@@ -80,6 +81,7 @@ function scheduleHistoryRecord(video) {
 // --- Main Player Logic ---
 
 export function closeVideoModal() {
+    teardownUpscale();
     clearTimeout(historyRecordTimer);
     historyRecordTimer = null;
     if (state.player) state.player.pause();

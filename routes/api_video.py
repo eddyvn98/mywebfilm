@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request, send_file
 import mimetypes
 import os
 import subprocess
+import shutil
+from web_security import is_direct_local_request
 
 import config_manager as cfg
 import ffmpeg_service as ff
@@ -202,3 +204,35 @@ def stream_video():
         conditional=True,
         as_attachment=False,
     )
+
+
+@video_bp.route("/api/play/upscaled", methods=["POST"])
+def play_upscaled():
+    """Launch neural FSRCNNX locally on the Windows host, never through a remote browser."""
+    data = request.get_json(silent=True) or {}
+    path = data.get("path")
+    if not isinstance(path, str) or not _catalog_item(path):
+        return jsonify({"status": "err", "msg": "Access denied"}), 403
+    if not os.path.isfile(path):
+        return jsonify({"status": "err", "msg": "File not found"}), 404
+    if os.name != "nt" or not is_direct_local_request():
+        return jsonify({"status": "err", "msg": "Chỉ mở AI player trên Windows localhost"}), 403
+
+    executable = os.environ.get("CINEMA_MPV_PATH") or shutil.which("mpv")
+    shader = os.environ.get("CINEMA_FSRCNNX_SHADER", "")
+    if not executable or not os.path.isfile(executable):
+        return jsonify({"status": "err", "msg": "Chưa cài mpv hoặc CINEMA_MPV_PATH"}), 503
+    if not shader or not os.path.isfile(shader) or not shader.lower().endswith(".glsl"):
+        return jsonify({"status": "err", "msg": "Chưa cấu hình CINEMA_FSRCNNX_SHADER"}), 503
+
+    try:
+        subprocess.Popen([
+            executable, "--no-config", "--vo=gpu-next",
+            "--gpu-api=d3d11", "--hwdec=auto-safe",
+            "--scale=ewa_lanczossharp",
+            "--glsl-shader=" + shader, "--", path,
+        ], close_fds=True)
+    except OSError:
+        return jsonify({"status": "err", "msg": "Không thể chạy mpv"}), 500
+    cfg.increment_views(path)
+    return jsonify({"status": "ok", "mode": "FSRCNNX", "location": "server"})

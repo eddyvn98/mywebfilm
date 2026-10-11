@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 import { getStreamUrl } from './api.js';
 import { playerRuntime } from './player_runtime.js';
+import { restoreUpscale, setUpscaleMode, teardownUpscale, getUpscaleState, onUpscaleChange } from './player_upscale.js';
 
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
 let lastProgressSaveAt = 0;
@@ -92,6 +93,7 @@ function ensurePlayer(video) {
 }
 
 export function loadVideoSource(v) {
+    teardownUpscale();
     playerRuntime.currentRotation = 0;
     const video = document.getElementById('modal-player') || state.player?.media;
     if (!video) return;
@@ -134,6 +136,7 @@ export function loadVideoSource(v) {
 
     lastProgressSaveAt = 0;
     setTimeout(injectPlyrCustomControls, 0);
+    void restoreUpscale(video);
     state.player.play().catch(() => { });
 }
 
@@ -179,6 +182,9 @@ function injectPlyrCustomControls() {
         else controls.appendChild(playlistBtn);
     }
 
+    injectUpscaleControl(controls, fullscreenBtn);
+    injectNeuralControl(controls, fullscreenBtn);
+
     const rotateBtn = createCustomControl(
         'plyr-btn-rotate',
         'fa-solid fa-rotate-right',
@@ -211,3 +217,58 @@ window.rotateVideo = () => {
 };
 
 
+
+function injectUpscaleControl(controls, fullscreenBtn) {
+    if (document.getElementById('plyr-btn-upscale')) return;
+    const btn = createCustomControl('plyr-btn-upscale', 'fa-solid fa-wand-magic-sparkles',
+        'Nâng nét GPU: tắt / cân bằng / sắc nét', () => {
+            const video = document.getElementById('modal-player');
+            const current = getUpscaleState().mode;
+            const next = current === 'off' ? 'balanced' : current === 'balanced' ? 'sharp' : 'off';
+            void setUpscaleMode(next, video);
+        });
+    if (!btn) return;
+    btn.style.cssText = 'min-width:44px;position:relative;';
+    if (fullscreenBtn) controls.insertBefore(btn, fullscreenBtn);
+    else controls.appendChild(btn);
+    const update = ({ mode, status }) => {
+        btn.style.color = mode === 'off' ? '' : '#4ade80';
+        btn.setAttribute('aria-label', 'Nâng nét GPU: ' + mode + '. ' + status);
+        btn.title = 'FSR (không phải AI neural): ' + mode + ' — ' + status;
+        btn.setAttribute('aria-pressed', mode !== 'off' ? 'true' : 'false');
+    };
+    onUpscaleChange(update);
+    update(getUpscaleState());
+}
+
+function injectNeuralControl(controls, fullscreenBtn) {
+    const btn = createCustomControl('plyr-btn-neural', 'fa-solid fa-microchip',
+        'AI neural FSRCNNX trên PC Windows (chỉ localhost)', async () => {
+            const movie = getCurrentMedia();
+            if (!movie?.full_path) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/play/upscaled', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: movie.full_path })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    window.alert(data.msg || 'Không thể mở AI player');
+                    return;
+                }
+                state.player?.pause();
+                window.alert('Đã yêu cầu mở mpv + FSRCNNX trên máy Windows chạy server.');
+            } catch {
+                window.alert('Không thể kết nối máy chủ AI player');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    if (btn) {
+        btn.style.minWidth = '44px';
+        if (fullscreenBtn) controls.insertBefore(btn, fullscreenBtn);
+        else controls.appendChild(btn);
+    }
+}
