@@ -6,6 +6,8 @@ import { restoreUpscale, setUpscaleMode, teardownUpscale, getUpscaleState, onUps
 
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
 let lastProgressSaveAt = 0;
+let unsubscribeUpscale = null;
+let upscaleNoticeTimer = null;
 
 export function getCurrentMedia() {
     return state.currentGridVideos[state.currentIndex] || null;
@@ -218,26 +220,50 @@ window.rotateVideo = () => {
 
 
 
+function showUpscaleStatus({ mode, status }) {
+    const stage = document.querySelector('#video-modal .player-stage');
+    if (!stage) return;
+    let notice = document.getElementById('player-upscale-notice');
+    if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'player-upscale-notice';
+        notice.className = 'player-upscale-notice';
+        notice.setAttribute('role', 'status');
+        notice.setAttribute('aria-live', 'polite');
+        stage.appendChild(notice);
+    }
+    const label = mode === 'balanced' ? 'Cân bằng' : mode === 'sharp' ? 'Sắc nét' : 'Tắt';
+    notice.textContent = 'Nâng nét FSR · ' + label + ' · ' + status;
+    notice.hidden = false;
+    clearTimeout(upscaleNoticeTimer);
+    upscaleNoticeTimer = setTimeout(() => { notice.hidden = true; }, 4500);
+}
 function injectUpscaleControl(controls, fullscreenBtn) {
     if (document.getElementById('plyr-btn-upscale')) return;
     const btn = createCustomControl('plyr-btn-upscale', 'fa-solid fa-wand-magic-sparkles',
-        'Nâng nét GPU: tắt / cân bằng / sắc nét', () => {
+        'Nâng nét FSR: Tắt / Cân bằng / Sắc nét', () => {
             const video = document.getElementById('modal-player');
             const current = getUpscaleState().mode;
             const next = current === 'off' ? 'balanced' : current === 'balanced' ? 'sharp' : 'off';
             void setUpscaleMode(next, video);
         });
     if (!btn) return;
-    btn.style.cssText = 'min-width:44px;position:relative;';
     if (fullscreenBtn) controls.insertBefore(btn, fullscreenBtn);
     else controls.appendChild(btn);
-    const update = ({ mode, status }) => {
-        btn.style.color = mode === 'off' ? '' : '#4ade80';
-        btn.setAttribute('aria-label', 'Nâng nét GPU: ' + mode + '. ' + status);
-        btn.title = 'FSR (không phải AI neural): ' + mode + ' — ' + status;
+    unsubscribeUpscale?.();
+    let previous = '';
+    const update = ({ mode, status, fps }) => {
+        btn.dataset.upscaleMode = mode;
+        const label = mode === 'balanced' ? 'Cân bằng' : mode === 'sharp' ? 'Sắc nét' : 'Tắt';
+        btn.setAttribute('aria-label', 'Nâng nét FSR: ' + label + '. ' + status);
+        btn.title = 'FSR (không phải AI neural): ' + label + ' · ' + status
+            + (fps ? ' · khoảng ' + fps + ' khung hình/giây xử lý' : '');
         btn.setAttribute('aria-pressed', mode !== 'off' ? 'true' : 'false');
+        const identity = mode + ':' + status;
+        if (previous && identity !== previous) showUpscaleStatus({ mode, status });
+        previous = identity;
     };
-    onUpscaleChange(update);
+    unsubscribeUpscale = onUpscaleChange(update);
     update(getUpscaleState());
 }
 

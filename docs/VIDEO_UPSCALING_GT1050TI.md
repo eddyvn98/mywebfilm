@@ -44,3 +44,13 @@ FSRCNNX is licensed separately by its author (LGPL); it is **not** bundled into 
 - CI validates Python syntax, JavaScript syntax and static player contracts. Actual GPU FPS requires Windows GTX 1050 Ti hardware and a browser smoke test.
 
 Important: Neither "Balanced" nor "Sharp" is neural AI. True neural upscaling requires launching the separately configured FSRCNNX player.
+
+## Wand troubleshooting and status (October 2026 fix)
+
+- The wand has a **blue background** in Balanced, **green background** in Sharp, and no highlight when Off. A short on-screen message confirms the actual GPU state or explains why upscaling is unavailable.
+- If the browser has no WebGL2 or the shaders fail, the source video remains available and the status reports the failure (not a silent no-op).
+- Paused video, seeking, switching movie, browser resizing and leaving fullscreen now all update or stop the renderer.
+- At 1:1 or downscaled display size, the source video remains visible; there is nothing to spatially upscale. Increase the playback area or use 480p/720p content to test.
+- After deploying, use Ctrl+Shift+R once to invalidate previous JS/CSS. The import map now uses v18_upscale_fix.
+- Chrome/Edge: open DevTools Console and check [Video upscaling] for technical shader errors if the status reports a failure.
+- CI runs an actual headless Chrome WebGL2 smoke test in addition to syntax and static tests.

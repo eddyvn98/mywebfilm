@@ -1,18 +1,20 @@
-// Local WebGL2 FSR 1.0 (EASU + RCAS). FSR is spatial, not neural AI.
+// FSR 1 (EASU + RCAS), locally rendered on the viewer's WebGL2 GPU. Not neural AI.
 const QUAD = `#version 300 es
 in vec2 p;
 void main() { gl_Position = vec4(p, 0., 1.); }`;
 const MODES = new Set(['off', 'balanced', 'sharp']);
 const KEY = 'cinema_upscale_mode';
-let mode = MODES.has(localStorage.getItem(KEY)) ? localStorage.getItem(KEY) : 'off';
+let mode = 'off';
+try { const saved = localStorage.getItem(KEY); if (MODES.has(saved)) mode = saved; } catch {}
 let renderer = null;
 let currentVideo = null;
 let active = false;
-let lastTime = -1;
+let callbackId = 0;
+let generation = 0;
 let frameCount = 0;
 let started = 0;
-let callbackId = 0;
 let status = 'Tắt';
+let lastFrameTime = -1;
 const listeners = new Set();
 
 export function getUpscaleState() {
@@ -23,14 +25,17 @@ export function onUpscaleChange(fn) {
     return () => listeners.delete(fn);
 }
 function notify() { for (const fn of listeners) fn(getUpscaleState()); }
+function setStatus(value) {
+    if (status !== value) { status = value; notify(); }
+}
 function compile(gl, type, code) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, code);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        const reason = gl.getShaderInfoLog(shader);
+        const error = gl.getShaderInfoLog(shader);
         gl.deleteShader(shader);
-        throw new Error(reason || 'Shader compilation failed');
+        throw new Error(error || 'Shader compilation failed');
     }
     return shader;
 }
@@ -43,14 +48,18 @@ function program(gl, fragment) {
     gl.linkProgram(p);
     gl.deleteShader(vert);
     gl.deleteShader(frag);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        const error = gl.getProgramInfoLog(p);
+        gl.deleteProgram(p);
+        throw new Error(error || 'Shader program link failed');
+    }
     return p;
 }
 async function loadShaders() {
-    const paths = ['/static/shaders/fsr-easu.frag', '/static/shaders/fsr-rcas.frag'];
-    const responses = await Promise.all(paths.map(url => fetch(url, { credentials: 'same-origin' })));
-    if (responses.some(r => !r.ok)) throw new Error('Không tải được shader FSR');
-    return Promise.all(responses.map(r => r.text()));
+    const urls = ['/static/shaders/fsr-easu.frag', '/static/shaders/fsr-rcas.frag'];
+    const responses = await Promise.all(urls.map(url => fetch(url, { credentials: 'same-origin', cache: 'no-cache' })));
+    if (responses.some(res => !res.ok)) throw new Error('Không tải được shader FSR');
+    return Promise.all(responses.map(res => res.text()));
 }
 function allocate(gl, w, h) {
     const texture = gl.createTexture();
@@ -62,16 +71,6 @@ function allocate(gl, w, h) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     return texture;
 }
-function setupPass(gl, p, texture, w, h, sharpness) {
-    gl.useProgram(p);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(gl.getUniformLocation(p, 'iChannel0'), 0);
-    gl.uniform2f(gl.getUniformLocation(p, 'iResolution'), w, h);
-    const loc = gl.getUniformLocation(p, 'sharpness');
-    if (loc !== null) gl.uniform1f(loc, sharpness);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-}
 async function createRenderer(video) {
     const stage = document.querySelector('#video-modal .player-stage');
     if (!stage) throw new Error('Không tìm thấy vùng phát');
@@ -79,31 +78,54 @@ async function createRenderer(video) {
     canvas.id = 'cinema-fsr-canvas';
     canvas.setAttribute('aria-hidden', 'true');
     canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;object-fit:contain;display:none';
-    const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, preserveDrawingBuffer: false });
+    const gl = canvas.getContext('webgl2', { alpha: false, antialias: false });
     if (!gl) throw new Error('Trình duyệt không hỗ trợ WebGL2');
     const [easu, rcas] = await loadShaders();
-    const prog1 = program(gl, easu);
-    const prog2 = program(gl, rcas);
+    const first = program(gl, easu), second = program(gl, rcas);
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-    for (const p of [prog1, prog2]) {
-        const loc = gl.getAttribLocation(p, 'p');
-        gl.enableVertexAttribArray(loc);
-        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    }
     const framebuffer = gl.createFramebuffer();
     let src = null, intermediate = null, sw = 0, sh = 0, ow = 0, oh = 0;
     stage.appendChild(canvas);
+
+    const contextLost = event => {
+        event.preventDefault();
+        failUpscale('GPU WebGL bị mất kết nối; đã trở về video gốc');
+    };
+    canvas.addEventListener('webglcontextlost', contextLost);
+    function pass(p, texture, w, h, sharpness) {
+        gl.useProgram(p);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        const loc = gl.getAttribLocation(p, 'p');
+        if (loc >= 0) {
+            gl.enableVertexAttribArray(loc);
+            gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(gl.getUniformLocation(p, 'iChannel0'), 0);
+        gl.uniform2f(gl.getUniformLocation(p, 'iResolution'), w, h);
+        const sharp = gl.getUniformLocation(p, 'sharpness');
+        if (sharp !== null) gl.uniform1f(sharp, sharpness);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    function showOriginal() {
+        video.style.opacity = '';
+        canvas.style.display = 'none';
+    }
     function draw() {
-        if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
-        const bounds = stage.getBoundingClientRect();
-        const ratio = Math.min(bounds.width / video.videoWidth, bounds.height / video.videoHeight);
-        // Cap GPU work at 1080p on entry-level GTX 1050 Ti.
-        const cap = Math.min(1, Math.sqrt((1920 * 1080) / Math.max(1, video.videoWidth * ratio * video.videoHeight * ratio)));
+        if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return 'waiting';
+        const rect = stage.getBoundingClientRect();
+        if (!rect.width || !rect.height) return 'waiting';
+        const ratio = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight);
+        const cap = Math.min(1, Math.sqrt(1920 * 1080 / Math.max(1, video.videoWidth * ratio * video.videoHeight * ratio)));
         const w = Math.max(2, Math.round(video.videoWidth * ratio * cap));
         const h = Math.max(2, Math.round(video.videoHeight * ratio * cap));
-        if (w < video.videoWidth || h < video.videoHeight) return;
+        if (w <= video.videoWidth || h <= video.videoHeight) {
+            showOriginal();
+            return 'native';
+        }
         if (video.videoWidth !== sw || video.videoHeight !== sh || ow !== w || oh !== h) {
             if (src) gl.deleteTexture(src);
             if (intermediate) gl.deleteTexture(intermediate);
@@ -111,8 +133,6 @@ async function createRenderer(video) {
             src = allocate(gl, sw, sh);
             intermediate = allocate(gl, ow, oh);
             canvas.width = ow; canvas.height = oh;
-            canvas.style.width = '100%'; canvas.style.height = '100%';
-            canvas.style.objectFit = 'contain';
         }
         gl.bindTexture(gl.TEXTURE_2D, src);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -121,21 +141,26 @@ async function createRenderer(video) {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, intermediate, 0);
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('GPU framebuffer failed');
         gl.viewport(0, 0, ow, oh);
-        setupPass(gl, prog1, src, ow, oh, 0);
+        pass(first, src, ow, oh, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        setupPass(gl, prog2, intermediate, ow, oh, mode === 'sharp' ? 0.15 : 1.5);
-        if (frameCount === 0) { video.style.opacity = '0'; canvas.style.display = 'block'; started = performance.now(); }
+        pass(second, intermediate, ow, oh, mode === 'sharp' ? 0.15 : 1.5);
+        if (!frameCount) started = performance.now();
         frameCount++;
-        if (frameCount % 60 === 0) notify();
+        video.style.opacity = '0';
+        canvas.style.display = 'block';
+        if (frameCount % 120 === 0) notify();
+        return 'processed';
     }
-    return { canvas, gl, draw, dispose() {
+    return { draw, dispose() {
+        canvas.removeEventListener('webglcontextlost', contextLost);
+        showOriginal();
         canvas.remove();
-        video.style.opacity = '';
         if (src) gl.deleteTexture(src);
         if (intermediate) gl.deleteTexture(intermediate);
         gl.deleteFramebuffer(framebuffer);
         gl.deleteBuffer(buffer);
-        gl.deleteProgram(prog1); gl.deleteProgram(prog2);
+        gl.deleteProgram(first);
+        gl.deleteProgram(second);
     } };
 }
 function cancelLoop() {
@@ -145,67 +170,86 @@ function cancelLoop() {
     }
     callbackId = 0;
 }
+function renderFrame() {
+    if (!active || !renderer || !currentVideo) return;
+    try {
+        const result = renderer.draw();
+        if (result === 'processed') setStatus('FSR GPU đang hoạt động');
+        if (result === 'native') setStatus('Video không cần phóng to ở kích thước hiện tại');
+    } catch (err) {
+        console.error('[Video upscaling]', err);
+        failUpscale('FSR lỗi GPU/shader; đang phát video gốc');
+    }
+}
 function schedule() {
-    if (!active || !renderer || !currentVideo || currentVideo.paused || currentVideo.ended) return;
-    const v = currentVideo;
+    if (!active || !renderer || !currentVideo || currentVideo.paused || currentVideo.ended || callbackId) return;
+    const video = currentVideo;
     const tick = () => {
-        if (!active || currentVideo !== v) return;
-        try {
-            if (v.currentTime !== lastTime && v.readyState >= 2) {
-                renderer.draw();
-                lastTime = v.currentTime;
-            }
-        } catch (err) {
-            console.warn('FSR disabled:', err);
-            status = 'GPU không thể xử lý video; đang dùng hình gốc';
-            stopUpscale(false);
+        callbackId = 0;
+        if (!active || currentVideo !== video) return;
+        if (!video.requestVideoFrameCallback && video.currentTime === lastFrameTime) {
+            schedule();
             return;
         }
+        lastFrameTime = video.currentTime;
+        renderFrame();
         schedule();
     };
-    callbackId = v.requestVideoFrameCallback
-        ? v.requestVideoFrameCallback(tick)
-        : requestAnimationFrame(tick);
+    callbackId = video.requestVideoFrameCallback ? video.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
 }
 function stopUpscale(resetStatus = true) {
+    generation++;
     active = false;
     cancelLoop();
-    if (renderer) { renderer.dispose(); renderer = null; }
     if (currentVideo) {
         currentVideo.removeEventListener('play', schedule);
         currentVideo.removeEventListener('pause', cancelLoop);
-        currentVideo.removeEventListener('seeked', schedule);
+        currentVideo.removeEventListener('seeked', renderFrame);
+        currentVideo.removeEventListener('loadeddata', renderFrame);
     }
+    window.removeEventListener('resize', renderFrame);
+    if (renderer) { renderer.dispose(); renderer = null; }
     currentVideo = null;
-    frameCount = 0; started = 0; lastTime = -1;
+    frameCount = 0; started = 0; lastFrameTime = -1;
     if (resetStatus) status = 'Tắt';
     notify();
+}
+function failUpscale(message) {
+    mode = 'off';
+    try { localStorage.setItem(KEY, mode); } catch {}
+    stopUpscale(false);
+    setStatus(message);
 }
 export function teardownUpscale() { stopUpscale(); }
 export async function setUpscaleMode(nextMode, video) {
     if (!MODES.has(nextMode)) return;
     mode = nextMode;
-    localStorage.setItem(KEY, mode);
+    try { localStorage.setItem(KEY, mode); } catch {}
     stopUpscale();
     if (nextMode === 'off' || !video) return;
+    const token = generation;
     currentVideo = video;
-    status = 'Đang khởi tạo FSR...'; notify();
+    setStatus('Đang khởi tạo WebGL2...');
     try {
         const created = await createRenderer(video);
-        if (currentVideo !== video || mode !== nextMode) { created.dispose(); return; }
+        if (token !== generation || currentVideo !== video || mode !== nextMode) {
+            created.dispose();
+            return;
+        }
         renderer = created;
-        active = true; status = 'FSR GPU hoạt động';
+        active = true;
+        setStatus('Đang chờ khung hình...');
         video.addEventListener('play', schedule);
         video.addEventListener('pause', cancelLoop);
-        video.addEventListener('seeked', schedule);
-        video.addEventListener('loadeddata', schedule, { once: true });
-        schedule(); notify();
+        video.addEventListener('seeked', renderFrame);
+        video.addEventListener('loadeddata', renderFrame);
+        window.addEventListener('resize', renderFrame);
+        renderFrame(); // Work when paused; also reveal GPU errors immediately.
+        schedule();
     } catch (err) {
-        console.warn('FSR unavailable:', err);
-        status = 'Không hỗ trợ GPU/WebGL2; phát video gốc';
-        stopUpscale(false);
+        if (token !== generation) return;
+        console.error('[Video upscaling]', err);
+        failUpscale('Không thể bật FSR (WebGL2/shader); đang phát gốc');
     }
 }
-export function restoreUpscale(video) {
-    return setUpscaleMode(mode, video);
-}
+export function restoreUpscale(video) { return setUpscaleMode(mode, video); }

@@ -11,6 +11,7 @@
 @import url("./style/cinema.css");
 @import url("./style/responsive-polish.css");
 @import url("./style/youtube-player-controls.css");
+@import url("./style/player-upscale.css");
 
 /* Performance invariant mirrored for legacy checks. */
 /* content-visibility: auto; */
