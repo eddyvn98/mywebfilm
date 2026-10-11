@@ -2,8 +2,8 @@ import { state } from './state.js';
 import { escapeHtml, escapeInlineJsSingleQuoted } from './security.js';
 import { getStreamUrl } from './api.js';
 import { playerRuntime } from './player_runtime.js';
-import { restoreUpscale, teardownUpscale } from './player_upscale.js';
-import { initUpscalePanel, toggleUpscalePanel } from './player_upscale_panel.js';
+import { teardownUpscale } from './player_upscale.js';
+import { initUpscalePanel, toggleUpscalePanel, cancelSavedUpscale, restoreSavedUpscale } from './player_upscale_panel.js';
 import { stopServerStream } from './player_server_stream.js';
 
 const PROGRESS_SAVE_INTERVAL_MS = 3000;
@@ -95,6 +95,7 @@ function ensurePlayer(video) {
 }
 
 export function loadVideoSource(v) {
+    cancelSavedUpscale();
     stopServerStream();
     teardownUpscale();
     playerRuntime.currentRotation = 0;
@@ -139,8 +140,8 @@ export function loadVideoSource(v) {
 
     lastProgressSaveAt = 0;
     setTimeout(injectPlyrCustomControls, 0);
-    void restoreUpscale(video);
     state.player.play().catch(() => { });
+    void restoreSavedUpscale(v.full_path, video, Number.isFinite(resumeTime) ? resumeTime : 0);
 }
 
 function createCustomControl(id, iconClass, label, onClick) {
