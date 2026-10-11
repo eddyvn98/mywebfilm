@@ -183,6 +183,7 @@ function injectPlyrCustomControls() {
     }
 
     injectUpscaleControl(controls, fullscreenBtn);
+    injectNeuralControl(controls, fullscreenBtn);
 
     const rotateBtn = createCustomControl(
         'plyr-btn-rotate',
@@ -238,4 +239,36 @@ function injectUpscaleControl(controls, fullscreenBtn) {
     };
     onUpscaleChange(update);
     update(getUpscaleState());
+}
+
+function injectNeuralControl(controls, fullscreenBtn) {
+    const btn = createCustomControl('plyr-btn-neural', 'fa-solid fa-microchip',
+        'AI neural FSRCNNX trên PC Windows (chỉ localhost)', async () => {
+            const movie = getCurrentMedia();
+            if (!movie?.full_path) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/play/upscaled', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: movie.full_path })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    window.alert(data.msg || 'Không thể mở AI player');
+                    return;
+                }
+                state.player?.pause();
+                window.alert('Đã yêu cầu mở mpv + FSRCNNX trên máy Windows chạy server.');
+            } catch {
+                window.alert('Không thể kết nối máy chủ AI player');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    if (btn) {
+        btn.style.minWidth = '44px';
+        if (fullscreenBtn) controls.insertBefore(btn, fullscreenBtn);
+        else controls.appendChild(btn);
+    }
 }
