@@ -119,7 +119,7 @@ def test_mac_retina_fsr_reports_only_real_gpu_processing():
     renderer = read("static/js/player_upscale.js")
     panel = read("static/js/player_upscale_panel.js")
     assert "vw * density" in geometry and "vh * density" in geometry
-    assert "kind: 'sharpen'" in geometry
+    assert "scale > 1.001 ? 'upscale' : 'sharpen'" in geometry
     assert "targetFsrSize" in renderer
     assert "window.devicePixelRatio" in renderer
     assert "processing = isRendering" in renderer
