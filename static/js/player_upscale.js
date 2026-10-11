@@ -262,6 +262,7 @@ function stopUpscale(resetStatus = true) {
 }
 function failUpscale(message) {
     mode = 'off';
+    saveUpscalePrefs({ preset: 'off' });
     try { localStorage.setItem(KEY, mode); } catch {}
     stopUpscale(false);
     setStatus(message);
