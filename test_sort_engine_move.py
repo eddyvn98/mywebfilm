@@ -46,3 +46,32 @@ def test_run_does_not_report_failed_move(monkeypatch):
     state = engine.run()
 
     assert state['moved'] == []
+
+
+def test_execute_move_moves_sidecars_and_syncs_catalog(monkeypatch, tmp_path):
+    src = tmp_path / "incoming" / "ABC-123.mp4"
+    src.parent.mkdir()
+    src.write_text("video")
+    nfo = tmp_path / "incoming" / "ABC-123.nfo"
+    nfo.write_text("nfo")
+    poster = tmp_path / "incoming" / "ABC-123.jpg"
+    poster.write_text("poster")
+
+    dst = tmp_path / "sorted" / "ABC-123.mp4"
+
+    mock_catalog = [{"full_path": str(src), "folder": "incoming"}]
+    import config_manager as cfg
+    monkeypatch.setattr(cfg, "mutate_cache", lambda fn: fn(mock_catalog))
+
+    engine = SortEngine(dry_run=False)
+    plan = {"src": str(src), "studio_dst": str(dst), "filename": src.name}
+
+    assert engine.execute_move(plan) is True
+    assert dst.exists()
+    assert (tmp_path / "sorted" / "ABC-123.nfo").exists()
+    assert (tmp_path / "sorted" / "ABC-123.jpg").exists()
+    assert not nfo.exists()
+    assert not poster.exists()
+    assert mock_catalog[0]["full_path"] == str(dst)
+    assert mock_catalog[0]["folder"] == "sorted"
+

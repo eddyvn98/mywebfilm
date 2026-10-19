@@ -21,6 +21,7 @@ app.after_request(apply_security_headers)
 if __name__ == "__main__":
     from waitress import serve
     from metadata_worker import start_metadata_service
+    from sort_worker import start_sort_service
 
     checks = run_startup_checks()
     logger = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ if __name__ == "__main__":
     )
 
     start_metadata_service()
+    start_sort_service()
 
     if public_url:
         if not public_url.startswith("https://"):

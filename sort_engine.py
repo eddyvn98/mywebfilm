@@ -1,4 +1,4 @@
-﻿"""
+"""
 sort_engine.py - Core engine for Video Auto-Sort Web Dashboard.
 Handles: scan, classify, actress lookup (jav321), move files.
 """
@@ -98,14 +98,21 @@ def jav321_id(code):
     m = JAV_RE.match(code)
     return f"{m.group(1).lower()}{m.group(2).zfill(5)}" if m else None
 
-def fetch_actresses(code, retries=2):
+def fetch_actresses(code, retries=1):
     jid = jav321_id(code)
     if not jid: return []
+    try:
+        from jav_metadata_service import _cache as jm_cache
+        norm = code.upper()
+        if norm in jm_cache and jm_cache[norm].get("actors"):
+            return jm_cache[norm]["actors"]
+    except Exception:
+        pass
     url = f"https://www.jav321.com/video/{jid}"
     for _ in range(retries):
         try:
             req = urllib.request.Request(url, headers=HEADERS)
-            html = urllib.request.urlopen(req, timeout=10).read().decode("utf-8","replace")
+            html = urllib.request.urlopen(req, timeout=2).read().decode("utf-8","replace")
             sec = re.search(r"\u51fa\u6f14\u8005.*?<br", html, re.DOTALL)
             if sec:
                 names = re.findall(r"/star/\d+/1\">(.*?)</a>", sec.group())
@@ -113,9 +120,10 @@ def fetch_actresses(code, retries=2):
             return []
         except urllib.error.HTTPError as e:
             if e.code == 404: return []
-            time.sleep(1)
-        except: time.sleep(2)
+            time.sleep(0.5)
+        except: time.sleep(0.5)
     return []
+
 
 def others_group(p):
     c = p[0].upper() if p else ""
@@ -223,9 +231,35 @@ class SortEngine:
             return False
         try:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
-            if os.path.abspath(src) == os.path.abspath(dst):
-                return True
-            shutil.move(src, dst)
+            if os.path.abspath(src) != os.path.abspath(dst):
+                shutil.move(src, dst)
+
+            # Also move associated sidecars (.nfo, posters, etc.)
+            src_base, _ = os.path.splitext(src)
+            dst_base, _ = os.path.splitext(dst)
+            for ext in ('.nfo', '.jpg', '.jpeg', '.png', '.webp', '.nfo.bak'):
+                s_side = src_base + ext
+                if os.path.exists(s_side):
+                    d_side = dst_base + ext
+                    try:
+                        shutil.move(s_side, d_side)
+                    except Exception:
+                        pass
+
+            # Sync Catalog in DB
+            try:
+                import config_manager as cfg
+                def update_catalog(items):
+                    for video in items:
+                        if video.get('full_path') == src:
+                            video['full_path'] = dst
+                            video['folder'] = os.path.basename(os.path.dirname(dst))
+                            break
+                    return items
+                cfg.mutate_cache(update_catalog)
+            except Exception:
+                pass
+
             return True
         except Exception as e:
             self._state["errors"].append(f"Failed: {plan['filename']}: {e}")
