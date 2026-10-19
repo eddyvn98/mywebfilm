@@ -264,7 +264,8 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
         try:
             filename = os.path.basename(input_path)
             name, _ = os.path.splitext(filename)
-            output_path = os.path.join(output_dir, f"{name}_highlight.mp4")
+            clean_name = re.sub(r'(_highlight)+$', '', name, flags=re.IGNORECASE)
+            output_path = os.path.join(output_dir, f"{clean_name}_highlight.mp4")
             temp_output = output_path + '.partial.mp4'
 
             os.makedirs(output_dir, exist_ok=True)
@@ -304,9 +305,10 @@ def process_highlight_video(input_path, output_dir, delete_src=False):
                 return None
 
             os.replace(temp_output, output_path)
-            if delete_src:
-                os.remove(input_path)
-                print(f"Auto-cleanup: Deleted original {input_path}")
+            if delete_src and os.path.abspath(input_path) != os.path.abspath(output_path):
+                if os.path.exists(input_path):
+                    os.remove(input_path)
+                    print(f"Auto-cleanup: Deleted original {input_path}")
             return output_path
         except Exception as e:
             print(f"FFmpeg Highlight Exception: {e}")

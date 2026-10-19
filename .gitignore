@@ -36,6 +36,7 @@ configs/
 credentials.json
 history_cache.json
 favorites_cache.json
+last_daily_sort.json
 
 # Local tool binaries
 cloudflared.exe

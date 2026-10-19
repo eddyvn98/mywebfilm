@@ -72,11 +72,13 @@ def sort_run():
         mode = request.json.get("mode", "incoming")
 
     if not dry_run:
-        from .api_auth import is_direct_local_request
-        if not is_direct_local_request():
+        from .api_auth import is_direct_local_request, get_session_state
+        state = get_session_state()
+        is_authenticated = bool(state and not state.get("locked") and state.get("session_id"))
+        if not is_direct_local_request() and not is_authenticated:
             return jsonify({
                 "ok": False,
-                "msg": "Bulk file sorting chỉ được chạy từ direct localhost"
+                "msg": "Bulk file sorting yêu cầu đăng nhập quản trị hoặc direct localhost"
             }), 403
 
     # Reset state

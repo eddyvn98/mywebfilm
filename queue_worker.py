@@ -1,6 +1,7 @@
 import threading
 import queue
 import os
+import shutil
 import ffmpeg_service as ff
 import config_manager as cfg
 import logging
@@ -62,7 +63,10 @@ class MediaQueue:
                 res_path = None
                 if item['type'] == "highlight":
                     video_dir = os.path.dirname(item['path'])
-                    processed_dir = os.path.join(video_dir, 'Processed')
+                    if os.path.basename(video_dir).lower() == "processed":
+                        processed_dir = video_dir
+                    else:
+                        processed_dir = os.path.join(video_dir, 'Processed')
                     res_path = ff.process_highlight_video(item['path'], processed_dir, delete_src=True)
                     
                     # Ensure Processed dir is in config
@@ -71,6 +75,19 @@ class MediaQueue:
                         if processed_dir not in c["video_dirs"]:
                             c["video_dirs"].append(processed_dir)
                             cfg.save_config(c)
+
+                        # Move associated sidecars (.nfo, .jpg, .jpeg, .png) to Processed
+                        src_base, _ = os.path.splitext(item['path'])
+                        res_base, _ = os.path.splitext(res_path)
+                        for ext in ('.nfo', '.jpg', '.jpeg', '.png'):
+                            src_sidecar = src_base + ext
+                            if os.path.exists(src_sidecar):
+                                dst_sidecar = res_base + ext
+                                try:
+                                    shutil.move(src_sidecar, dst_sidecar)
+                                    logger.info("Moved sidecar %s -> %s", src_sidecar, dst_sidecar)
+                                except Exception as sc_err:
+                                    logger.warning("Could not move sidecar %s: %s", src_sidecar, sc_err)
                 
                 elif item['type'] == "convert":
                     res_path = ff.convert_ts_to_mp4(item['path'], delete_src=True)
@@ -84,7 +101,7 @@ class MediaQueue:
                         
                         # Sync Catalog
                         try:
-                            if item['type'] == "convert":
+                            if item['type'] in ("convert", "highlight"):
                                 def update_catalog(items):
                                     for video in items:
                                         if video.get('full_path') != item['path']:
