@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 import os
 import re
 import time
+from urllib.parse import quote
 import config_manager as cfg
 import llm_service
 import llm_search_service
@@ -20,8 +21,8 @@ def get_unverified():
 
 @ai_bp.route('/api/admin/upload_actor_image', methods=['POST'])
 def upload_actor_image():
-    """Lưu ảnh diễn viên vào thư mục static/img/actors"""
-    from werkzeug.utils import secure_filename
+    """Lưu ảnh diễn viên vào thư mục data/actors (bảo mật ngoài static)"""
+    from actor_image_store import actor_image_path, actor_image_filename
     name = request.form.get('name')
     file = request.files.get('image')
     if not name or not file:
@@ -43,25 +44,38 @@ def upload_actor_image():
             "msg": "Nội dung file không phải JPEG hợp lệ"
         }), 415
 
-    safe_name = secure_filename(name.strip().replace(' ', '_'))
-    if not safe_name:
-        return "Invalid name", 400
-    safe_name = safe_name[:80]
-
-    save_dir = os.path.join('static', 'img', 'actors')
-    os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, f"{safe_name}.jpg")
-
-    from utils import check_path_safe
-    if not check_path_safe(save_path, allow_project_assets=True):
-        return jsonify({"status": "error", "msg": "Access denied"}), 403
-
+    try:
+        filename = actor_image_filename(name.strip().replace(' ', '_'))
+        save_path = actor_image_path(filename)
+    except ValueError:
+        return jsonify({"status": "error", "msg": "Invalid actor name"}), 400
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     file.save(save_path)
-
     return jsonify({
         "status": "ok",
-        "url": f"/static/img/actors/{safe_name}.jpg"
+        "url": f"/api/actor_image/{quote(filename, safe='')}"
     })
+
+
+@ai_bp.route('/api/actor_image/<path:filename>')
+def serve_actor_image(filename):
+    """Serve exactly one private actor photo after session authorization."""
+    from actor_image_store import actor_image_path
+    from web_security import get_session_state
+    from flask import send_file
+
+    record = get_session_state()
+    if not record or record.get("locked"):
+        return jsonify({"status": "err", "msg": "Unauthorized"}), 401
+    try:
+        if filename != os.path.basename(filename):
+            raise ValueError("Invalid actor filename")
+        image_path = actor_image_path(filename)
+        if not os.path.isfile(image_path):
+            return jsonify({"status": "err", "msg": "File not found"}), 404
+        return send_file(image_path, mimetype="image/jpeg", conditional=True, max_age=0)
+    except (ValueError, OSError):
+        return jsonify({"status": "err", "msg": "Access denied"}), 403
 
 @ai_bp.route('/api/ai/analyze', methods=['POST'])
 def ai_analyze():

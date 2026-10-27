@@ -122,13 +122,12 @@
 
         function safeNext() {
             const value = new URLSearchParams(window.location.search).get("next") || "/";
-            if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\") || value.includes("\\")) {
-                return "/";
-            }
             try {
                 const parsed = new URL(value, window.location.origin);
-                if (parsed.origin !== window.location.origin) return "/";
-                return parsed.pathname + parsed.search + parsed.hash;
+                if (parsed.origin !== window.location.origin || parsed.pathname.startsWith("//")) {
+                    return "/";
+                }
+                return parsed.href;
             } catch {
                 return "/";
             }

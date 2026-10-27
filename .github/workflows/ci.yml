@@ -58,4 +58,4 @@ jobs:
         env:
           CINEMA_DATA_DIR: ${{ runner.temp }}\cinema-data
           CINEMA_SECRET_KEY: ci-only-test-secret-32-bytes-minimum-2026
-        run: python -m pytest -q test_windows_e2e.py test_backup_restore.py test_failure_injection.py test_media_safety.py test_library_integration.py
+        run: python -m pytest -q test_windows_e2e.py test_backup_restore.py test_failure_injection.py test_media_safety.py test_library_integration.py test_security.py test_security_hardening.py

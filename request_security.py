@@ -52,7 +52,7 @@ def check_auth():
             "msg": "Sync allowed only from direct localhost",
         }), 403
 
-    if path_lower.startswith("/static/img/actors/"):
+    if path_lower.startswith("/static/img/actors"):
         actor_record = get_session_state()
         if not actor_record or actor_record.get("locked"):
             return "Unauthorized", 401

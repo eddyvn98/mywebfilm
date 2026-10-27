@@ -2,6 +2,7 @@
 webfilm.py - Main Cinema web application.
 """
 import os
+import posixpath
 import secrets
 import threading
 import time
@@ -151,6 +152,15 @@ def _allowed_host():
     except Exception:
         pass
 
+    tunnel_env = os.environ.get("TUNNEL_URL", "").strip().rstrip("/")
+    if tunnel_env:
+        try:
+            tun_env_h = (urlsplit(tunnel_env).hostname or "").lower()
+            if tun_env_h:
+                configured.add(tun_env_h)
+        except Exception:
+            pass
+
     if hostname in {
         "localhost",
         "127.0.0.1",
@@ -159,23 +169,33 @@ def _allowed_host():
         forwarded_host = request.headers.get("X-Forwarded-Host")
         if forwarded_host and not is_direct_local_request():
             f_host = (urlsplit("//" + forwarded_host.split(",")[0].strip()).hostname or "").lower()
-            if f_host and f_host not in configured and not f_host.endswith(".trycloudflare.com"):
+            if f_host and f_host not in configured:
                 return False
         return True
 
     return bool(
         hostname
-        and (hostname in configured or hostname.endswith(".trycloudflare.com"))
+        and hostname in configured
     )
 
 
-def _safe_next_path():
-    path = (
-        request.path
-        if request.path.startswith("/")
-        else "/"
-    )
-    if path.startswith("//") or path.startswith("/\\") or "\\" in path:
+def _safe_next_path(path=None):
+    if path is None:
+        if not _allowed_host():
+            return "/"
+        path = (
+            request.path
+            if request.path.startswith("/")
+            else "/"
+        )
+    if not path.startswith("/") or "//" in path or "\\" in path:
+        return "/"
+    from urllib.parse import unquote
+    unquoted = unquote(path)
+    if not unquoted.startswith("/") or "//" in unquoted or "\\" in unquoted:
+        return "/"
+    normalized = posixpath.normpath(unquoted)
+    if not normalized.startswith("/") or normalized == "/" or "//" in normalized or "\\" in normalized:
         return "/"
     return path
 

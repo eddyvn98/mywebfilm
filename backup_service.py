@@ -5,6 +5,7 @@ import re
 import shutil
 import sqlite3
 import tempfile
+import tarfile
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ BACKUP_DIR = os.environ.get("CINEMA_BACKUP_DIR", os.path.join(DATA_DIR, "backups
 TAGS_FILE = os.path.join(BASE_DIR, "tags.json")
 CREDENTIALS_FILE = os.path.join(DATA_DIR, "credentials.json")
 MANIFEST_FILE = "manifest.json"
+ACTOR_ARCHIVE = "actor_images.tar.gz"
 _backup_lock = threading.RLock()
 
 BACKUP_ID_RE = re.compile(r"^\d{8}T\d{6}Z_[0-9a-f]{8}$")
@@ -51,6 +53,71 @@ def _source_files():
         "config.json": _project_path(CONFIG_FILE),
         "tags.json": TAGS_FILE,
     }
+
+
+def _archive_actor_images(staging):
+    """Include private actor photos in every new versioned backup."""
+    from actor_image_store import actor_image_dir, actor_image_filename
+
+    source_dir = actor_image_dir()
+    archive_path = os.path.join(staging, ACTOR_ARCHIVE)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        if not os.path.isdir(source_dir):
+            return
+        for entry in sorted(os.scandir(source_dir), key=lambda e: e.name):
+            if entry.is_symlink():
+                raise ValueError("Refusing to back up symlinked actor image")
+            if not entry.is_file(follow_symlinks=False):
+                continue
+            if entry.name != actor_image_filename(entry.name):
+                raise ValueError("Unexpected actor image filename")
+            archive.add(entry.path, arcname=entry.name, recursive=False)
+
+
+def _restore_actor_images(backup_dir):
+    """Extract verified backup into a private staging dir and swap atomically."""
+    from actor_image_store import actor_image_dir, actor_image_filename
+
+    source = os.path.join(backup_dir, ACTOR_ARCHIVE)
+    # Legacy backups predate private photo storage; preserve live photos.
+    if not os.path.isfile(source):
+        return
+
+    destination = actor_image_dir()
+    parent = os.path.dirname(destination)
+    os.makedirs(parent, exist_ok=True)
+    staging = tempfile.mkdtemp(prefix=".actors-restore-", dir=parent)
+    previous = None
+    try:
+        with tarfile.open(source, "r:gz") as archive:
+            for member in archive:
+                if not member.isfile():
+                    raise ValueError("Unsupported entry in actor archive")
+                if member.name != actor_image_filename(member.name):
+                    raise ValueError("Unsafe actor name in backup")
+                extracted = archive.extractfile(member)
+                if extracted is None:
+                    raise ValueError("Unreadable actor archive entry")
+                with extracted, open(os.path.join(staging, member.name), "xb") as target:
+                    shutil.copyfileobj(extracted, target)
+
+        if os.path.lexists(destination):
+            previous = tempfile.mkdtemp(prefix=".actors-previous-", dir=parent)
+            os.rmdir(previous)
+            os.replace(destination, previous)
+        try:
+            os.replace(staging, destination)
+            staging = None
+        except Exception:
+            if previous is not None:
+                os.replace(previous, destination)
+                previous = None
+            raise
+    finally:
+        if staging is not None:
+            shutil.rmtree(staging, ignore_errors=True)
+        if previous is not None:
+            shutil.rmtree(previous, ignore_errors=True)
 
 
 def _backup_database(destination):
@@ -130,6 +197,7 @@ def create_backup(keep=None, cleanup=True):
                 if os.path.isfile(source):
                     shutil.copy2(source, os.path.join(staging, name))
 
+            _archive_actor_images(staging)
             manifest = _manifest_for(staging, backup_id)
             _write_manifest(staging, manifest)
             os.replace(staging, final_dir)
@@ -237,6 +305,7 @@ def _apply_backup_dir(backup_dir):
         elif os.path.exists(destination):
             os.remove(destination)
 
+    _restore_actor_images(backup_dir)
     runtime_db._schema_path = None
 
 

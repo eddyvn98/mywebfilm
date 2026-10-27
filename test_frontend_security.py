@@ -184,3 +184,56 @@ def test_smart_mix_home_contract():
     assert "sortOrder: 'smart_mix'" in state
     assert 'historyService.loadHistoryData()' in main
     assert "selectSort('smart_mix', 'GỢI Ý')" in menu
+
+
+def test_login_safe_next_js_open_redirect_vectors():
+    """Execute the REAL safeNext implementation from login.html under Node.js."""
+    import re
+    import shutil
+    import subprocess
+
+    node_bin = shutil.which("node")
+    if not node_bin:
+        pytest.skip("Node.js is not installed on this system")
+
+    html = read("templates/login.html")
+    match = re.search(r"function safeNext\(\)\s*\{[\s\S]*?\n        \}", html)
+    assert match, "Could not extract production safeNext() from login.html"
+
+    runner = r"""
+const vm = require('node:vm');
+const fs = require('node:fs');
+const code = fs.readFileSync(0, 'utf8');
+const ctx = {
+    window: { location: { origin: 'https://cinema.example.com', search: '' } },
+    URL, URLSearchParams,
+};
+vm.createContext(ctx);
+vm.runInContext(code, ctx);
+function safeNext(raw) {
+    ctx.window.location.search = '?next=' + encodeURIComponent(raw);
+    return vm.runInContext('safeNext()', ctx);
+}
+const blocked = [
+    '/.//evil.com', '/%2e//evil.com', '/..//evil.com', '//evil.com',
+    '/\\evil.com', 'https://evil.com', 'javascript:alert(1)',
+    '//attacker.com/test', '///attacker.com',
+];
+for (const vector of blocked) {
+    const result = safeNext(vector);
+    if (result !== '/') throw Error('Unsafe next: ' + vector + ' -> ' + result);
+}
+const expected = 'https://cinema.example.com/catalog/film-1?q=test#top';
+if (safeNext('/catalog/film-1?q=test#top') !== expected) {
+    throw Error('Valid relative redirect was not preserved');
+}
+"""
+    result = subprocess.run(
+        [node_bin, "-e", runner],
+        input=match.group(0),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "Production safeNext() test failed:\n" + result.stdout + result.stderr
+    )

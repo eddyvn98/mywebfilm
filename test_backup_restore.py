@@ -25,6 +25,8 @@ def backup_env(tmp_path, monkeypatch):
     monkeypatch.setattr(backup_service, "CONFIG_FILE", str(config))
     monkeypatch.setattr(backup_service, "TAGS_FILE", str(tags))
     monkeypatch.setattr(backup_service, "CREDENTIALS_FILE", str(credentials))
+    import actor_image_store
+    monkeypatch.setattr(actor_image_store, "DATA_DIR", str(data_dir))
 
     config.write_text(json.dumps({"video_dirs": ["D:/Media"]}), encoding="utf-8")
     tags.write_text(json.dumps({"genres": ["Drama"]}), encoding="utf-8")
@@ -158,3 +160,67 @@ def test_restore_removes_files_absent_from_backup(backup_env):
     backup_service.restore_backup(target["backup_id"])
 
     assert not backup_env["credentials"].exists()
+
+
+def test_private_actor_photos_are_part_of_backup_and_restore(backup_env):
+    import actor_image_store
+    from pathlib import Path
+
+    actors = Path(actor_image_store.actor_image_dir())
+    actors.mkdir(parents=True)
+    (actors / "Alice.jpg").write_bytes(b"original-jpeg")
+    target = backup_service.create_backup(cleanup=False)
+    assert backup_service.ACTOR_ARCHIVE in target["files"]
+
+    (actors / "Alice.jpg").write_bytes(b"mutated-jpeg")
+    (actors / "New.jpg").write_bytes(b"not-in-backup")
+    backup_service.restore_backup(target["backup_id"])
+
+    assert (actors / "Alice.jpg").read_bytes() == b"original-jpeg"
+    assert not (actors / "New.jpg").exists()
+
+
+def test_legacy_backup_preserves_current_private_photos(backup_env):
+    import actor_image_store
+    from pathlib import Path
+
+    actors = Path(actor_image_store.actor_image_dir())
+    actors.mkdir(parents=True)
+    (actors / "Alice.jpg").write_bytes(b"preserve-legacy")
+    target = backup_service.create_backup(cleanup=False)
+    folder = Path(backup_service._backup_path(target["backup_id"]))
+    (folder / backup_service.ACTOR_ARCHIVE).unlink()
+    backup_service._write_manifest(
+        str(folder),
+        backup_service._manifest_for(str(folder), target["backup_id"]),
+    )
+
+    backup_service.restore_backup(target["backup_id"])
+    assert (actors / "Alice.jpg").read_bytes() == b"preserve-legacy"
+
+
+def test_actor_archive_rejects_path_traversal_before_file_swap(backup_env):
+    import io
+    import tarfile
+    from pathlib import Path
+    import actor_image_store
+
+    actors = Path(actor_image_store.actor_image_dir())
+    actors.mkdir(parents=True)
+    (actors / "Safe.jpg").write_bytes(b"safe")
+    target = backup_service.create_backup(cleanup=False)
+    folder = Path(backup_service._backup_path(target["backup_id"]))
+    with tarfile.open(folder / backup_service.ACTOR_ARCHIVE, "w:gz") as archive:
+        payload = b"malicious"
+        info = tarfile.TarInfo("../escaped.jpg")
+        info.size = len(payload)
+        archive.addfile(info, io.BytesIO(payload))
+    backup_service._write_manifest(
+        str(folder),
+        backup_service._manifest_for(str(folder), target["backup_id"]),
+    )
+
+    with pytest.raises(ValueError, match="Invalid actor name|Unsafe actor name"):
+        backup_service.restore_backup(target["backup_id"])
+    assert (actors / "Safe.jpg").read_bytes() == b"safe"
+    assert not (backup_env["data_dir"] / "escaped.jpg").exists()
