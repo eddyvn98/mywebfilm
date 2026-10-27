@@ -187,60 +187,53 @@ def test_smart_mix_home_contract():
 
 
 def test_login_safe_next_js_open_redirect_vectors():
-    """Verify safeNext() in login.html using Node.js against known bypass vectors."""
-    import subprocess
+    """Execute the REAL safeNext implementation from login.html under Node.js."""
+    import re
     import shutil
+    import subprocess
 
     node_bin = shutil.which("node")
     if not node_bin:
         pytest.skip("Node.js is not installed on this system")
 
-    js_code = """
-    function safeNext(raw) {
-        if (!raw) return "/";
-        const value = String(raw).trim();
-        if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\\\")) {
-            return "/";
-        }
-        try {
-            const parsed = new URL(value, "https://cinema.example.com");
-            if (parsed.origin !== "https://cinema.example.com" || parsed.pathname.startsWith("//")) {
-                return "/";
-            }
-            return parsed.href;
-        } catch (_) {
-            return "/";
-        }
-    }
+    html = read("templates/login.html")
+    match = re.search(r"function safeNext\(\)\s*\{[\s\S]*?\n        \}", html)
+    assert match, "Could not extract production safeNext() from login.html"
 
-    const vectors = [
-        "/.//evil.com",
-        "/%2e//evil.com",
-        "/..//evil.com",
-        "//evil.com",
-        "/\\\\evil.com",
-        "https://evil.com",
-        "javascript:alert(1)",
-        "//attacker.com/test",
-        "///attacker.com"
-    ];
-
-    for (const v of vectors) {
-        const res = safeNext(v);
-        if (res !== "/") {
-            console.error(`Bypass vector succeeded: ${v} => ${res}`);
-            process.exit(1);
-        }
-    }
-
-    const valid = safeNext("/catalog/film-1?q=test#top");
-    if (valid !== "https://cinema.example.com/catalog/film-1?q=test#top") {
-        console.error(`Valid path failed: ${valid}`);
-        process.exit(2);
-    }
-
-    process.exit(0);
-    """
-
-    res = subprocess.run([node_bin, "-e", js_code], capture_output=True, text=True)
-    assert res.returncode == 0, f"Node.js safeNext test failed:\nSTDOUT: {res.stdout}\nSTDERR: {res.stderr}"
+    runner = r"""
+const vm = require('node:vm');
+const fs = require('node:fs');
+const code = fs.readFileSync(0, 'utf8');
+const ctx = {
+    window: { location: { origin: 'https://cinema.example.com', search: '' } },
+    URL, URLSearchParams,
+};
+vm.createContext(ctx);
+vm.runInContext(code, ctx);
+function safeNext(raw) {
+    ctx.window.location.search = '?next=' + encodeURIComponent(raw);
+    return vm.runInContext('safeNext()', ctx);
+}
+const blocked = [
+    '/.//evil.com', '/%2e//evil.com', '/..//evil.com', '//evil.com',
+    '/\\evil.com', 'https://evil.com', 'javascript:alert(1)',
+    '//attacker.com/test', '///attacker.com',
+];
+for (const vector of blocked) {
+    const result = safeNext(vector);
+    if (result !== '/') throw Error('Unsafe next: ' + vector + ' -> ' + result);
+}
+const expected = 'https://cinema.example.com/catalog/film-1?q=test#top';
+if (safeNext('/catalog/film-1?q=test#top') !== expected) {
+    throw Error('Valid relative redirect was not preserved');
+}
+"""
+    result = subprocess.run(
+        [node_bin, "-e", runner],
+        input=match.group(0),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        "Production safeNext() test failed:\n" + result.stdout + result.stderr
+    )
