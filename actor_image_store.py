@@ -49,18 +49,26 @@ def actor_image_path(name):
 
 
 def migrate_legacy_actor_images():
-    """Idempotently move old photos out of Flask's public static directory.
+    """Quarantine old static photos *before* accepting web requests.
 
-    Never delete the source until a complete private copy has been installed.
-    Conflicting files remain untouched and are logged for manual resolution.
+    Rename on the same filesystem is atomic. Conflicting originals remain
+    in a private quarantine; never serve them from Flask's static directory.
     """
     legacy = os.path.join(BASE_DIR, "static", "img", "actors")
-    if not os.path.isdir(legacy):
+    quarantine = os.path.join(BASE_DIR, ".cinema-legacy-actor-images")
+    if os.path.lexists(legacy):
+        if os.path.islink(legacy) or not os.path.isdir(legacy):
+            raise RuntimeError("Unsafe legacy actor image directory")
+        if os.path.lexists(quarantine):
+            raise RuntimeError("Legacy actor image migration already in progress")
+        os.replace(legacy, quarantine)
+    if not os.path.isdir(quarantine):
         return 0
+
     destination = actor_image_dir()
     os.makedirs(destination, exist_ok=True)
     moved = 0
-    for entry in os.scandir(legacy):
+    for entry in os.scandir(quarantine):
         if not entry.is_file(follow_symlinks=False) or not entry.name.lower().endswith(".jpg"):
             continue
         try:
@@ -87,4 +95,6 @@ def migrate_legacy_actor_images():
             moved += 1
         except (OSError, ValueError):
             logger.exception("actor_image_migration_failed filename=%r", entry.name)
+    if not os.listdir(quarantine):
+        os.rmdir(quarantine)
     return moved
