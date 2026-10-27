@@ -77,7 +77,7 @@ def test_ai_inject_destination_must_be_authorized(tmp_path, monkeypatch):
 
     with app.test_client() as client:
         authenticate_client(client)
-        with patch("routes.api_ai.check_path_safe", side_effect=[True, False]), \
+        with patch("utils.check_path_safe", side_effect=[True, False]), \
              patch("routes.api_ai.metadata_injector.save_metadata_fast") as save:
             response = client.post(
                 "/api/ai/inject",
