@@ -99,7 +99,7 @@ def apply_security_headers(response):
         path_lower.startswith("/api/")
         or path_lower.startswith("/login")
         or path_lower.startswith("/register_security")
-        or path_lower.startswith("/static/img/actors/")
+        or path_lower.startswith("/static/img/actors")
     ):
         response.headers["Cache-Control"] = (
             "no-store, max-age=0"

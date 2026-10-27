@@ -1,5 +1,6 @@
 import subprocess
 import os
+import re
 from constants import FFMPEG_PATH, FFPROBE_PATH, THUMB_SEEK_TIME, THUMB_SIZE, PREVIEW_SEEK_TIME, PREVIEW_DURATION, PREVIEW_SIZE
 import ffmpeg_conversion
 from ffmpeg_runtime import (

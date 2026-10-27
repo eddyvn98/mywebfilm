@@ -99,7 +99,7 @@ export function renderMgmtSidebars() {
     } else {
         galleryEl.innerHTML = actors.map(name => {
             const safeName = name.replace(/ /g, '_');
-            const imgPath = `/static/img/actors/${safeName}.jpg?t=${Date.now()}`;
+            const imgPath = `/api/actor_image/${encodeURIComponent(safeName)}.jpg?t=${Date.now()}`;
             return `
                 <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-800 border border-white/5 group shadow-lg">
                     <img src="${escapeAttr(imgPath)}" class="w-full h-full object-cover" 

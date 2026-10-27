@@ -184,3 +184,63 @@ def test_smart_mix_home_contract():
     assert "sortOrder: 'smart_mix'" in state
     assert 'historyService.loadHistoryData()' in main
     assert "selectSort('smart_mix', 'GỢI Ý')" in menu
+
+
+def test_login_safe_next_js_open_redirect_vectors():
+    """Verify safeNext() in login.html using Node.js against known bypass vectors."""
+    import subprocess
+    import shutil
+
+    node_bin = shutil.which("node")
+    if not node_bin:
+        pytest.skip("Node.js is not installed on this system")
+
+    js_code = """
+    function safeNext(raw) {
+        if (!raw) return "/";
+        const value = String(raw).trim();
+        if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\\\")) {
+            return "/";
+        }
+        try {
+            const parsed = new URL(value, "https://cinema.example.com");
+            if (parsed.origin !== "https://cinema.example.com" || parsed.pathname.startsWith("//")) {
+                return "/";
+            }
+            return parsed.href;
+        } catch (_) {
+            return "/";
+        }
+    }
+
+    const vectors = [
+        "/.//evil.com",
+        "/%2e//evil.com",
+        "/..//evil.com",
+        "//evil.com",
+        "/\\\\evil.com",
+        "https://evil.com",
+        "javascript:alert(1)",
+        "//attacker.com/test",
+        "///attacker.com"
+    ];
+
+    for (const v of vectors) {
+        const res = safeNext(v);
+        if (res !== "/") {
+            console.error(`Bypass vector succeeded: ${v} => ${res}`);
+            process.exit(1);
+        }
+    }
+
+    const valid = safeNext("/catalog/film-1?q=test#top");
+    if (valid !== "https://cinema.example.com/catalog/film-1?q=test#top") {
+        console.error(`Valid path failed: ${valid}`);
+        process.exit(2);
+    }
+
+    process.exit(0);
+    """
+
+    res = subprocess.run([node_bin, "-e", js_code], capture_output=True, text=True)
+    assert res.returncode == 0, f"Node.js safeNext test failed:\nSTDOUT: {res.stdout}\nSTDERR: {res.stderr}"

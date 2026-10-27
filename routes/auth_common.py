@@ -211,7 +211,16 @@ def get_origin():
             except Exception:
                 pass
 
-            if f_hostname and (f_hostname in configured_hosts or f_hostname.endswith(".trycloudflare.com")):
+            tunnel_env = os.environ.get("TUNNEL_URL", "").strip().rstrip("/")
+            if tunnel_env:
+                try:
+                    tun_env_h = (urlsplit(tunnel_env).hostname or "").lower()
+                    if tun_env_h:
+                        configured_hosts.add(tun_env_h)
+                except Exception:
+                    pass
+
+            if f_hostname and f_hostname in configured_hosts:
                 host = f_host
 
     proto = "https" if proto == "https" else "http"
@@ -243,10 +252,26 @@ def get_origin():
                     f"{public_scheme}://{public_host}"
                 ).rstrip("/")
 
-    # Preserve the exact direct-local host the browser used. Treating
-    # 127.0.0.1 as localhost here causes same-origin POSTs from 127.0.0.1
-    # to be rejected before authentication is reached.
-    if hostname.endswith(".trycloudflare.com"):
-        proto = "https"
+    tunnel_url = os.environ.get("TUNNEL_URL", "").strip().rstrip("/")
+    if not tunnel_url:
+        try:
+            from routes.api_config import TUNNEL_URL
+            tunnel_url = (TUNNEL_URL or "").strip().rstrip("/")
+        except Exception:
+            pass
+    if tunnel_url:
+        tun = urlsplit(tunnel_url)
+        tun_hostname = (tun.hostname or "").lower()
+        if tun_hostname and hostname == tun_hostname:
+            tun_scheme = (
+                "https"
+                if tun.scheme == "https"
+                else "http"
+            )
+            tun_host = tun.netloc
+            if tun_host:
+                return (
+                    f"{tun_scheme}://{tun_host}"
+                ).rstrip("/")
 
     return f"{proto}://{host}".rstrip("/")

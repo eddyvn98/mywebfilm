@@ -242,9 +242,13 @@ def check_path_safe(
                 project_root,
                 "static",
             )
+            data_actors = os.path.join(
+                os.environ.get("CINEMA_DATA_DIR", os.path.join(project_root, "data")),
+                "actors",
+            )
             return _path_inside(
                 path,
-                [static_root],
+                [static_root, data_actors],
             )
 
         return False

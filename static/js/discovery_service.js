@@ -62,7 +62,7 @@ export function renderDiscoveryContent() {
     html += renderSection('Diễn viên (Idol)', sections['Diễn viên'], name => {
         const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
         const colorHue = Math.abs(name.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % 360;
-        const imgPath = `/static/img/actors/${name.replace(/ /g, '_')}.jpg`;
+        const imgPath = `/api/actor_image/${encodeURIComponent(name.replace(/ /g, '_'))}.jpg`;
         return `<div class="idol-avatar-container" onclick="window.selectCategory('Diễn viên: ${escapeInlineJsSingleQuoted(name)}', '${escapeInlineJsSingleQuoted(name.toUpperCase())}')">
             <div class="idol-avatar-circle" style="background: linear-gradient(135deg, hsl(${colorHue}, 60%, 40%), hsl(${colorHue}, 60%, 20%))">
                 <img src="${escapeAttr(imgPath)}" class="idol-avatar-img absolute inset-0 hidden" onload="this.classList.remove('hidden')" onerror="this.style.display='none'">

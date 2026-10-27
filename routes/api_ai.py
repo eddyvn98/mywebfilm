@@ -20,7 +20,7 @@ def get_unverified():
 
 @ai_bp.route('/api/admin/upload_actor_image', methods=['POST'])
 def upload_actor_image():
-    """Lưu ảnh diễn viên vào thư mục static/img/actors"""
+    """Lưu ảnh diễn viên vào thư mục data/actors (bảo mật ngoài static)"""
     from werkzeug.utils import secure_filename
     name = request.form.get('name')
     file = request.files.get('image')
@@ -48,7 +48,8 @@ def upload_actor_image():
         return "Invalid name", 400
     safe_name = safe_name[:80]
 
-    save_dir = os.path.join('static', 'img', 'actors')
+    from web_security import DATA_DIR
+    save_dir = os.path.join(DATA_DIR, 'actors')
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, f"{safe_name}.jpg")
 
@@ -60,8 +61,30 @@ def upload_actor_image():
 
     return jsonify({
         "status": "ok",
-        "url": f"/static/img/actors/{safe_name}.jpg"
+        "url": f"/api/actor_image/{safe_name}.jpg"
     })
+
+@ai_bp.route('/api/actor_image/<path:filename>')
+def serve_actor_image(filename):
+    """Phục vụ ảnh diễn viên từ thư mục data/actors với kiểm tra xác thực người dùng"""
+    from web_security import DATA_DIR, get_session_state
+    from utils import check_path_safe
+    from flask import send_from_directory
+
+    record = get_session_state()
+    if not record or record.get("locked"):
+        return jsonify({"status": "err", "msg": "Unauthorized"}), 401
+
+    save_dir = os.path.abspath(os.path.join(DATA_DIR, 'actors'))
+    target_path = os.path.abspath(os.path.join(save_dir, filename))
+
+    if not target_path.startswith(save_dir) or not check_path_safe(target_path, allow_project_assets=True):
+        return jsonify({"status": "err", "msg": "Access denied"}), 403
+
+    if not os.path.isfile(target_path):
+        return jsonify({"status": "err", "msg": "File not found"}), 404
+
+    return send_from_directory(save_dir, os.path.basename(target_path), max_age=0)
 
 @ai_bp.route('/api/ai/analyze', methods=['POST'])
 def ai_analyze():

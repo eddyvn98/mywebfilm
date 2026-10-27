@@ -12,9 +12,10 @@ def download_avatar(actor_name, url):
         
     # Chuẩn hóa tên file
     safe_name = actor_name.replace(' ', '_')
-    output_dir = os.path.join('static', 'img', 'actors')
+    from web_security import DATA_DIR
+    output_dir = os.path.join(DATA_DIR, 'actors')
     if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
         
     filepath = os.path.join(output_dir, f"{safe_name}.jpg")
     
