@@ -122,7 +122,16 @@
 
         function safeNext() {
             const value = new URLSearchParams(window.location.search).get("next") || "/";
-            return value.startsWith("/") && !value.startsWith("//") ? value : "/";
+            if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\") || value.includes("\\")) {
+                return "/";
+            }
+            try {
+                const parsed = new URL(value, window.location.origin);
+                if (parsed.origin !== window.location.origin) return "/";
+                return parsed.pathname + parsed.search + parsed.hash;
+            } catch {
+                return "/";
+            }
         }
 
         const bootstrapToken = getBootstrapToken();

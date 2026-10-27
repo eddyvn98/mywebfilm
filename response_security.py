@@ -26,7 +26,8 @@ def apply_security_headers(response):
         "same-origin",
     )
 
-    auth_surface = request.path.startswith((
+    path_lower = request.path.lower()
+    auth_surface = path_lower.startswith((
         "/login",
         "/register_security",
         "/api/auth/",
@@ -86,7 +87,7 @@ def apply_security_headers(response):
         )
 
     cacheable_media_artifact = (
-        request.path in {"/api/thumbnail", "/api/preview"}
+        path_lower in {"/api/thumbnail", "/api/preview"}
         and response.status_code == 200
     )
     if cacheable_media_artifact:
@@ -95,16 +96,16 @@ def apply_security_headers(response):
         )
         response.headers.pop("Pragma", None)
     elif (
-        request.path.startswith("/api/")
-        or request.path.startswith("/login")
-        or request.path.startswith("/register_security")
-        or request.path.startswith("/static/img/actors/")
+        path_lower.startswith("/api/")
+        or path_lower.startswith("/login")
+        or path_lower.startswith("/register_security")
+        or path_lower.startswith("/static/img/actors/")
     ):
         response.headers["Cache-Control"] = (
             "no-store, max-age=0"
         )
         response.headers["Pragma"] = "no-cache"
-    elif request.path.startswith(("/static/js/", "/static/css/")):
+    elif path_lower.startswith(("/static/js/", "/static/css/")):
         response.headers["Cache-Control"] = (
             "no-cache, must-revalidate"
         )

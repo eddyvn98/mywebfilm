@@ -7,7 +7,8 @@ from web_security import (
 
 def check_auth():
     full_path = request.path
-    is_api = full_path.startswith("/api/")
+    path_lower = full_path.lower()
+    is_api = path_lower.startswith("/api/")
 
     if not _allowed_host():
         return jsonify({
@@ -43,7 +44,7 @@ def check_auth():
                 "msg": "Cross-origin request blocked",
             }), 403
 
-    if full_path == "/api/auth/tunnel/sync":
+    if path_lower == "/api/auth/tunnel/sync":
         if is_direct_local_request():
             return
         return jsonify({
@@ -51,16 +52,16 @@ def check_auth():
             "msg": "Sync allowed only from direct localhost",
         }), 403
 
-    if full_path.startswith("/static/img/actors/"):
+    if path_lower.startswith("/static/img/actors/"):
         actor_record = get_session_state()
         if not actor_record or actor_record.get("locked"):
             return "Unauthorized", 401
         return
 
-    if full_path.startswith("/static/"):
+    if path_lower.startswith("/static/"):
         return
     if any(
-        full_path.startswith(path)
+        path_lower.startswith(path.lower())
         for path in ALLOWED_PATH_BASES
     ):
         return
@@ -73,12 +74,12 @@ def check_auth():
 
     if (
         unlocked
-        and full_path.startswith("/api/stream")
+        and path_lower.startswith("/api/stream")
     ):
         _touch_stream_activity(record)
 
     if any(
-        full_path.startswith(path)
+        path_lower.startswith(path.lower())
         for path in SENSITIVE_PATH_BASES
     ):
         if can_register_request():

@@ -58,3 +58,32 @@ def test_upload_actor_image_traversal_protection(client):
     # In any case, it should NOT write to the root project folder (../../api_ai.jpg).
     assert resp.status_code in [403, 415]
     assert not os.path.exists("api_ai.jpg")
+
+def test_actor_image_case_insensitive_auth(client):
+    # Unauthenticated access to actor images must be denied regardless of URL case
+    resp1 = client.get('/static/img/actors/api_ai.jpg')
+    assert resp1.status_code == 401
+
+    resp2 = client.get('/static/IMG/actors/api_ai.jpg')
+    assert resp2.status_code == 401
+
+    resp3 = client.get('/static/Img/actors/api_ai.jpg')
+    assert resp3.status_code == 401
+
+def test_safe_next_path_and_backslash(client):
+    from web_security import _safe_next_path
+    with app.test_request_context('/\\evil.com'):
+        assert _safe_next_path() == '/'
+
+def test_get_origin_rejects_unallowed_forwarded_host(client):
+    from routes.api_auth import get_origin
+    with patch.dict(os.environ, {'CINEMA_ALLOWED_HOSTS': 'jp.vivutrade.io.vn', 'CINEMA_PUBLIC_URL': 'https://jp.vivutrade.io.vn'}):
+        with app.test_request_context(
+            '/api/auth/logout',
+            method='POST',
+            headers={'Host': 'jp.vivutrade.io.vn', 'X-Forwarded-Host': 'evil.com', 'CF-Connecting-IP': '1.2.3.4'},
+            environ_base={'REMOTE_ADDR': '127.0.0.1'}
+        ):
+            origin = get_origin()
+            assert 'evil.com' not in origin
+            assert origin == 'https://jp.vivutrade.io.vn'

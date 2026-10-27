@@ -22,6 +22,7 @@ IDLE_LOCK_SECONDS = max(
 REMEMBER_SESSION_SECONDS = 7 * 24 * 60 * 60
 SHORT_SESSION_SECONDS = 12 * 60 * 60
 from .auth_request import (
+    _host_name,
     _is_loopback_peer,
     is_direct_local_request,
     rate_limited as _rate_limited,
@@ -180,14 +181,38 @@ def get_origin():
     host = request.host
 
     if _is_loopback_peer() and not is_direct_local_request():
-        proto = request.headers.get(
-            "X-Forwarded-Proto",
-            proto,
-        ).split(",")[0].strip()
-        host = request.headers.get(
-            "X-Forwarded-Host",
-            host,
-        ).split(",")[0].strip()
+        forwarded_proto = request.headers.get("X-Forwarded-Proto")
+        if forwarded_proto:
+            proto = forwarded_proto.split(",")[0].strip()
+
+        forwarded_host = request.headers.get("X-Forwarded-Host")
+        if forwarded_host:
+            f_host = forwarded_host.split(",")[0].strip()
+            f_hostname = _host_name(f_host)
+            configured_hosts = {
+                item.strip().lower()
+                for item in os.environ.get("CINEMA_ALLOWED_HOSTS", "").split(",")
+                if item.strip()
+            }
+            public_url = os.environ.get("CINEMA_PUBLIC_URL", "").strip().rstrip("/")
+            if public_url:
+                try:
+                    pub_h = (urlsplit(public_url).hostname or "").lower()
+                    if pub_h:
+                        configured_hosts.add(pub_h)
+                except Exception:
+                    pass
+            try:
+                from routes.api_config import TUNNEL_URL
+                if TUNNEL_URL:
+                    tun_h = (urlsplit(TUNNEL_URL).hostname or "").lower()
+                    if tun_h:
+                        configured_hosts.add(tun_h)
+            except Exception:
+                pass
+
+            if f_hostname and (f_hostname in configured_hosts or f_hostname.endswith(".trycloudflare.com")):
+                host = f_host
 
     proto = "https" if proto == "https" else "http"
     parsed = urlsplit(f"{proto}://{host}")
@@ -225,5 +250,3 @@ def get_origin():
         proto = "https"
 
     return f"{proto}://{host}".rstrip("/")
-
-

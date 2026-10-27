@@ -126,12 +126,6 @@ def _allowed_host():
         urlsplit("//" + request.host).hostname
         or ""
     ).lower()
-    if hostname in {
-        "localhost",
-        "127.0.0.1",
-        "::1",
-    }:
-        return True
 
     configured = {
         item.strip().lower()
@@ -157,9 +151,21 @@ def _allowed_host():
     except Exception:
         pass
 
+    if hostname in {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+    }:
+        forwarded_host = request.headers.get("X-Forwarded-Host")
+        if forwarded_host and not is_direct_local_request():
+            f_host = (urlsplit("//" + forwarded_host.split(",")[0].strip()).hostname or "").lower()
+            if f_host and f_host not in configured and not f_host.endswith(".trycloudflare.com"):
+                return False
+        return True
+
     return bool(
         hostname
-        and hostname in configured
+        and (hostname in configured or hostname.endswith(".trycloudflare.com"))
     )
 
 
@@ -169,7 +175,7 @@ def _safe_next_path():
         if request.path.startswith("/")
         else "/"
     )
-    if path.startswith("//"):
+    if path.startswith("//") or path.startswith("/\\") or "\\" in path:
         return "/"
     return path
 
@@ -189,4 +195,3 @@ SENSITIVE_PATH_BASES = [
     "/api/auth/register/options",
     "/api/auth/register/verify",
 ]
-
