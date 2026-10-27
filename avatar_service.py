@@ -5,20 +5,19 @@ import time
 def download_avatar(actor_name, url):
     """
     Tải ảnh đại diện diễn viên về máy.
-    Lưu tại: static/img/actors/{actor_name}.jpg
+    Lưu tại: data/actors/{actor_name}.jpg
     """
     if not url:
         return False
         
-    # Chuẩn hóa tên file
-    safe_name = actor_name.replace(' ', '_')
-    from web_security import DATA_DIR
-    output_dir = os.path.join(DATA_DIR, 'actors')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-        
-    filepath = os.path.join(output_dir, f"{safe_name}.jpg")
-    
+    # Metadata may contain user-controlled names; never concatenate paths.
+    from actor_image_store import actor_image_path
+    try:
+        filepath = actor_image_path(actor_name)
+    except ValueError:
+        return False
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
     # Nếu đã có rồi thì thôi (trừ khi file quá nhỏ/lỗi)
     if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
         return True
