@@ -3,6 +3,7 @@ import os
 import re
 import time
 from urllib.parse import quote
+from media_rename_security import plan_ai_media_rename
 import config_manager as cfg
 import llm_service
 import llm_search_service
@@ -135,27 +136,36 @@ def ai_inject():
     final_meta['is_ai_verified'] = True
     final_meta['timestamp'] = time.time()
 
-    # Dùng phương thức lưu "siêu nhanh" (FAST) mặc định để tránh lag máy cho user
-    ok, msg = metadata_injector.save_metadata_fast(full_path, final_meta)
-    
-    if ok:
-        new_path = full_path
-        new_filename = filename
+    # Check the destination BEFORE writing the NFO sidecar or moving media.
+    new_path = full_path
+    new_filename = os.path.basename(full_path)
+    target_path = None
+    if should_rename:
+        try:
+            new_filename, target_path = plan_ai_media_rename(full_path, final_meta)
+        except ValueError:
+            return jsonify({"status": "error", "msg": "Invalid target filename"}), 400
+        if not check_path_safe(target_path):
+            return jsonify({"status": "error", "msg": "Target outside allowed media roots"}), 403
+        if os.path.normcase(os.path.realpath(target_path)) == os.path.normcase(os.path.realpath(full_path)):
+            target_path = None
+        elif os.path.lexists(target_path):
+            return jsonify({"status": "error", "msg": "Target already exists"}), 409
 
-        if should_rename:
+    ok, msg = metadata_injector.save_metadata_fast(full_path, final_meta)
+
+    if ok:
+        if target_path:
             try:
-                code = final_meta.get('code')
-                title = final_meta.get('title')
-                ext = os.path.splitext(full_path)[1]
-                clean_title = re.sub(r'[\\/:*?"<>|]', '', title)
-                new_filename = f"[{code}] {clean_title}{ext}" if code else f"{clean_title}{ext}"
-                target_path = os.path.join(os.path.dirname(full_path), new_filename)
-                
-                if not os.path.exists(target_path):
-                    os.rename(full_path, target_path)
-                    new_path = target_path
-            except Exception as re_err:
-                print(f"Rename error: {re_err}")
+                # Check once more immediately before the filesystem mutation.
+                if not check_path_safe(target_path):
+                    return jsonify({"status": "error", "msg": "Target outside allowed media roots"}), 403
+                if os.path.lexists(target_path):
+                    return jsonify({"status": "error", "msg": "Target already exists"}), 409
+                os.rename(full_path, target_path)
+                new_path = target_path
+            except OSError:
+                return jsonify({"status": "error", "msg": "Failed to rename media file"}), 500
 
         # Harvest Tags
         if 'genres' in final_meta: tag_manager.add_tags('genres', final_meta['genres'])
